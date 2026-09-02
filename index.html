@@ -81,7 +81,8 @@
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: var(--bg-body); z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 24px; transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding: 24px; overflow-y: auto; max-height: 100vh;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .pin-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; text-align: center; color: var(--text-main); }
         .pin-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
@@ -302,9 +303,19 @@
             <div class="pin-btn" onclick="pressPin('7')">7</div>
             <div class="pin-btn" onclick="pressPin('8')">8</div>
             <div class="pin-btn" onclick="pressPin('9')">9</div>
-            <div class="pin-btn action" onclick="resetPinCode()">초기화</div>
+            <div class="pin-btn action" onclick="resetPinCode()">지우기</div>
             <div class="pin-btn" onclick="pressPin('0')">0</div>
             <div class="pin-btn action" onclick="pressPinBackspace()">⌫</div>
+        </div>
+
+        <!-- 🔓 비밀번호 건너뛰기 및 초기화 버튼 -->
+        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; max-width: 280px;">
+            <button type="button" class="btn-icon" style="width: 100%; padding: 12px; font-size: 0.9rem; background: var(--bg-card); color: var(--primary); border: 1.5px solid var(--border-color); border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" onclick="skipPinLock()">
+                🔓 비밀번호 없이 바로 입장하기
+            </button>
+            <button type="button" style="background: transparent; border: none; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; padding: 6px;" onclick="resetPinPermanently()">
+                🔑 비밀번호 초기화 (새로 설정)
+            </button>
         </div>
     </div>
 
@@ -1059,7 +1070,7 @@
             }, 2600);
         }
 
-        // 🔒 PIN Logic
+        // 🔒 PIN Logic (물리 키보드 지원 + 건너뛰기 + 영구 초기화 탑재)
         function initPinLock() {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
@@ -1070,16 +1081,39 @@
                 isSettingNewPin = true;
                 tempNewPin = "";
                 document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
-                document.getElementById('pinDesc').innerText = '가계부 접속 시 사용할 4자리 숫자를 입력하세요.';
+                document.getElementById('pinDesc').innerText = '화면의 숫자 버튼을 누르거나 키보드로 4자리를 입력하세요.';
                 overlay.style.display = 'flex';
             } else {
                 isSettingNewPin = false;
                 document.getElementById('pinTitle').innerText = '🔒 비밀번호 4자리를 입력하세요';
-                document.getElementById('pinDesc').innerText = '소중한 나의 가계부와 자산을 보호합니다.';
+                document.getElementById('pinDesc').innerText = '화면의 숫자 버튼을 누르거나 키보드로 입력하세요.';
                 overlay.style.display = 'flex';
             }
         }
+
+        function skipPinLock() {
+            playSound('coin');
+            const overlay = document.getElementById('pinOverlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 250);
+            showToast('가계부 메인 화면으로 이동했습니다.', 'success');
+        }
+
+        function resetPinPermanently() {
+            if (confirm('기존 비밀번호를 삭제하고 새로 설정하시겠습니까?')) {
+                localStorage.removeItem('app_user_pin');
+                isSettingNewPin = true;
+                tempNewPin = "";
+                enteredPin = "";
+                updatePinDots();
+                document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
+                document.getElementById('pinDesc').innerText = '새로 사용할 4자리 숫자를 입력하세요.';
+                showToast('비밀번호가 초기화되었습니다. 새 4자리를 입력하세요.', 'info');
+            }
+        }
+
         function lockAppNow() { playSound('click'); initPinLock(); }
+
         function startPinChange() {
             if (confirm('4자리 비밀번호를 새로 변경하시겠습니까?')) {
                 localStorage.removeItem('app_user_pin');
@@ -1087,18 +1121,22 @@
                 initPinLock();
             }
         }
+
         function resetPinCode() { playSound('click'); enteredPin = ""; updatePinDots(); }
+
         function pressPin(num) {
             playSound('click');
             if (enteredPin.length >= 4) return;
-            enteredPin += num;
+            enteredPin += String(num);
             updatePinDots();
             if (enteredPin.length === 4) setTimeout(evaluatePin, 120);
         }
+
         function pressPinBackspace() {
             playSound('click');
             if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updatePinDots(); }
         }
+
         function updatePinDots() {
             const dots = document.querySelectorAll('#pinDots .pin-dot');
             dots.forEach((dot, idx) => {
@@ -1106,6 +1144,7 @@
                 else dot.classList.remove('filled');
             });
         }
+
         function evaluatePin() {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
@@ -1116,17 +1155,18 @@
                     enteredPin = "";
                     updatePinDots();
                     document.getElementById('pinTitle').innerText = '🔒 비밀번호를 한 번 더 입력하세요';
-                    document.getElementById('pinDesc').innerText = '확인을 위해 동일한 4자리를 입력해주세요.';
+                    document.getElementById('pinDesc').innerText = '확인을 위해 동일한 4자리를 한 번 더 입력해주세요.';
+                    showToast('확인을 위해 동일한 4자리를 한 번 더 입력해주세요.', 'info');
                 } else {
                     if (enteredPin === tempNewPin) {
                         playSound('coin');
                         localStorage.setItem('app_user_pin', enteredPin);
-                        alert('4자리 비밀번호가 안전하게 설정되었습니다!');
+                        showToast('4자리 비밀번호가 안전하게 설정되었습니다!', 'success');
                         overlay.style.opacity = '0';
                         setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
                     } else {
                         triggerPinShake();
-                        alert('비밀번호가 일치하지 않습니다. 처음부터 다시 설정해주세요.');
+                        showToast('비밀번호가 일치하지 않습니다. 처음부터 다시 설정해주세요.', 'error');
                         tempNewPin = ""; enteredPin = ""; updatePinDots();
                         document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
                     }
@@ -1136,18 +1176,38 @@
                     playSound('coin');
                     overlay.style.opacity = '0';
                     setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
+                    showToast('잠금이 해제되었습니다!', 'success');
                 } else {
                     triggerPinShake();
+                    showToast('비밀번호가 일치하지 않습니다. 다시 입력해주세요.', 'error');
                     enteredPin = ""; updatePinDots();
                 }
             }
         }
+
         function triggerPinShake() {
             const dotsBox = document.getElementById('pinDots');
             dotsBox.classList.add('shake');
             if (navigator.vibrate) navigator.vibrate([80, 80, 80]);
             setTimeout(() => dotsBox.classList.remove('shake'), 400);
         }
+
+        // ⌨️ PC 물리 키보드 숫자 키패드 지원
+        window.addEventListener('keydown', (e) => {
+            const overlay = document.getElementById('pinOverlay');
+            if (!overlay || overlay.style.display === 'none') return;
+
+            if (e.key >= '0' && e.key <= '9') {
+                e.preventDefault();
+                pressPin(e.key);
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                pressPinBackspace();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                resetPinCode();
+            }
+        });
 
         // 🔄 Type Switch (지출 vs 수입)
         function switchTxType(type) {
