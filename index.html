@@ -566,11 +566,11 @@
                 </div>
 
                 <div class="desktop-dashboard-grid">
-                    <!-- 좌측: 정기 입출금 등록 폼 -->
+                    <!-- 좌측: 정기 입출금 등록 / 수정 폼 -->
                     <div class="card" style="margin-bottom: 0;">
                         <div class="card-title">
-                            <span>🗓️ 매월 정기 입출금 등록</span>
-                            <span style="font-size: 0.8rem; color: var(--text-muted);">날짜 & 금액 지정</span>
+                            <span id="recFormTitle">🗓️ 매월 정기 입출금 등록</span>
+                            <button type="button" class="btn-icon" style="font-size: 0.78rem;" onclick="resetRecForm()">🔄 폼 비우기</button>
                         </div>
 
                         <!-- 유형 선택 (고정 지출 vs 고정 수입) -->
@@ -626,16 +626,24 @@
                             </select>
                         </div>
 
-                        <button type="button" class="btn-submit" onclick="handleAddRecurringPlan()">
-                            ➕ 매월 정기 일정으로 저장하기
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" id="btnSubmitRecPlan" class="btn-submit" style="flex: 1;" onclick="handleSaveRecurringPlan()">
+                                ➕ 매월 정기 일정으로 저장하기
+                            </button>
+                            <button type="button" id="btnCancelRecEdit" class="btn-icon" style="display: none; padding: 0 16px; font-weight: 700;" onclick="cancelRecEdit()">
+                                취소
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 우측: 등록된 정기 입출금 목록 & D-Day 알림 -->
                     <div class="card" style="margin-bottom: 0;">
                         <div class="card-title">
                             <span>📋 등록된 매월 고정 일정 목록</span>
-                            <span style="font-size: 0.8rem; color: var(--text-muted);">실시간 D-Day 계산</span>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem;" onclick="restoreDefaultRecurringSamples()">✨ 샘플 복원</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem; color: var(--expense);" onclick="clearAllRecurringPlans()">🗑️ 전체 비우기</button>
+                            </div>
                         </div>
                         <div id="recurringListContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
                     </div>
@@ -1771,8 +1779,9 @@
             });
         }
 
-        // 🗓️ 매월 정기 입출금 / 고정비 관리 로직
+        // 🗓️ 매월 정기 입출금 / 고정비 관리 로직 (수정, 전체초기화, 샘플복원)
         let currentRecType = "지출";
+        let editingRecId = null;
 
         function switchRecType(type) {
             playSound('click');
@@ -1790,9 +1799,10 @@
 
         function getRecurringPlans() {
             const raw = localStorage.getItem('user_recurring_plans');
-            if (raw) {
-                try { return JSON.parse(raw); } catch(e) {}
+            if (raw !== null) {
+                try { return JSON.parse(raw); } catch(e) { return []; }
             }
+            // 최초 접속 시 기본 샘플
             const defaults = [
                 { id: 'rec_salary', day: 10, type: '수입', category: '급여/월급', name: '정기 월급여', amount: 3500000, pay_method: '현금/계좌' },
                 { id: 'rec_rent', day: 25, type: '지출', category: '생활', name: '아파트 관리비/공과금', amount: 250000, pay_method: '현대카드' },
@@ -1807,7 +1817,65 @@
             renderRecurringUI();
         }
 
-        function handleAddRecurringPlan() {
+        function clearAllRecurringPlans() {
+            if (!confirm('등록된 모든 정기 입출금 일정을 삭제하고 깨끗하게 비우시겠습니까?')) return;
+            playSound('click');
+            saveRecurringPlans([]);
+            resetRecForm();
+            alert('모든 일정이 초기화되었습니다! 이제 나만의 진짜 고정 지출/수익을 등록해보세요.');
+        }
+
+        function restoreDefaultRecurringSamples() {
+            if (!confirm('기본 예시 샘플 데이터(월급, 관리비, 넷플릭스)를 다시 불러오시겠습니까?')) return;
+            playSound('click');
+            const defaults = [
+                { id: 'rec_salary', day: 10, type: '수입', category: '급여/월급', name: '정기 월급여', amount: 3500000, pay_method: '현금/계좌' },
+                { id: 'rec_rent', day: 25, type: '지출', category: '생활', name: '아파트 관리비/공과금', amount: 250000, pay_method: '현대카드' },
+                { id: 'rec_sub', day: 14, type: '지출', category: '구독', name: '넷플릭스/유튜브 프리미엄', amount: 17000, pay_method: '신한카드' }
+            ];
+            saveRecurringPlans(defaults);
+            resetRecForm();
+        }
+
+        function editRecurringPlan(id) {
+            playSound('click');
+            const plans = getRecurringPlans();
+            const item = plans.find(p => p.id === id);
+            if (!item) return;
+
+            editingRecId = id;
+            switchRecType(item.type);
+            document.getElementById('rngRecDay').value = item.day;
+            document.getElementById('lblRecDay').innerText = '매월 ' + item.day + '일';
+            document.getElementById('recItemName').value = item.name;
+            document.getElementById('recItemAmount').value = item.amount;
+            document.getElementById('recCategory').value = item.category;
+            document.getElementById('recPayMethod').value = item.pay_method;
+
+            document.getElementById('recFormTitle').innerText = '✏️ 정기 입출금 수정 중';
+            document.getElementById('btnSubmitRecPlan').innerText = '💾 수정 내용 저장하기';
+            document.getElementById('btnCancelRecEdit').style.display = 'block';
+
+            document.getElementById('tab-recurring').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cancelRecEdit() {
+            playSound('click');
+            resetRecForm();
+        }
+
+        function resetRecForm() {
+            editingRecId = null;
+            document.getElementById('recItemName').value = '';
+            document.getElementById('recItemAmount').value = '';
+            document.getElementById('rngRecDay').value = 10;
+            document.getElementById('lblRecDay').innerText = '매월 10일';
+            document.getElementById('recFormTitle').innerText = '🗓️ 매월 정기 입출금 등록';
+            document.getElementById('btnSubmitRecPlan').innerText = '➕ 매월 정기 일정으로 저장하기';
+            document.getElementById('btnCancelRecEdit').style.display = 'none';
+        }
+
+        function handleSaveRecurringPlan() {
             const day = parseInt(document.getElementById('rngRecDay').value, 10);
             const name = document.getElementById('recItemName').value.trim();
             const amount = parseInt(document.getElementById('recItemAmount').value, 10);
@@ -1819,21 +1887,37 @@
 
             playSound('coin');
             const plans = getRecurringPlans();
-            const newPlan = {
-                id: 'rec_' + Date.now(),
-                day,
-                type: currentRecType,
-                category,
-                name,
-                amount,
-                pay_method: payMethod
-            };
-            plans.push(newPlan);
-            saveRecurringPlans(plans);
 
-            document.getElementById('recItemName').value = '';
-            document.getElementById('recItemAmount').value = '';
-            alert(`매월 ${day}일 [${name} ${amount.toLocaleString()}원] 정기 일정이 저장되었습니다!`);
+            if (editingRecId) {
+                const idx = plans.findIndex(p => p.id === editingRecId);
+                if (idx >= 0) {
+                    plans[idx] = {
+                        id: editingRecId,
+                        day,
+                        type: currentRecType,
+                        category,
+                        name,
+                        amount,
+                        pay_method: payMethod
+                    };
+                }
+                alert(`[${name}] 정기 일정이 성공적으로 수정되었습니다!`);
+            } else {
+                const newPlan = {
+                    id: 'rec_' + Date.now(),
+                    day,
+                    type: currentRecType,
+                    category,
+                    name,
+                    amount,
+                    pay_method: payMethod
+                };
+                plans.push(newPlan);
+                alert(`매월 ${day}일 [${name} ${amount.toLocaleString()}원] 정기 일정이 저장되었습니다!`);
+            }
+
+            saveRecurringPlans(plans);
+            resetRecForm();
         }
 
         function handleDeleteRecurringPlan(id) {
@@ -1842,6 +1926,7 @@
             let plans = getRecurringPlans();
             plans = plans.filter(p => p.id !== id);
             saveRecurringPlans(plans);
+            if (editingRecId === id) resetRecForm();
         }
 
         async function handleApplyRecurringToSheet(id) {
@@ -1914,7 +1999,7 @@
                 container.innerHTML = `
                     <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.9rem;">
                         등록된 매월 정기 입출금 일정이 없습니다.<br>
-                        왼쪽에서 매월 결제/입금 일자와 금액을 등록해보세요!
+                        왼쪽에서 매월 결제/입금 일자와 금액을 새로 등록해보세요!
                     </div>
                 `;
                 return;
@@ -1954,9 +2039,10 @@
                         <span>${p.pay_method}</span>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                        <button type="button" class="btn-icon" style="font-size: 0.78rem; color: var(--expense);" onclick="handleDeleteRecurringPlan('${p.id}')">🗑️ 삭제</button>
-                        <button type="button" class="btn-icon" style="font-size: 0.82rem; font-weight: 700; background: ${isRecorded ? 'var(--bg-subtle)' : 'var(--primary)'}; color: ${isRecorded ? 'var(--text-muted)' : 'white'}; border: none;" onclick="handleApplyRecurringToSheet('${p.id}')">
+                    <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                        <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; color: var(--primary); font-weight: 700;" onclick="editRecurringPlan('${p.id}')">✏️ 수정</button>
+                        <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; color: var(--expense);" onclick="handleDeleteRecurringPlan('${p.id}')">🗑️ 삭제</button>
+                        <button type="button" class="btn-icon" style="font-size: 0.82rem; font-weight: 700; background: ${isRecorded ? 'var(--bg-subtle)' : 'var(--primary)'}; color: ${isRecorded ? 'var(--text-muted)' : 'white'}; border: none; padding: 4px 12px;" onclick="handleApplyRecurringToSheet('${p.id}')">
                             ${isRecorded ? '✓ 이번달 반영완료 (재등록)' : '⚡ 이번달 시트에 즉시 등록'}
                         </button>
                     </div>
