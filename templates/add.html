@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}소비 기록 & 자각 — 스마트 가계부{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>✍️ 소비 기록 & 자각</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            직접 입력할 때마다 내 돈의 가치를 실감하고, 카드 청구서와 1원 단위까지 완벽히 대조합니다.
+        </p>
+    </div>
+</div>
+
+<div class="card" style="box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);">
+    <div class="card-body">
+        <form id="transactionForm" method="POST" action="/add" onsubmit="submitTransaction(event)">
+            <!-- 1. 유형 선택 -->
+            <div class="form-group">
+                <label class="form-label">1. 거래 유형</label>
+                <div class="type-toggle">
+                    <label class="type-option">
+                        <input type="radio" name="type" value="지출" checked onchange="handleTypeChange(this.value); playSound('pop');">
+                        <span class="type-btn type-expense">🔴 지출</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="type" value="수입" onchange="handleTypeChange(this.value); playSound('pop');">
+                        <span class="type-btn type-income">🟢 수입</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. 날짜 & 금액 -->
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label" for="date">날짜</label>
+                    <input type="date" id="date" name="date" class="form-control" value="{{ today }}" required onchange="updateBillingMonthDefault(this.value)">
+                </div>
+                <div class="form-group" style="flex: 1.5;">
+                    <label class="form-label" for="amount">금액</label>
+                    <div class="input-with-suffix">
+                        <input type="number" id="amount" name="amount" class="form-control amount-input-impact"
+                               placeholder="0" min="1" step="1" required autocomplete="off"
+                               oninput="updateValueComparison(this.value)">
+                        <span class="input-suffix">원</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✨ 실시간 체감 가치 환산기 (입력할 때마다 즉각적인 체감 임팩트) -->
+            <div id="valueComparisonBox" class="value-comparison-box" style="display: none;">
+                <span class="comparison-icon" id="comparisonIcon">☕</span>
+                <span class="comparison-text" id="comparisonText">커피 1잔 정도의 금액입니다.</span>
+            </div>
+
+            <div class="quick-amounts" style="margin-top: 10px;">
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="setQuickAmount(5000)">+5천</button>
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="setQuickAmount(10000)">+1만</button>
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="setQuickAmount(30000)">+3만</button>
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="setQuickAmount(50000)">+5만</button>
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="setQuickAmount(100000)">+10만</button>
+                <button type="button" class="btn btn-secondary btn-sm keycap-btn" onclick="toggleKeypad()" style="margin-left: auto;">⌨️ 키패드</button>
+            </div>
+
+            <!-- ⌨️ 3D 가상 기계식 텐키패드 (딸깍거리는 키캡 타건 패드) -->
+            <div id="virtualKeypad" class="mechanical-keypad" style="display: none;">
+                <button type="button" class="keypad-key" onclick="inputKeypad('1')">1</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('2')">2</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('3')">3</button>
+                <button type="button" class="keypad-key key-clear" onclick="inputKeypad('backspace')">⌫</button>
+
+                <button type="button" class="keypad-key" onclick="inputKeypad('4')">4</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('5')">5</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('6')">6</button>
+                <button type="button" class="keypad-key key-action" onclick="inputKeypad('+1만')">+1만</button>
+
+                <button type="button" class="keypad-key" onclick="inputKeypad('7')">7</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('8')">8</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('9')">9</button>
+                <button type="button" class="keypad-key key-action" onclick="inputKeypad('+5만')">+5만</button>
+
+                <button type="button" class="keypad-key key-clear" onclick="inputKeypad('C')">C</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('0')">0</button>
+                <button type="button" class="keypad-key" onclick="inputKeypad('00')">00</button>
+                <button type="button" class="keypad-key key-action" onclick="toggleKeypad()" style="font-size: 1rem;">닫기</button>
+            </div>
+
+            <!-- 💳 3. [신규] 결제 수단 & 신용카드 청구월 선택 (카드값 대조의 핵심) -->
+            <div id="paymentSection" class="form-group" style="margin-top: 1.5rem; padding: 14px; background: var(--bg-card-subtle); border-radius: 12px; border: 1px solid var(--border-color);">
+                <label class="form-label" style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span>💳</span> 2. 결제 수단 및 카드 선택
+                </label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                        <input type="radio" name="payment_method" value="신용카드" checked onchange="handlePaymentMethodChange(this.value)" style="display:none;">
+                        <span class="pay-method-btn active" id="btn-pay-credit">💳 신용카드</span>
+                    </label>
+                    <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                        <input type="radio" name="payment_method" value="체크카드" onchange="handlePaymentMethodChange(this.value)" style="display:none;">
+                        <span class="pay-method-btn" id="btn-pay-debit">💳 체크카드</span>
+                    </label>
+                    <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                        <input type="radio" name="payment_method" value="현금/계좌" onchange="handlePaymentMethodChange(this.value)" style="display:none;">
+                        <span class="pay-method-btn" id="btn-pay-cash">💵 현금/계좌</span>
+                    </label>
+                </div>
+
+                <!-- 신용카드 상세 (카드사 + 청구월 + 할부) -->
+                <div id="creditCardDetails" class="form-row" style="margin-bottom: 0;">
+                    <div class="form-group" style="flex: 1.5; margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.85rem;" for="card_name">카드사 선택</label>
+                        <select id="card_name" name="card_name" class="form-control" style="font-size: 0.9rem;">
+                            {% for card in default_cards %}
+                            <option value="{{ card.name }}">{{ card.emoji }} {{ card.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1.2; margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.85rem;" for="billing_month">청구/결제월</label>
+                        <input type="month" id="billing_month" name="billing_month" class="form-control" value="{{ today[:7] }}" style="font-size: 0.9rem;">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.85rem;" for="installment">할부</label>
+                        <select id="installment" name="installment" class="form-control" style="font-size: 0.9rem;">
+                            <option value="1">일시불</option>
+                            <option value="2">2개월</option>
+                            <option value="3">3개월 (무이자 등)</option>
+                            <option value="6">6개월</option>
+                            <option value="12">12개월</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 카테고리 -->
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label class="form-label">3. 카테고리</label>
+                <input type="hidden" id="category" name="category" value="식비" required>
+                <div class="category-picker">
+                    {% for cat in categories %}
+                    <button type="button"
+                            class="category-item {% if cat.name == '식비' %}active{% endif %}"
+                            data-category="{{ cat.name }}"
+                            data-default-type="{{ cat.default_type }}"
+                            style="--cat-color: {{ cat.color }}"
+                            onclick="selectCategory(this, '{{ cat.name }}', '{{ cat.default_type }}')">
+                        <span class="category-emoji">{{ cat.emoji }}</span>
+                        <span class="category-name">{{ cat.name }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 5. [소비 자각 영역 - 지출일 때만 강조] -->
+            <div id="mindfulSection" class="mindful-box-impact">
+                <h4 style="margin-bottom: 1rem; font-size: 1.05rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>🧠</span> <strong>스스로 돌아보는 소비 성격 & 가치</strong>
+                </h4>
+
+                <!-- 소비 성격 -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-secondary);">
+                        이 소비는 어떤 성격인가요?
+                    </label>
+                    <input type="hidden" id="consumption_type" name="consumption_type" value="필수">
+                    <div class="mindful-btn-grid">
+                        {% for ct in consumption_types %}
+                        <button type="button"
+                                class="mindful-btn mindful-type-btn {% if ct.key == '필수' %}active{% endif %}"
+                                data-val="{{ ct.key }}"
+                                style="--accent: {{ ct.color }};"
+                                onclick="selectConsumptionType(this, '{{ ct.key }}')">
+                            <span style="font-size: 1.4rem;">{{ ct.emoji }}</span>
+                            <strong style="font-size: 0.95rem;">{{ ct.label }}</strong>
+                            <small class="mindful-desc">{{ ct.desc }}</small>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 소비 만족도 -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-secondary);">
+                        이 지출에 대한 나의 느낌/만족도는?
+                    </label>
+                    <input type="hidden" id="satisfaction" name="satisfaction" value="보통">
+                    <div class="mindful-btn-grid">
+                        {% for sat in satisfaction_levels %}
+                        <button type="button"
+                                class="mindful-btn mindful-sat-btn {% if sat.key == '보통' %}active{% endif %}"
+                                data-val="{{ sat.key }}"
+                                onclick="selectSatisfaction(this, '{{ sat.key }}')">
+                            <span style="font-size: 1.4rem;">{{ sat.emoji }}</span>
+                            <strong style="font-size: 0.95rem;">{{ sat.label }}</strong>
+                            <small class="mindful-desc">{{ sat.desc }}</small>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. 메모 & 사용처 -->
+            <div class="form-group" style="margin-top: 1.25rem;">
+                <label class="form-label" for="description">4. 사용처 / 메모 (카드 명세서 대조용)</label>
+                <input type="text" id="description" name="description" class="form-control"
+                       placeholder="예: 배달의민족, 스타벅스 강남점, 쿠팡 로켓배송 등">
+            </div>
+
+            <!-- 제출 버튼 (임팩트 애니메이션) -->
+            <button type="submit" class="btn btn-primary btn-lg btn-full btn-impact-submit" style="margin-top: 1.5rem;">
+                ✨ 자각하며 기록 저장하기 ✨
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleTypeChange(val) {
+    const mindfulSection = document.getElementById('mindfulSection');
+    const compBox = document.getElementById('valueComparisonBox');
+    const paymentSection = document.getElementById('paymentSection');
+    if (mindfulSection) mindfulSection.style.display = val === '수입' ? 'none' : 'block';
+    if (compBox && val === '수입') compBox.style.display = 'none';
+    if (paymentSection) paymentSection.style.display = val === '수입' ? 'none' : 'block';
+}
+
+function handlePaymentMethodChange(val) {
+    playSound('pop');
+    document.querySelectorAll('.pay-method-btn').forEach(btn => btn.classList.remove('active'));
+    const creditDetails = document.getElementById('creditCardDetails');
+
+    if (val === '신용카드') {
+        document.getElementById('btn-pay-credit').classList.add('active');
+        if (creditDetails) creditDetails.style.display = 'flex';
+    } else if (val === '체크카드') {
+        document.getElementById('btn-pay-debit').classList.add('active');
+        if (creditDetails) creditDetails.style.display = 'flex';
+    } else {
+        document.getElementById('btn-pay-cash').classList.add('active');
+        if (creditDetails) creditDetails.style.display = 'none';
+    }
+}
+
+function updateBillingMonthDefault(dateVal) {
+    const billingInput = document.getElementById('billing_month');
+    if (billingInput && dateVal) {
+        billingInput.value = dateVal.substring(0, 7);
+    }
+}
+
+function updateValueComparison(val) {
+    const box = document.getElementById('valueComparisonBox');
+    const icon = document.getElementById('comparisonIcon');
+    const text = document.getElementById('comparisonText');
+    const type = document.querySelector('input[name="type"]:checked')?.value || '지출';
+
+    if (!box || type === '수입') return;
+
+    const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
+    if (!num || num <= 0) {
+        box.style.display = 'none';
+        return;
+    }
+
+    box.style.display = 'flex';
+
+    if (num < 3000) {
+        icon.innerText = '🍬';
+        text.innerText = '간식 또는 생수 1병 정도의 소액입니다.';
+    } else if (num < 8000) {
+        const cups = (num / 4500).toFixed(1);
+        icon.innerText = '☕';
+        text.innerText = `카페 아메리카노 약 ${cups}잔에 해당하는 금액입니다.`;
+    } else if (num < 18000) {
+        const meals = (num / 10000).toFixed(1);
+        icon.innerText = '🍚';
+        text.innerText = `든든한 찌개 백반 약 ${meals}끼 분량입니다.`;
+    } else if (num < 40000) {
+        const chicken = (num / 23000).toFixed(1);
+        icon.innerText = '🍗';
+        text.innerText = `바삭한 치킨 약 ${chicken}마리 분량입니다.`;
+    } else if (num < 100000) {
+        icon.innerText = '🛒';
+        text.innerText = `일주일치 식료품 장보기 또는 가족 외식 1회 분량입니다.`;
+    } else if (num < 300000) {
+        icon.innerText = '🎧';
+        text.innerText = `가성비 전자제품 또는 1달치 교통비 분량의 지출입니다.`;
+    } else if (num < 700000) {
+        icon.innerText = '✈️';
+        text.innerText = `제주도 힐링 여행을 다녀올 수 있는 큰 지출입니다.`;
+    } else {
+        icon.innerText = '💻';
+        text.innerText = `최신 스마트 기기 또는 1달치 생활비에 달하는 고액 소비입니다!`;
+    }
+
+    box.classList.remove('pulse-impact');
+    void box.offsetWidth;
+    box.classList.add('pulse-impact');
+}
+
+function setQuickAmount(amt) {
+    playSound('pop');
+    const amountInput = document.getElementById('amount');
+    if (amountInput) {
+        const cur = parseInt(amountInput.value.replace(/[^0-9]/g, ''), 10) || 0;
+        amountInput.value = cur + amt;
+        updateValueComparison(amountInput.value);
+        amountInput.focus();
+    }
+}
+
+function selectCategory(el, name, defaultType) {
+    playSound('pop');
+    document.querySelectorAll('.category-item').forEach(item => item.classList.remove('active'));
+    if (el) el.classList.add('active');
+    document.getElementById('category').value = name;
+
+    if (defaultType) {
+        const btn = document.querySelector(`.mindful-type-btn[data-val="${defaultType}"]`);
+        if (btn) selectConsumptionType(btn, defaultType, false);
+    }
+}
+
+function selectConsumptionType(el, val, sound = true) {
+    if (sound) playSound('pop');
+    document.querySelectorAll('.mindful-type-btn').forEach(item => item.classList.remove('active'));
+    if (el) el.classList.add('active');
+    document.getElementById('consumption_type').value = val;
+}
+
+function selectSatisfaction(el, val) {
+    playSound('pop');
+    document.querySelectorAll('.mindful-sat-btn').forEach(item => item.classList.remove('active'));
+    if (el) el.classList.add('active');
+    document.getElementById('satisfaction').value = val;
+}
+
+function toggleKeypad() {
+    playSound('click');
+    const keypad = document.getElementById('virtualKeypad');
+    if (keypad) {
+        keypad.style.display = keypad.style.display === 'none' ? 'grid' : 'none';
+    }
+}
+</script>
+{% endblock %}

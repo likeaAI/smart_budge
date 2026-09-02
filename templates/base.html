@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}올인원 스마트 머니 허브{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+</head>
+<body>
+    <!-- 사이드바 -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">💰</span>
+            <div>
+                <h1 class="sidebar-title" style="font-size: 1.15rem; margin-bottom: 2px;">스마트 머니 허브</h1>
+                <small style="font-size: 0.72rem; color: var(--text-muted);">가계부 + 카드대조 + 자산/주식</small>
+            </div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if page == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">대시보드</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('add_page') }}" class="nav-item {% if page == 'add' %}active{% endif %}">
+                    <span class="nav-icon">➕</span>
+                    <span class="nav-label">소비 입력</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('history_page') }}" class="nav-item {% if page == 'history' %}active{% endif %}">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">내역 관리</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('cards_page') }}" class="nav-item {% if page == 'cards' %}active{% endif %}">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-label">카드값 대조</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('assets_page') }}" class="nav-item {% if page == 'assets' %}active{% endif %}">
+                    <span class="nav-icon">🏦</span>
+                    <span class="nav-label">자산 & 원금</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('investments_page') }}" class="nav-item {% if page == 'investments' %}active{% endif %}">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">주식 & 투자</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('goals_page') }}" class="nav-item {% if page == 'goals' %}active{% endif %}">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-label">예산 목표</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('advice_page') }}" class="nav-item {% if page == 'advice' %}active{% endif %}">
+                    <span class="nav-icon">🧠</span>
+                    <span class="nav-label">AI 머니 분석</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer" style="display: flex; gap: 8px; justify-content: center;">
+            <button class="theme-toggle" id="soundToggleBtn" onclick="toggleSound()" title="타건음 켜기/끄기" style="font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); cursor: pointer;">
+                <span id="soundIcon">⌨️</span>
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="테마 전환" style="font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; background: var(--bg-card-subtle); border: 1px solid var(--border-color); cursor: pointer;">
+                <span class="theme-icon-light">🌙</span>
+                <span class="theme-icon-dark">☀️</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 시각적 임팩트: 자각 스탬프 오버레이 -->
+    <div id="mindfulStampOverlay" class="stamp-overlay" style="display:none;">
+        <div class="stamp-box" id="stampBox">
+            <div class="stamp-icon" id="stampIcon">🌟</div>
+            <div class="stamp-badge" id="stampBadge">현명한 소비 완료!</div>
+            <div class="stamp-amount" id="stampAmount">0원</div>
+            <div class="stamp-message" id="stampMessage">소비 자각 성공!</div>
+        </div>
+    </div>
+
+    <!-- 모바일 하단 네비게이션 -->
+    <nav class="mobile-nav">
+        <a href="{{ url_for('dashboard') }}" class="mobile-nav-item {% if page == 'dashboard' %}active{% endif %}">
+            <span>📊</span><span>홈</span>
+        </a>
+        <a href="{{ url_for('add_page') }}" class="mobile-nav-item {% if page == 'add' %}active{% endif %}">
+            <span>➕</span><span>입력</span>
+        </a>
+        <a href="{{ url_for('cards_page') }}" class="mobile-nav-item {% if page == 'cards' %}active{% endif %}">
+            <span>💳</span><span>카드</span>
+        </a>
+        <a href="{{ url_for('assets_page') }}" class="mobile-nav-item {% if page == 'assets' %}active{% endif %}">
+            <span>🏦</span><span>자산</span>
+        </a>
+        <a href="{{ url_for('advice_page') }}" class="mobile-nav-item {% if page == 'advice' %}active{% endif %}">
+            <span>🧠</span><span>AI</span>
+        </a>
+    </nav>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

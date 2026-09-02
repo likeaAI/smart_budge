@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}통합 머니 허브 대시보드 — 스마트 가계부{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>🌐 올인원 머니 허브 대시보드</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            가계부 지출/수입 + 보유 자산(원금) + 주식 투자 포트폴리오를 한눈에 종합 분석합니다.
+        </p>
+    </div>
+    <div class="month-selector">
+        {% set cur_y = summary.month[:4]|int %}
+        {% set cur_m = summary.month[5:]|int %}
+        {% set prev_y = cur_y if cur_m > 1 else cur_y - 1 %}
+        {% set prev_m = cur_m - 1 if cur_m > 1 else 12 %}
+        {% set next_y = cur_y if cur_m < 12 else cur_y + 1 %}
+        {% set next_m = cur_m + 1 if cur_m < 12 else 1 %}
+        <a href="?month={{ '%04d-%02d'|format(prev_y, prev_m) }}" class="btn btn-secondary btn-sm">◀</a>
+        <span class="current-month">{{ summary.month }}</span>
+        <a href="?month={{ '%04d-%02d'|format(next_y, next_m) }}" class="btn btn-secondary btn-sm">▶</a>
+    </div>
+</div>
+
+<!-- 🌐 [핵심 1] 통합 순자산 & 주식 투자 현황 카드 -->
+<div class="card" style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-subtle) 100%); border: 1.5px solid var(--border-color); margin-bottom: 1.5rem;">
+    <div class="card-body" style="padding: 1.25rem 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Net Worth)</span>
+                <div style="font-size: 1.85rem; font-weight: 900; color: #2563EB; margin-top: 2px;">
+                    {{ net_worth_info.net_worth|format_number }}원
+                </div>
+            </div>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <div style="padding: 8px 14px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">📈 주식/투자 자산</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #2563EB;">{{ net_worth_info.inv_total_eval|format_number }}원</div>
+                    <small style="color: {% if net_worth_info.inv_total_profit >= 0 %}#10B981{% else %}#EF4444{% endif %}; font-weight: 600;">
+                        {{ net_worth_info.inv_total_profit|format_sign }}원 ({{ net_worth_info.inv_total_profit_rate }}%)
+                    </small>
+                </div>
+                <div style="padding: 8px 14px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">🏦 현금/예적금/원금</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #10B981;">{{ net_worth_info.total_assets|format_number }}원</div>
+                    <small style="color: var(--text-muted);">자산 항목 {{ net_worth_info.assets_list|length }}개</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이번 달 수입/지출 요약 카드 -->
+<div class="stat-cards">
+    <div class="stat-card stat-expense">
+        <div class="stat-label">이번 달 지출</div>
+        <div class="stat-value">{{ summary.total_expense|format_number }}원</div>
+        <div class="stat-sub">소비 기록 {{ summary.count }}건</div>
+    </div>
+    <div class="stat-card stat-income">
+        <div class="stat-label">이번 달 수입</div>
+        <div class="stat-value">{{ summary.total_income|format_number }}원</div>
+        <div class="stat-sub">이번 달 잉여: {{ summary.balance|format_sign }}원</div>
+    </div>
+    <div class="stat-card stat-balance" style="border-left: 4px solid #10B981;">
+        <div class="stat-label">소비 자각 점수</div>
+        <div class="stat-value" style="color: #10B981;">{{ summary.mindful_score }}점</div>
+        <div class="stat-sub">낭비/후회 지출 통제율</div>
+    </div>
+</div>
+
+<!-- 💡 [핵심 2] 소비 성격 (필수 vs 선택 vs 낭비) 자각 섹션 -->
+<div class="card" style="border: 1px solid var(--border-color, #e2e8f0);">
+    <div class="card-header">
+        <h3>🧠 이번 달 소비 성격 분석 (Needs vs Wants vs Waste)</h3>
+        <a href="{{ url_for('advice_page', month=month) }}" class="btn btn-secondary btn-sm">AI 자산 리포트</a>
+    </div>
+    <div class="card-body">
+        {% if summary.total_expense > 0 %}
+        {% set need = summary.by_consumption_type.get('필수', {'total': 0, 'count': 0}) %}
+        {% set want = summary.by_consumption_type.get('선택', {'total': 0, 'count': 0}) %}
+        {% set waste = summary.by_consumption_type.get('낭비', {'total': 0, 'count': 0}) %}
+        {% set need_pct = (need.total / summary.total_expense * 100)|round(1) %}
+        {% set want_pct = (want.total / summary.total_expense * 100)|round(1) %}
+        {% set waste_pct = (waste.total / summary.total_expense * 100)|round(1) %}
+
+        <!-- 3분할 비례 바 -->
+        <div style="height: 24px; display: flex; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; background: #e2e8f0;">
+            <div style="width: {{ need_pct }}%; background: #10B981;" title="필수 {{ need_pct }}%"></div>
+            <div style="width: {{ want_pct }}%; background: #F59E0B;" title="선택 {{ want_pct }}%"></div>
+            <div style="width: {{ waste_pct }}%; background: #EF4444;" title="낭비 {{ waste_pct }}%"></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+            <div style="padding: 10px; background: var(--bg-card-subtle, #f8fafc); border-radius: 8px; border-left: 3px solid #10B981;">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">🟢 필수 소비 (Needs)</div>
+                <div style="font-size: 1.1rem; font-weight: 700;">{{ need.total|format_number }}원 <span style="font-size: 0.85rem; font-weight: normal;">({{ need_pct }}%)</span></div>
+            </div>
+            <div style="padding: 10px; background: var(--bg-card-subtle, #f8fafc); border-radius: 8px; border-left: 3px solid #F59E0B;">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">🟡 선택 소비 (Wants)</div>
+                <div style="font-size: 1.1rem; font-weight: 700;">{{ want.total|format_number }}원 <span style="font-size: 0.85rem; font-weight: normal;">({{ want_pct }}%)</span></div>
+            </div>
+            <div style="padding: 10px; background: var(--bg-card-subtle, #f8fafc); border-radius: 8px; border-left: 3px solid #EF4444;">
+                <div style="font-size: 0.85rem; color: var(--text-muted);">🔴 낭비/충동 (Waste)</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #EF4444;">{{ waste.total|format_number }}원 <span style="font-size: 0.85rem; font-weight: normal;">({{ waste_pct }}%)</span></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>지출을 기록하면 소비 성격(필수/선택/낭비) 비중이 시각화됩니다.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 예산 진행률 -->
+{% if budget_status %}
+<div class="card">
+    <div class="card-header">
+        <h3>🎯 예산 달성 현황</h3>
+        <a href="{{ url_for('goals_page', month=month) }}" class="btn btn-secondary btn-sm">관리</a>
+    </div>
+    <div class="card-body">
+        {% for bs in budget_status %}
+        <div class="budget-progress-item">
+            <div class="budget-progress-header">
+                <span class="budget-category">
+                    {% if bs.category in category_map %}{{ category_map[bs.category].emoji }}{% else %}📊{% endif %}
+                    {{ bs.category }}
+                </span>
+                <span class="budget-amount">
+                    {{ bs.spent|format_number }}원 / {{ bs.budget|format_number }}원
+                </span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill {% if bs.percent >= 90 %}danger{% elif bs.percent >= 70 %}warning{% else %}safe{% endif %}"
+                     style="width: {{ [bs.percent, 100]|min }}%">
+                </div>
+            </div>
+            <div class="budget-progress-footer">
+                <span>{{ bs.percent }}%</span>
+                <span>
+                    {% if bs.remaining >= 0 %}
+                    남은 금액: {{ bs.remaining|format_number }}원
+                    {% else %}
+                    초과: {{ (bs.remaining * -1)|format_number }}원 🚨
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 차트 영역 -->
+<div class="chart-grid">
+    <div class="card">
+        <div class="card-header"><h3>📁 카테고리별 지출</h3></div>
+        <div class="card-body">
+            {% if summary.by_category %}
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">📊</span>
+                <p>아직 지출 데이터가 없습니다</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3>📈 일별 지출 추이</h3></div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 💡 AI 종합 머니 브리핑 -->
+{% if advice %}
+<div class="card">
+    <div class="card-header">
+        <h3>🧠 AI 머니 브리핑 & 절약 조언</h3>
+        <a href="{{ url_for('advice_page', month=month) }}" class="btn btn-secondary btn-sm">전체 보기</a>
+    </div>
+    <div class="card-body">
+        {% for tip in advice %}
+        <div class="advice-card advice-{{ tip.type }}">
+            <span class="advice-emoji">{{ tip.emoji }}</span>
+            <div class="advice-content">
+                <strong>{{ tip.title }}</strong>
+                <p>{{ tip.message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 모바일 빠른 추가 버튼 -->
+<a href="{{ url_for('add_page') }}" class="quick-add-btn" title="새 내역 추가">➕</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardCharts('{{ summary.month }}');
+});
+</script>
+{% endblock %}

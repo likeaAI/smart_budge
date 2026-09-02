@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}자산 & 순자산 관리 — 스마트 머니 허브{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>🏦 자산 & 순자산 관리</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            원래 가지고 있던 시드머니, 예적금, 부동산, 대출까지 전체 자산 포트폴리오를 관리합니다.
+        </p>
+    </div>
+</div>
+
+<!-- 순자산 요약 카드 -->
+<div class="stat-cards">
+    <div class="stat-card" style="border-left: 4px solid #3B82F6;">
+        <div class="stat-label">현재 총 순자산 (Net Worth)</div>
+        <div class="stat-value" style="color: #2563EB;">{{ net_worth_info.net_worth|format_number }}원</div>
+        <div class="stat-sub">총 자산 - 총 부채</div>
+    </div>
+    <div class="stat-card stat-income">
+        <div class="stat-label">총 자산 규모</div>
+        <div class="stat-value">{{ net_worth_info.total_assets|format_number }}원</div>
+        <div class="stat-sub">자산 항목 {{ net_worth_info.assets_list|length }}개</div>
+    </div>
+    <div class="stat-card stat-expense">
+        <div class="stat-label">총 부채 / 대출</div>
+        <div class="stat-value">{{ net_worth_info.total_debt|format_number }}원</div>
+        <div class="stat-sub">상환 필요 금액</div>
+    </div>
+</div>
+
+<!-- 자산 등록/수정 폼 -->
+<div class="card">
+    <div class="card-header">
+        <h3>➕ 자산 / 원금 항목 추가</h3>
+    </div>
+    <div class="card-body">
+        <form id="assetForm" onsubmit="submitAsset(event)">
+            <input type="hidden" id="assetId">
+            <div class="form-row">
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="assetName">자산 이름</label>
+                    <input type="text" id="assetName" class="form-control" placeholder="예: 국민은행 비상금통장, 청약적금, 전세보증금" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label" for="assetType">자산 종류</label>
+                    <select id="assetType" class="form-control">
+                        {% for at in asset_types %}
+                        <option value="{{ at.key }}">{{ at.emoji }} {{ at.key }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="assetAmount">현재 평가 금액</label>
+                    <div class="input-with-suffix">
+                        <input type="number" id="assetAmount" class="form-control" placeholder="0" min="0" step="1" required>
+                        <span class="input-suffix">원</span>
+                    </div>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="assetInitial">최초 원금 (시드머니)</label>
+                    <div class="input-with-suffix">
+                        <input type="number" id="assetInitial" class="form-control" placeholder="0" min="0" step="1">
+                        <span class="input-suffix">원</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="assetMemo">메모 (이자율, 만기일, 비고 등)</label>
+                <input type="text" id="assetMemo" class="form-control" placeholder="예: 연 3.5% 금리, 만기 2027-12, 주거래 은행">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-primary btn-impact-submit" style="flex: 1;">
+                    💾 자산 저장하기
+                </button>
+                <button type="button" id="assetCancelBtn" class="btn btn-secondary" style="display: none;" onclick="cancelAssetEdit()">
+                    취소
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 보유 자산 목록 테이블 -->
+<div class="card">
+    <div class="card-header">
+        <h3>📋 보유 자산 및 부채 목록</h3>
+    </div>
+    <div class="card-body">
+        {% if net_worth_info.assets_list %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>자산 항목명</th>
+                    <th>구분</th>
+                    <th class="text-right">현재 금액</th>
+                    <th class="text-right">원금/시드</th>
+                    <th class="text-right">증감액</th>
+                    <th>메모</th>
+                    <th class="text-center">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in net_worth_info.assets_list %}
+                {% set diff = a.amount - a.initial_amount %}
+                <tr id="asset-row-{{ a.id }}">
+                    <td>
+                        <strong>{{ asset_type_map.get(a.asset_type, {}).get('emoji', '💼') }} {{ a.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge" style="background: {{ asset_type_map.get(a.asset_type, {}).get('color', '#6B7280') }}; color: white;">
+                            {{ a.asset_type }}
+                        </span>
+                    </td>
+                    <td class="text-right" style="font-weight: 700; {% if a.asset_type == '부채/대출' %}color: #EF4444;{% endif %}">
+                        {{ a.amount|format_number }}원
+                    </td>
+                    <td class="text-right text-muted">
+                        {{ a.initial_amount|format_number }}원
+                    </td>
+                    <td class="text-right" style="font-weight: 600; color: {% if diff > 0 %}#10B981{% elif diff < 0 %}#EF4444{% else %}var(--text-muted){% endif %};">
+                        {{ diff|format_sign }}원
+                    </td>
+                    <td class="text-muted" style="font-size: 0.85rem;">{{ a.memo or '-' }}</td>
+                    <td class="text-center action-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm btn-icon"
+                                onclick="editAsset({{ a.id }}, '{{ a.name|e }}', '{{ a.asset_type }}', {{ a.amount }}, {{ a.initial_amount }}, '{{ a.memo|e }}')"
+                                title="수정">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-icon"
+                                onclick="deleteAsset({{ a.id }}, '{{ a.name|e }}')"
+                                title="삭제">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🏦</span>
+            <p>아직 등록된 자산이 없습니다</p>
+            <p class="text-muted">원래 가지고 있던 시드머니나 통장 잔고를 위 폼에서 등록해보세요!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitAsset(event) {
+    if (event) event.preventDefault();
+    const id = document.getElementById('assetId').value;
+    const name = document.getElementById('assetName').value.trim();
+    const asset_type = document.getElementById('assetType').value;
+    const amount = document.getElementById('assetAmount').value;
+    const initial_amount = document.getElementById('assetInitial').value || amount;
+    const memo = document.getElementById('assetMemo').value.trim();
+
+    if (!name || !amount) {
+        showToast('자산명과 금액을 입력해주세요.', 'error');
+        return;
+    }
+
+    const payload = { name, asset_type, amount, initial_amount, memo };
+    const url = id ? `/api/assets/${id}` : '/api/assets';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            playSound('coin');
+            triggerConfetti('default');
+            showToast('자산이 저장되었습니다.', 'success');
+            setTimeout(() => location.reload(), 700);
+        } else {
+            showToast('저장에 실패했습니다.', 'error');
+        }
+    } catch (e) {
+        showToast('오류가 발생했습니다.', 'error');
+    }
+}
+
+function editAsset(id, name, type, amount, initial, memo) {
+    playSound('pop');
+    document.getElementById('assetId').value = id;
+    document.getElementById('assetName').value = name;
+    document.getElementById('assetType').value = type;
+    document.getElementById('assetAmount').value = amount;
+    document.getElementById('assetInitial').value = initial;
+    document.getElementById('assetMemo').value = memo;
+    document.getElementById('assetCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelAssetEdit() {
+    document.getElementById('assetForm').reset();
+    document.getElementById('assetId').value = '';
+    document.getElementById('assetCancelBtn').style.display = 'none';
+}
+
+async function deleteAsset(id, name) {
+    if (!confirm(`'${name}' 자산 항목을 삭제하시겠습니까?`)) return;
+    try {
+        const res = await fetch(`/api/assets/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            playSound('pop');
+            showToast('자산이 삭제되었습니다.', 'success');
+            setTimeout(() => location.reload(), 600);
+        }
+    } catch (e) {
+        showToast('삭제 실패', 'error');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}소비 자각 리포트 — 스마트 가계부{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>🧠 소비 자각 & 절약 리포트</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            스스로 기록한 데이터를 바탕으로 나의 소비 습관과 절약 잠재력을 분석합니다.
+        </p>
+    </div>
+    <div class="month-selector">
+        {% set cur_y = month[:4]|int %}
+        {% set cur_m = month[5:]|int %}
+        {% set prev_y = cur_y if cur_m > 1 else cur_y - 1 %}
+        {% set prev_m = cur_m - 1 if cur_m > 1 else 12 %}
+        {% set next_y = cur_y if cur_m < 12 else cur_y + 1 %}
+        {% set next_m = cur_m + 1 if cur_m < 12 else 1 %}
+        <a href="?month={{ '%04d-%02d'|format(prev_y, prev_m) }}" class="btn btn-secondary btn-sm">◀</a>
+        <span class="current-month">{{ month }}</span>
+        <a href="?month={{ '%04d-%02d'|format(next_y, next_m) }}" class="btn btn-secondary btn-sm">▶</a>
+    </div>
+</div>
+
+<!-- 상단 3단 핵심 지표 -->
+<div class="stat-cards">
+    <div class="stat-card stat-expense">
+        <div class="stat-label">총 지출</div>
+        <div class="stat-value">{{ summary.total_expense|format_number }}원</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid #EF4444;">
+        <div class="stat-label">후회 / 낭비 지출</div>
+        <div class="stat-value" style="color: #EF4444;">
+            {% set waste_total = summary.waste_total + summary.regret_total %}
+            {{ waste_total|format_number }}원
+        </div>
+        <div class="stat-sub">연간 {{ (waste_total * 12)|format_number }}원 절약 가능</div>
+    </div>
+    <div class="stat-card stat-income">
+        <div class="stat-label">소비 자각 점수</div>
+        <div class="stat-value" style="color: #10B981;">{{ summary.mindful_score }}점</div>
+        <div class="stat-sub">100점 만점 기준</div>
+    </div>
+</div>
+
+<!-- 소비 성격 & 만족도 심층 비교 -->
+{% if summary.total_expense > 0 %}
+<div class="chart-grid">
+    <!-- 소비 성격 비중 -->
+    <div class="card">
+        <div class="card-header">
+            <h3>⚖️ 소비 성격 (Needs vs Wants)</h3>
+        </div>
+        <div class="card-body">
+            {% set need = summary.by_consumption_type.get('필수', {'total': 0, 'count': 0}) %}
+            {% set want = summary.by_consumption_type.get('선택', {'total': 0, 'count': 0}) %}
+            {% set waste = summary.by_consumption_type.get('낭비', {'total': 0, 'count': 0}) %}
+
+            <div class="category-bar-item" style="margin-bottom: 12px;">
+                <div class="category-bar-header">
+                    <span>🟢 필수 소비 (Needs)</span>
+                    <span>{{ need.total|format_number }}원 ({{ (need.total / summary.total_expense * 100)|round(1) }}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (need.total / summary.total_expense * 100) }}%; background: #10B981;"></div>
+                </div>
+            </div>
+
+            <div class="category-bar-item" style="margin-bottom: 12px;">
+                <div class="category-bar-header">
+                    <span>🟡 선택 소비 (Wants)</span>
+                    <span>{{ want.total|format_number }}원 ({{ (want.total / summary.total_expense * 100)|round(1) }}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (want.total / summary.total_expense * 100) }}%; background: #F59E0B;"></div>
+                </div>
+            </div>
+
+            <div class="category-bar-item">
+                <div class="category-bar-header">
+                    <span>🔴 낭비 / 충동 (Waste)</span>
+                    <span>{{ waste.total|format_number }}원 ({{ (waste.total / summary.total_expense * 100)|round(1) }}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (waste.total / summary.total_expense * 100) }}%; background: #EF4444;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 소비 만족도 비중 -->
+    <div class="card">
+        <div class="card-header">
+            <h3>😊 소비 만족도 분포</h3>
+        </div>
+        <div class="card-body">
+            {% set sat_good = summary.by_satisfaction.get('만족', {'total': 0, 'count': 0}) %}
+            {% set sat_norm = summary.by_satisfaction.get('보통', {'total': 0, 'count': 0}) %}
+            {% set sat_bad = summary.by_satisfaction.get('후회', {'total': 0, 'count': 0}) %}
+
+            <div class="category-bar-item" style="margin-bottom: 12px;">
+                <div class="category-bar-header">
+                    <span>😊 가치 있음 / 만족</span>
+                    <span>{{ sat_good.total|format_number }}원 ({{ sat_good.count }}건)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (sat_good.total / summary.total_expense * 100) }}%; background: #3B82F6;"></div>
+                </div>
+            </div>
+
+            <div class="category-bar-item" style="margin-bottom: 12px;">
+                <div class="category-bar-header">
+                    <span>😐 일상적 / 보통</span>
+                    <span>{{ sat_norm.total|format_number }}원 ({{ sat_norm.count }}건)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (sat_norm.total / summary.total_expense * 100) }}%; background: #94A3B8;"></div>
+                </div>
+            </div>
+
+            <div class="category-bar-item">
+                <div class="category-bar-header">
+                    <span>😞 아쉬움 / 후회됨</span>
+                    <span>{{ sat_bad.total|format_number }}원 ({{ sat_bad.count }}건)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (sat_bad.total / summary.total_expense * 100) }}%; background: #EF4444;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 맞춤 조언 리스트 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">
+        <h3>💡 맞춤형 소비 개선 조언</h3>
+    </div>
+    <div class="card-body">
+        {% if advice %}
+            {% for tip in advice %}
+            <div class="advice-card advice-{{ tip.type }}" style="margin-bottom: 1rem;">
+                <span class="advice-emoji">{{ tip.emoji }}</span>
+                <div class="advice-content">
+                    <strong>{{ tip.title }}</strong>
+                    <p>{{ tip.message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">지출을 기록하면 맞춤형 소비 개선 조언이 제공됩니다.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 실천 가이드 -->
+<div class="card">
+    <div class="card-header"><h3>📚 소비 자각 4계명</h3></div>
+    <div class="card-body">
+        <div class="tips-grid">
+            <div class="tip-item">
+                <span class="tip-emoji">1️⃣</span>
+                <h4>직접 손으로 쓰기</h4>
+                <p>자동 수집보다 직접 입력할 때 뇌가 지출의 무게를 실감합니다.</p>
+            </div>
+            <div class="tip-item">
+                <span class="tip-emoji">2️⃣</span>
+                <h4>필수 vs 선택 가르기</h4>
+                <p>'필요한 것(Need)'과 '원하는 것(Want)'을 분리해 인지하세요.</p>
+            </div>
+            <div class="tip-item">
+                <span class="tip-emoji">3️⃣</span>
+                <h4>후회되는 소비 체크</h4>
+                <p>후회로 체크된 항목을 주기적으로 보고 같은 실수를 방지하세요.</p>
+            </div>
+            <div class="tip-item">
+                <span class="tip-emoji">4️⃣</span>
+                <h4>가치 소비 격려</h4>
+                <p>나를 진정 성장시키고 행복하게 한 소비에는 아낌없이 칭찬하세요.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

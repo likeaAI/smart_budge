@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}내역 관리 — 스마트 가계부{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>📋 내역 관리 & 소비 자각</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            소비 성격, 카드별 결제 수단, 청구 대조 상태를 꼼꼼하게 필터링하여 확인하세요.
+        </p>
+    </div>
+    <div class="month-selector">
+        {% set cur_y = month[:4]|int %}
+        {% set cur_m = month[5:]|int %}
+        {% set prev_y = cur_y if cur_m > 1 else cur_y - 1 %}
+        {% set prev_m = cur_m - 1 if cur_m > 1 else 12 %}
+        {% set next_y = cur_y if cur_m < 12 else cur_y + 1 %}
+        {% set next_m = cur_m + 1 if cur_m < 12 else 1 %}
+        <a href="?month={{ '%04d-%02d'|format(prev_y, prev_m) }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if consumption_type_filter %}&consumption_type={{ consumption_type_filter }}{% endif %}{% if satisfaction_filter %}&satisfaction={{ satisfaction_filter }}{% endif %}{% if card_name_filter %}&card_name={{ card_name_filter }}{% endif %}" class="btn btn-secondary btn-sm">◀</a>
+        <span class="current-month">{{ month }}</span>
+        <a href="?month={{ '%04d-%02d'|format(next_y, next_m) }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if consumption_type_filter %}&consumption_type={{ consumption_type_filter }}{% endif %}{% if satisfaction_filter %}&satisfaction={{ satisfaction_filter }}{% endif %}{% if card_name_filter %}&card_name={{ card_name_filter }}{% endif %}" class="btn btn-secondary btn-sm">▶</a>
+    </div>
+</div>
+
+<!-- 필터 바 -->
+<div class="filter-bar" style="display: flex; flex-wrap: wrap; gap: 8px;">
+    <select id="filterCategory" class="form-control" onchange="applyFilters()" style="flex: 1; min-width: 120px;">
+        <option value="">전체 카테고리</option>
+        {% for cat in categories %}
+        <option value="{{ cat.name }}" {% if category_filter == cat.name %}selected{% endif %}>
+            {{ cat.emoji }} {{ cat.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select id="filterType" class="form-control" onchange="applyFilters()" style="flex: 0.8; min-width: 90px;">
+        <option value="">전체 유형</option>
+        <option value="지출" {% if type_filter == '지출' %}selected{% endif %}>🔴 지출</option>
+        <option value="수입" {% if type_filter == '수입' %}selected{% endif %}>🟢 수입</option>
+    </select>
+
+    <select id="filterPaymentMethod" class="form-control" onchange="applyFilters()" style="flex: 1; min-width: 110px;">
+        <option value="">전체 결제수단</option>
+        {% for pm in payment_methods %}
+        <option value="{{ pm.key }}" {% if payment_method_filter == pm.key %}selected{% endif %}>
+            {{ pm.emoji }} {{ pm.key }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select id="filterCardName" class="form-control" onchange="applyFilters()" style="flex: 1; min-width: 110px;">
+        <option value="">전체 카드</option>
+        {% for card in default_cards %}
+        <option value="{{ card.name }}" {% if card_name_filter == card.name %}selected{% endif %}>
+            {{ card.emoji }} {{ card.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select id="filterConsumptionType" class="form-control" onchange="applyFilters()" style="flex: 1; min-width: 110px;">
+        <option value="">전체 소비성격</option>
+        {% for ct in consumption_types %}
+        <option value="{{ ct.key }}" {% if consumption_type_filter == ct.key %}selected{% endif %}>
+            {{ ct.emoji }} {{ ct.label }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select id="filterSatisfaction" class="form-control" onchange="applyFilters()" style="flex: 1; min-width: 110px;">
+        <option value="">전체 만족도</option>
+        {% for sat in satisfaction_levels %}
+        <option value="{{ sat.key }}" {% if satisfaction_filter == sat.key %}selected{% endif %}>
+            {{ sat.emoji }} {{ sat.label }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- 내역 테이블 -->
+<div class="card">
+    <div class="card-body">
+        {% if transactions %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>카테고리</th>
+                    <th>결제 수단</th>
+                    <th>소비 성격</th>
+                    <th>만족도</th>
+                    <th>메모 / 사용처</th>
+                    <th class="text-right">금액</th>
+                    <th class="text-center">카드대조</th>
+                    <th class="text-center">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr id="row-{{ tx.id }}" data-id="{{ tx.id }}" class="{% if tx.is_reconciled %}row-reconciled{% endif %}">
+                    <td>{{ tx.date }}</td>
+                    <td>
+                        <span class="category-badge" style="--cat-color: {{ category_map.get(tx.category, {}).get('color', '#95A5A6') }}">
+                            {{ category_map.get(tx.category, {}).get('emoji', '📝') }} {{ tx.category }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if tx.type == '수입' %}
+                        <span class="text-muted">입금/수입</span>
+                        {% else %}
+                            {% if tx.payment_method == '신용카드' %}
+                            <span class="badge" style="background: #2563EB; color: white;">
+                                💳 {{ tx.card_name or '신용카드' }}
+                            </span>
+                            {% elif tx.payment_method == '체크카드' %}
+                            <span class="badge" style="background: #0284C7; color: white;">
+                                💳 {{ tx.card_name or '체크카드' }}
+                            </span>
+                            {% else %}
+                            <span class="badge" style="background: #64748B; color: white;">
+                                💵 {{ tx.payment_method or '현금' }}
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tx.type == '수입' %}
+                        <span class="badge badge-income">수입</span>
+                        {% else %}
+                        <span class="badge" style="background: {% if tx.consumption_type == '필수' %}#10B981{% elif tx.consumption_type == '낭비' %}#EF4444{% else %}#F59E0B{% endif %}; color: white;">
+                            {{ tx.consumption_type or '선택' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tx.type == '지출' %}
+                            {% if tx.satisfaction == '만족' %}<span title="가치 있음">😊 만족</span>
+                            {% elif tx.satisfaction == '후회' %}<span title="후회됨" style="color: #EF4444; font-weight: 600;">😞 후회</span>
+                            {% else %}<span>😐 보통</span>{% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ tx.description or '-' }}</td>
+                    <td class="text-right {% if tx.type == '수입' %}amount-income{% else %}amount-expense{% endif %}" style="font-weight: 700;">
+                        {{ tx.amount|format_number }}원
+                    </td>
+                    <td class="text-center">
+                        {% if tx.type == '지출' and tx.payment_method == '신용카드' %}
+                        <button type="button" class="btn btn-sm" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; background: {% if tx.is_reconciled %}#10B981{% else %}var(--bg-card-subtle){% endif %}; color: {% if tx.is_reconciled %}white{% else %}var(--text-muted){% endif %}; border: 1px solid var(--border-color);"
+                                onclick="toggleReconcileQuick({{ tx.id }}, this)">
+                            {% if tx.is_reconciled %}✅ 완료{% else %}미대조{% endif %}
+                        </button>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center action-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm btn-icon"
+                                onclick="openEditModal({{ tx.id }}, '{{ tx.date }}', '{{ tx.type }}', {{ tx.amount }}, '{{ tx.category }}', '{{ tx.description|e }}', '{{ tx.consumption_type or '선택' }}', '{{ tx.satisfaction or '보통' }}', '{{ tx.payment_method or '신용카드' }}', '{{ tx.card_name|e }}', '{{ tx.billing_month }}', {{ tx.installment or 1 }})"
+                                title="수정">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-icon"
+                                onclick="deleteTransaction({{ tx.id }})"
+                                title="삭제">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📋</span>
+            <p>{{ month }}에 해당하는 내역이 없습니다</p>
+            <a href="{{ url_for('add_page') }}" class="btn btn-primary">내역 추가하기</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div id="editModal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ 내역 수정</h3>
+            <button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="closeEditModal()">✕</button>
+        </div>
+        <form id="editForm" onsubmit="submitEdit(event)">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label class="form-label" for="editDate">날짜</label>
+                <input type="date" id="editDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editType">유형</label>
+                <select id="editType" class="form-control" required>
+                    <option value="지출">🔴 지출</option>
+                    <option value="수입">🟢 수입</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editAmount">금액</label>
+                <input type="number" id="editAmount" class="form-control" required min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editPaymentMethod">결제 수단</label>
+                <select id="editPaymentMethod" class="form-control">
+                    {% for pm in payment_methods %}
+                    <option value="{{ pm.key }}">{{ pm.emoji }} {{ pm.key }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editCardName">카드사</label>
+                <select id="editCardName" class="form-control">
+                    <option value="">(선택 안함 / 기타)</option>
+                    {% for card in default_cards %}
+                    <option value="{{ card.name }}">{{ card.emoji }} {{ card.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editCategory">카테고리</label>
+                <select id="editCategory" class="form-control" required>
+                    {% for cat in categories %}
+                    <option value="{{ cat.name }}">{{ cat.emoji }} {{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editConsumptionType">소비 성격</label>
+                <select id="editConsumptionType" class="form-control">
+                    {% for ct in consumption_types %}
+                    <option value="{{ ct.key }}">{{ ct.emoji }} {{ ct.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editSatisfaction">소비 만족도</label>
+                <select id="editSatisfaction" class="form-control">
+                    {% for sat in satisfaction_levels %}
+                    <option value="{{ sat.key }}">{{ sat.emoji }} {{ sat.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editDescription">메모</label>
+                <input type="text" id="editDescription" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">취소</button>
+                <button type="submit" class="btn btn-primary">수정 완료</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyFilters() {
+    const month = '{{ month }}';
+    const cat = document.getElementById('filterCategory').value;
+    const type = document.getElementById('filterType').value;
+    const pm = document.getElementById('filterPaymentMethod').value;
+    const card = document.getElementById('filterCardName').value;
+    const cType = document.getElementById('filterConsumptionType').value;
+    const sat = document.getElementById('filterSatisfaction').value;
+
+    let url = `?month=${month}`;
+    if (cat) url += `&category=${encodeURIComponent(cat)}`;
+    if (type) url += `&type=${encodeURIComponent(type)}`;
+    if (pm) url += `&payment_method=${encodeURIComponent(pm)}`;
+    if (card) url += `&card_name=${encodeURIComponent(card)}`;
+    if (cType) url += `&consumption_type=${encodeURIComponent(cType)}`;
+    if (sat) url += `&satisfaction=${encodeURIComponent(sat)}`;
+
+    window.location.href = url;
+}
+
+async function toggleReconcileQuick(txId, btnEl) {
+    playSound('click');
+    try {
+        const res = await fetch(`/api/transactions/${txId}/toggle_reconcile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            const row = document.getElementById(`row-${txId}`);
+            if (data.is_reconciled) {
+                row.classList.add('row-reconciled');
+                btnEl.innerText = '✅ 완료';
+                btnEl.style.background = '#10B981';
+                btnEl.style.color = 'white';
+            } else {
+                row.classList.remove('row-reconciled');
+                btnEl.innerText = '미대조';
+                btnEl.style.background = 'var(--bg-card-subtle)';
+                btnEl.style.color = 'var(--text-muted)';
+            }
+        }
+    } catch (e) {
+        showToast('대조 변경 실패', 'error');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}주식 & 투자 포트폴리오 — 스마트 머니 허브{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>📈 주식 & 투자 포트폴리오</h2>
+        <p class="text-muted" style="margin-top: 4px; font-size: 0.95rem;">
+            국내주식, 미국주식, ETF, 코인까지 보유 종목과 실시간 평가손익, 매매/배당 일지를 관리합니다.
+        </p>
+    </div>
+</div>
+
+<!-- 투자 요약 카드 -->
+<div class="stat-cards">
+    <div class="stat-card" style="border-left: 4px solid #3B82F6;">
+        <div class="stat-label">총 투자 평가액</div>
+        <div class="stat-value" style="color: #2563EB;">{{ net_worth_info.inv_total_eval|format_number }}원</div>
+        <div class="stat-sub">원금: {{ net_worth_info.inv_total_cost|format_number }}원</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid {% if net_worth_info.inv_total_profit >= 0 %}#10B981{% else %}#EF4444{% endif %};">
+        <div class="stat-label">총 평가손익</div>
+        <div class="stat-value" style="color: {% if net_worth_info.inv_total_profit >= 0 %}#10B981{% else %}#EF4444{% endif %};">
+            {{ net_worth_info.inv_total_profit|format_sign }}원
+        </div>
+        <div class="stat-sub">수익률: {{ net_worth_info.inv_total_profit_rate }}%</div>
+    </div>
+    <div class="stat-card stat-income">
+        <div class="stat-label">보유 종목 수</div>
+        <div class="stat-value">{{ investments|length }}개</div>
+        <div class="stat-sub">다각화 포트폴리오</div>
+    </div>
+</div>
+
+<!-- 종목 추가 / 수정 폼 -->
+<div class="card">
+    <div class="card-header">
+        <h3>➕ 투자 종목 등록</h3>
+    </div>
+    <div class="card-body">
+        <form id="invForm" onsubmit="submitInvestment(event)">
+            <input type="hidden" id="invId">
+            <div class="form-row">
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="invName">종목명 / 자산명</label>
+                    <input type="text" id="invName" class="form-control" placeholder="예: 삼성전자, 애플(AAPL), TIGER 미국S&P500" required>
+                </div>
+                <div class="form-group" style="flex: 0.8;">
+                    <label class="form-label" for="invMarket">시장 구분</label>
+                    <select id="invMarket" class="form-control">
+                        <option value="국내주식">🇰🇷 국내주식</option>
+                        <option value="미국주식">🇺🇸 미국주식</option>
+                        <option value="해외주식">🌐 기타 해외</option>
+                        <option value="암호화폐">🪙 암호화폐</option>
+                        <option value="펀드/ETF">📊 펀드/ETF</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label" for="invShares">보유 수량 (주)</label>
+                    <input type="number" id="invShares" class="form-control" placeholder="0" step="any" min="0" required>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="invAvgPrice">평균 매수가 (평단가)</label>
+                    <div class="input-with-suffix">
+                        <input type="number" id="invAvgPrice" class="form-control" placeholder="0" step="any" min="0" required>
+                        <span class="input-suffix">원</span>
+                    </div>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label" for="invCurrentPrice">현재가 (평가 단가)</label>
+                    <div class="input-with-suffix">
+                        <input type="number" id="invCurrentPrice" class="form-control" placeholder="0" step="any" min="0">
+                        <span class="input-suffix">원</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label" for="invDividend">배당 수익률 (연 %)</label>
+                    <input type="number" id="invDividend" class="form-control" placeholder="예: 3.5" step="0.1" min="0">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label" for="invTargetPrice">목표가 (선택)</label>
+                    <input type="number" id="invTargetPrice" class="form-control" placeholder="0" step="any">
+                </div>
+                <div class="form-group" style="flex: 2;">
+                    <label class="form-label" for="invMemo">투자 아이디어 / 메모</label>
+                    <input type="text" id="invMemo" class="form-control" placeholder="예: 분기배당주, AI 반도체 장기투자, 적립식 매수">
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-primary btn-impact-submit" style="flex: 1;">
+                    💾 종목 저장하기
+                </button>
+                <button type="button" id="invCancelBtn" class="btn btn-secondary" style="display: none;" onclick="cancelInvEdit()">
+                    취소
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 보유 종목 리스트 테이블 -->
+<div class="card">
+    <div class="card-header">
+        <h3>📋 보유 종목 현황 & 수익률</h3>
+    </div>
+    <div class="card-body">
+        {% if investments %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>종목명</th>
+                    <th>시장</th>
+                    <th class="text-right">수량</th>
+                    <th class="text-right">평단가</th>
+                    <th class="text-right">현재가</th>
+                    <th class="text-right">평가금액</th>
+                    <th class="text-right">수익률 / 손익</th>
+                    <th class="text-center">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in investments %}
+                <tr id="inv-row-{{ inv.id }}">
+                    <td>
+                        <strong>{{ inv.name }}</strong>
+                        {% if inv.dividend_rate > 0 %}<span class="badge" style="background: #10B981; color: white; font-size: 0.7rem;">배당 {{ inv.dividend_rate }}%</span>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge" style="background: {% if inv.market == '미국주식' %}#8B5CF6{% elif inv.market == '암호화폐' %}#F59E0B{% else %}#3B82F6{% endif %}; color: white;">
+                            {{ inv.market }}
+                        </span>
+                    </td>
+                    <td class="text-right">{{ inv.shares }}</td>
+                    <td class="text-right text-muted">{{ inv.avg_price|format_float }}원</td>
+                    <td class="text-right" style="font-weight: 600;">{{ inv.current_price|format_float }}원</td>
+                    <td class="text-right" style="font-weight: 700;">{{ inv.total_eval|format_number }}원</td>
+                    <td class="text-right" style="font-weight: 700; color: {% if inv.profit >= 0 %}#10B981{% else %}#EF4444{% endif %};">
+                        {{ inv.profit_rate }}%<br>
+                        <small style="font-size: 0.8rem;">({{ inv.profit|format_sign }}원)</small>
+                    </td>
+                    <td class="text-center action-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm btn-icon"
+                                onclick="editInvestment({{ inv.id }}, '{{ inv.name|e }}', '{{ inv.market }}', {{ inv.shares }}, {{ inv.avg_price }}, {{ inv.current_price }}, '{{ inv.code }}', {{ inv.dividend_rate }}, {{ inv.target_price }}, '{{ inv.memo|e }}')"
+                                title="수정">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-icon"
+                                onclick="deleteInvestment({{ inv.id }}, '{{ inv.name|e }}')"
+                                title="삭제">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📈</span>
+            <p>보유 중인 주식/투자 종목이 없습니다</p>
+            <p class="text-muted">삼성전자, 미국 ETF, 비트코인 등 보유 자산을 등록하여 실시간 손익을 관리해보세요!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 매매 & 배당 거래 일지 등록 및 리스트 -->
+<div class="card">
+    <div class="card-header">
+        <h3>📝 매매 & 배당금 거래 일지</h3>
+    </div>
+    <div class="card-body">
+        <form id="invTxForm" onsubmit="submitInvTx(event)" style="margin-bottom: 1.5rem; padding: 12px; background: var(--bg-card-subtle); border-radius: 10px;">
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">거래일</label>
+                    <input type="date" id="txDate" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label">종목명</label>
+                    <input type="text" id="txStock" class="form-control" placeholder="예: 삼성전자" required>
+                </div>
+                <div class="form-group" style="flex: 0.8;">
+                    <label class="form-label">구분</label>
+                    <select id="txType" class="form-control">
+                        <option value="매수">🔴 매수</option>
+                        <option value="매도">🔵 매도</option>
+                        <option value="배당금">🟢 배당금</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1.2;">
+                    <label class="form-label">총 거래 금액</label>
+                    <input type="number" id="txAmount" class="form-control" placeholder="0" min="1" required>
+                </div>
+                <div class="form-group" style="flex: 0.8; display: flex; align-items: flex-end;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">기록</button>
+                </div>
+            </div>
+        </form>
+
+        {% if txs %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>종목명</th>
+                    <th>구분</th>
+                    <th class="text-right">금액</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in txs %}
+                <tr>
+                    <td>{{ t.date }}</td>
+                    <td><strong>{{ t.stock_name }}</strong></td>
+                    <td>
+                        <span class="badge" style="background: {% if t.tx_type == '매수' %}#EF4444{% elif t.tx_type == '매도' %}#3B82F6{% else %}#10B981{% endif %}; color: white;">
+                            {{ t.tx_type }}
+                        </span>
+                    </td>
+                    <td class="text-right" style="font-weight: 600;">{{ t.amount|format_number }}원</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitInvestment(event) {
+    if (event) event.preventDefault();
+    const id = document.getElementById('invId').value;
+    const name = document.getElementById('invName').value.trim();
+    const market = document.getElementById('invMarket').value;
+    const shares = document.getElementById('invShares').value;
+    const avg_price = document.getElementById('invAvgPrice').value;
+    const current_price = document.getElementById('invCurrentPrice').value || avg_price;
+    const dividend_rate = document.getElementById('invDividend').value || 0;
+    const target_price = document.getElementById('invTargetPrice').value || 0;
+    const memo = document.getElementById('invMemo').value.trim();
+
+    if (!name || !shares || !avg_price) {
+        showToast('종목명, 수량, 평단가를 입력해주세요.', 'error');
+        return;
+    }
+
+    const payload = { name, market, shares, avg_price, current_price, dividend_rate, target_price, memo };
+    const url = id ? `/api/investments/${id}` : '/api/investments';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            playSound('coin');
+            triggerConfetti('income');
+            showToast('종목이 저장되었습니다.', 'success');
+            setTimeout(() => location.reload(), 700);
+        } else {
+            showToast('저장 실패', 'error');
+        }
+    } catch (e) {
+        showToast('오류 발생', 'error');
+    }
+}
+
+function editInvestment(id, name, market, shares, avg, cur, code, div, target, memo) {
+    playSound('pop');
+    document.getElementById('invId').value = id;
+    document.getElementById('invName').value = name;
+    document.getElementById('invMarket').value = market;
+    document.getElementById('invShares').value = shares;
+    document.getElementById('invAvgPrice').value = avg;
+    document.getElementById('invCurrentPrice').value = cur;
+    document.getElementById('invDividend').value = div;
+    document.getElementById('invTargetPrice').value = target;
+    document.getElementById('invMemo').value = memo;
+    document.getElementById('invCancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelInvEdit() {
+    document.getElementById('invForm').reset();
+    document.getElementById('invId').value = '';
+    document.getElementById('invCancelBtn').style.display = 'none';
+}
+
+async function deleteInvestment(id, name) {
+    if (!confirm(`'${name}' 종목을 삭제하시겠습니까?`)) return;
+    try {
+        const res = await fetch(`/api/investments/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            playSound('pop');
+            showToast('삭제되었습니다.', 'success');
+            setTimeout(() => location.reload(), 600);
+        }
+    } catch (e) {
+        showToast('삭제 실패', 'error');
+    }
+}
+
+async function submitInvTx(event) {
+    if (event) event.preventDefault();
+    const date = document.getElementById('txDate').value;
+    const stock_name = document.getElementById('txStock').value.trim();
+    const tx_type = document.getElementById('txType').value;
+    const amount = document.getElementById('txAmount').value;
+
+    if (!stock_name || !amount) {
+        showToast('종목과 금액을 입력해주세요.', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/investments/txs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, stock_name, tx_type, amount, price: 0, shares: 0 })
+        });
+        if (res.ok) {
+            playSound('coin');
+            showToast('거래 일지가 저장되었습니다.', 'success');
+            setTimeout(() => location.reload(), 600);
+        }
+    } catch (e) {
+        showToast('저장 실패', 'error');
+    }
+}
+</script>
+{% endblock %}
