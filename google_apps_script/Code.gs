@@ -42,7 +42,14 @@ function handleApiPost(action, data) {
   if (action === 'reconcileCard') return reconcileCard(data);
   if (action === 'saveGoal') return saveGoal(data);
   if (action === 'saveAsset') return saveAsset(data);
+  if (action === 'deleteAsset') return deleteAsset(data);
+  if (action === 'clearAssets') return clearAssets();
   if (action === 'saveInvestment') return saveInvestment(data);
+  if (action === 'deleteInvestment') return deleteInvestment(data);
+  if (action === 'clearInvestments') return clearInvestments();
+  if (action === 'saveRecurring') return saveRecurring(data);
+  if (action === 'deleteRecurring') return deleteRecurring(data);
+  if (action === 'clearRecurring') return clearRecurring();
   return { success: false, error: 'Unknown action: ' + action };
 }
 
@@ -219,8 +226,31 @@ function getAllData(month) {
     cards_summary: cardsSummary,
     net_worth: { net_worth: netWorth, total_assets: grandAssets, total_debt: totalDebt, assets_list: assetsList, investments_list: investmentsList, inv_total_eval: invTotalEval },
     goals: goalsList,
-    level: { level: wealthLevel, title: levelTitle, next_target: nextTarget, progress_to_next: Math.min(100, Math.round(netWorth/nextTarget*100)) }
+    level: { level: wealthLevel, title: levelTitle, next_target: nextTarget, progress_to_next: Math.min(100, Math.round(netWorth/nextTarget*100)) },
+    recurring_plans: getRecurringPlansList()
   };
+}
+
+function getRecurringPlansList() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('정기_일정');
+  if (!sheet) return [];
+  var data = sheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!r[0] && !r[3]) continue;
+    list.push({
+      id: String(r[0] || ('rec_' + i)),
+      day: Number(r[1]) || 1,
+      type: String(r[2] || '지출'),
+      name: String(r[3] || ''),
+      amount: Number(r[4]) || 0,
+      category: String(r[5] || '기타'),
+      pay_method: String(r[6] || '현금/계좌')
+    });
+  }
+  return list;
 }
 
 function initSheets() {
@@ -239,7 +269,7 @@ function initSheets() {
     var s3 = ss.insertSheet('자산_원금');
     s3.appendRow(['ID', '자산명', '자산종류', '현재금액', '원금(시드)', '메모', '갱신일시']);
     s3.getRange(1, 1, 1, 7).setBackground('#10B981').setFontColor('#FFFFFF').setFontWeight('bold');
-    s3.appendRow([1, '비상금 통장', '현금/예적금', 3000000, 3000000, '생활비 비상금', new Date().toISOString()]);
+    s3.appendRow([1, '비상금 통장', '현금/예적금', 30000000, 30000000, '생활비 비상금', new Date().toISOString()]);
   }
   if (!ss.getSheetByName('주식_투자')) {
     var s4 = ss.insertSheet('주식_투자');
@@ -253,6 +283,14 @@ function initSheets() {
     s5.appendRow([101, '1억 시드머니 모으기', '시드머니', 100000000, 3000000, '2028-12-31', '🌱', '투자의 기초 시드머니', new Date().toISOString()]);
     s5.appendRow([102, '내 집 마련 / 청약 자금', '부동산/주거', 300000000, 0, '2031-12-31', '🏠', '안정적인 주거 환경', new Date().toISOString()]);
     s5.appendRow([103, '경제적 자유 (파이어족)', '은퇴/자유', 1000000000, 0, '2036-12-31', '🏖️', '배당과 금융소득 은퇴', new Date().toISOString()]);
+  }
+  if (!ss.getSheetByName('정기_일정')) {
+    var s6 = ss.insertSheet('정기_일정');
+    s6.appendRow(['ID', '지정일', '유형', '항목명', '금액', '카테고리', '결제수단', '갱신일시']);
+    s6.getRange(1, 1, 1, 8).setBackground('#6366F1').setFontColor('#FFFFFF').setFontWeight('bold');
+    s6.appendRow(['rec_salary', 10, '수입', '정기 월급여', 3500000, '급여/월급', '현금/계좌', new Date().toISOString()]);
+    s6.appendRow(['rec_rent', 25, '지출', '아파트 관리비/공과금', 250000, '생활', '현대카드', new Date().toISOString()]);
+    s6.appendRow(['rec_sub', 14, '지출', '넷플릭스/유튜브 프리미엄', 17000, '구독', '신한카드', new Date().toISOString()]);
   }
 }
 
@@ -326,4 +364,142 @@ function parseSmsAndSave(text, rawData) {
   
   var saveRes = addTransaction(txData);
   return { success: true, message: '웹훅 파싱 완료', parsed: txData, id: saveRes.id };
+}
+
+// 🏦 자산 관리
+function saveAsset(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('자산_원금');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var id = String(data.id || ('asset_' + new Date().getTime()));
+  var updated = false;
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === id || String(values[i][1]) === String(data.name)) {
+      sheet.getRange(i + 1, 1, 1, 7).setValues([[id, data.name, data.category || '현금/예적금', Number(data.amount) || 0, Number(data.amount) || 0, data.memo || '', new Date().toISOString()]]);
+      updated = true;
+      break;
+    }
+  }
+  if (!updated) {
+    sheet.appendRow([id, data.name, data.category || '현금/예적금', Number(data.amount) || 0, Number(data.amount) || 0, data.memo || '', new Date().toISOString()]);
+  }
+  return { success: true, id: id };
+}
+
+function deleteAsset(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('자산_원금');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var targetId = String(data.id);
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === targetId || String(values[i][1]) === String(data.name)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: 'Not found' };
+}
+
+function clearAssets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('자산_원금');
+  if (!sheet) return { success: false };
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+  return { success: true };
+}
+
+// 📈 주식 / 투자 관리
+function saveInvestment(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('주식_투자');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var id = String(data.id || ('inv_' + new Date().getTime()));
+  var updated = false;
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === id || String(values[i][1]) === String(data.name)) {
+      sheet.getRange(i + 1, 1, 1, 10).setValues([[id, data.name, data.market || '국내주식', Number(data.shares) || 0, Number(data.avg_buy_price) || 0, Number(data.current_price) || 0, Number(data.div_yield) || 0, Number(data.target_price) || 0, data.memo || '', new Date().toISOString()]]);
+      updated = true;
+      break;
+    }
+  }
+  if (!updated) {
+    sheet.appendRow([id, data.name, data.market || '국내주식', Number(data.shares) || 0, Number(data.avg_buy_price) || 0, Number(data.current_price) || 0, Number(data.div_yield) || 0, Number(data.target_price) || 0, data.memo || '', new Date().toISOString()]);
+  }
+  return { success: true, id: id };
+}
+
+function deleteInvestment(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('주식_투자');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var targetId = String(data.id);
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === targetId || String(values[i][1]) === String(data.name)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: 'Not found' };
+}
+
+function clearInvestments() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('주식_투자');
+  if (!sheet) return { success: false };
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+  return { success: true };
+}
+
+// 🗓️ 정기 일정 관리
+function saveRecurring(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('정기_일정');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var id = String(data.id || ('rec_' + new Date().getTime()));
+  var updated = false;
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === id || String(values[i][3]) === String(data.name)) {
+      sheet.getRange(i + 1, 1, 1, 8).setValues([[id, Number(data.day) || 1, data.type || '지출', data.name, Number(data.amount) || 0, data.category || '기타', data.pay_method || '현금/계좌', new Date().toISOString()]]);
+      updated = true;
+      break;
+    }
+  }
+  if (!updated) {
+    sheet.appendRow([id, Number(data.day) || 1, data.type || '지출', data.name, Number(data.amount) || 0, data.category || '기타', data.pay_method || '현금/계좌', new Date().toISOString()]);
+  }
+  return { success: true, id: id };
+}
+
+function deleteRecurring(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('정기_일정');
+  if (!sheet) return { success: false };
+  var values = sheet.getDataRange().getValues();
+  var targetId = String(data.id);
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === targetId || String(values[i][3]) === String(data.name)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: 'Not found' };
+}
+
+function clearRecurring() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('정기_일정');
+  if (!sheet) return { success: false };
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+  return { success: true };
 }

@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 📱 PWA & Mobile Standalone Web App Meta -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="머니허브">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
     <style>
         :root {
             --bg-body: #f8fafc; --bg-card: #ffffff; --bg-subtle: #f1f5f9;
@@ -38,6 +47,28 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
+        /* 🍞 인앱 플로팅 토스트 알림 */
+        .toast-container {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 100000; display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none; max-width: 92vw; width: 380px;
+        }
+        .toast {
+            background: var(--bg-card); color: var(--text-main);
+            border: 1.5px solid var(--border-color); border-radius: 12px;
+            padding: 12px 16px; font-size: 0.88rem; font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+            display: flex; align-items: center; gap: 10px;
+            animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        }
+        .toast.success { border-left: 5px solid var(--income); }
+        .toast.warning { border-left: 5px solid var(--warning); }
+        .toast.error { border-left: 5px solid var(--expense); }
+        .toast.info { border-left: 5px solid var(--primary); }
+        @keyframes toastSlideIn { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+
         /* Universal Dark Mode Text Safety */
         h1, h2, h3, h4, h5, h6, strong, b, label, span, p, div, tr, td, th { color: inherit; }
         .text-muted { color: var(--text-muted) !important; }
@@ -248,6 +279,8 @@
     </style>
 </head>
 <body>
+    <!-- 🍞 인앱 플로팅 토스트 컨테이너 -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <!-- 🔒 4자리 PIN 잠금화면 -->
     <div id="pinOverlay" class="pin-overlay">
@@ -444,11 +477,17 @@
                     </div>
                 </div>
 
-                <!-- 📊 3단 (맨 아래): 소비 분석 그래프 (50% : 50% 가로 대칭) -->
+                <!-- 📊 3단 (맨 아래): 소비 분석 그래프 (월간 vs 연간 2중 토글 탑재) -->
                 <div class="dash-chart-grid">
                     <div class="card">
                         <div class="card-title">
-                            <span>🍩 카테고리별 소비 비중</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>🍩 카테고리 소비 비중</span>
+                                <div style="display: inline-flex; background: var(--bg-subtle); border-radius: 8px; padding: 2px;">
+                                    <button id="btnCatMonth" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchCatChartPeriod('month')">월간</button>
+                                    <button id="btnCatYear" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchCatChartPeriod('year')">연간</button>
+                                </div>
+                            </div>
                             <span id="chartExpenseTotal" style="font-size: 0.85rem; font-weight: 700; color: var(--expense);">0원</span>
                         </div>
                         <div class="chart-wrapper">
@@ -458,8 +497,14 @@
 
                     <div class="card">
                         <div class="card-title">
-                            <span>📊 일자별 지출 추이 그래프</span>
-                            <span style="font-size: 0.8rem; color: var(--text-muted);">이번 달 일별 흐름</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>📊 지출 추이 그래프</span>
+                                <div style="display: inline-flex; background: var(--bg-subtle); border-radius: 8px; padding: 2px;">
+                                    <button id="btnTrendDaily" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchTrendChartPeriod('daily')">일별(당월)</button>
+                                    <button id="btnTrendMonthly" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchTrendChartPeriod('monthly')">월별(연간)</button>
+                                </div>
+                            </div>
+                            <span id="trendChartSub" style="font-size: 0.78rem; color: var(--text-muted);">이번 달 일별</span>
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="dailyChart"></canvas>
@@ -990,7 +1035,29 @@
             renderRecurringUI();
             renderAssetsAndInvUI();
             loadGameData(true);
+
+            // 📱 PWA Service Worker 등록
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch(() => {});
+                });
+            }
         });
+
+        // 🍞 인앱 플로팅 토스트 시스템
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? '✅' : (type === 'warning' ? '⚠️' : (type === 'error' ? '❌' : '💡'));
+            toast.innerHTML = `<span style="font-size:1.15rem;">${icon}</span><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastFadeOut 0.25s forwards';
+                setTimeout(() => { toast.remove(); }, 250);
+            }, 2600);
+        }
 
         // 🔒 PIN Logic
         function initPinLock() {
@@ -1134,10 +1201,10 @@
                         parseNaturalText(text);
                     }
                 } else {
-                    alert('문자 내용을 입력창에 직접 길게 눌러 [붙여넣기] 해주세요!');
+                    showToast('문자 내용을 입력창에 직접 붙여넣기 해주세요!', 'info');
                 }
             } catch(e) {
-                alert('문자 내용을 입력창에 직접 길게 눌러 [붙여넣기] 해주세요!');
+                showToast('문자 내용을 입력창에 직접 붙여넣기 해주세요!', 'info');
             }
         }
 
@@ -1386,7 +1453,7 @@
         async function handleSaveTx() {
             const amount = getEvaluatedAmount(calcExpr);
             if (amount <= 0) {
-                alert('0원 이상의 금액을 입력해주세요!');
+                showToast('0원 이상의 금액을 입력해주세요!', 'warning');
                 return;
             }
             playSound('click');
@@ -1425,10 +1492,10 @@
         async function handleReconcileCard() {
             const card_name = document.getElementById('recCardName').value;
             const billed_amount = getEvaluatedAmount(recCalcExpr);
-            if (!billed_amount || billed_amount <= 0) { alert('0원 이상의 청구금액을 입력해주세요.'); return; }
+            if (!billed_amount || billed_amount <= 0) { showToast('0원 이상의 청구금액을 입력해주세요.', 'warning'); return; }
             playSound('coin');
             await callGasApi('reconcileCard', { billing_month: currentMonth, card_name, billed_amount });
-            alert(`[${card_name}] 청구서 금액(${billed_amount.toLocaleString()}원) 대조 완료!`);
+            showToast(`[${card_name}] 청구서 금액(${billed_amount.toLocaleString()}원) 대조 완료!`, 'success');
             loadGameData(true);
         }
 
@@ -1534,9 +1601,9 @@
 
         function saveGasUrl() {
             const url = document.getElementById('inputGasUrl').value.trim();
-            if (!url) { alert('URL을 입력해주세요.'); return; }
+            if (!url) { showToast('URL을 입력해주세요.', 'warning'); return; }
             localStorage.setItem('gas_app_url', url);
-            alert('구글 연동 URL이 저장되었습니다!');
+            showToast('구글 연동 URL이 저장되었습니다!', 'success');
             document.getElementById('urlSettingBox').style.display = 'none';
             loadGameData();
         }
@@ -1665,30 +1732,106 @@
                 });
             }
 
+            // 🌐 구글 시트 원격 자산/주식/정기일정 데이터 자동 수신 및 로컬 동기화
+            if (res.net_worth?.assets_list && res.net_worth.assets_list.length > 0) {
+                const mappedAssets = res.net_worth.assets_list.map((a, i) => ({
+                    id: a.id || ('asset_' + (i + 1)),
+                    name: a.name,
+                    category: a.category || '현금/예적금',
+                    amount: Number(a.amount) || 0
+                }));
+                localStorage.setItem('user_custom_assets', JSON.stringify(mappedAssets));
+            }
+            if (res.net_worth?.investments_list && res.net_worth.investments_list.length > 0) {
+                const mappedInvs = res.net_worth.investments_list.map((inv, i) => ({
+                    id: inv.id || ('inv_' + (i + 1)),
+                    name: inv.name,
+                    market: inv.market || '국내주식',
+                    shares: Number(inv.shares) || 0,
+                    avg_buy_price: Number(inv.avg_buy_price || inv.current_price) || 0,
+                    current_price: Number(inv.current_price) || 0
+                }));
+                localStorage.setItem('user_custom_investments', JSON.stringify(mappedInvs));
+            }
+            if (res.recurring_plans && res.recurring_plans.length > 0) {
+                localStorage.setItem('user_recurring_plans', JSON.stringify(res.recurring_plans));
+            }
+
             renderCharts(txList);
             renderDashboardGoals(res.goals || []);
             renderDashboardCards(res.cards_summary || []);
             renderCardsSummary(res.cards_summary);
-            renderAssetsAndInv(res.net_worth);
+            renderAssetsAndInvUI();
+            renderRecurringUI();
             renderGoals(res.goals || []);
             updateSimulation();
         }
 
-        // 📊 차트 렌더링 함수 (카테고리 도넛 + 일별 추이 바)
+        // 📊 차트 기간 전환 및 렌더링 (카테고리 도넛 + 일별/월별 추이 바)
+        let catChartPeriod = 'month'; // 'month' | 'year'
+        let trendChartPeriod = 'daily'; // 'daily' | 'monthly'
+
+        function switchCatChartPeriod(period) {
+            playSound('click');
+            catChartPeriod = period;
+            const btnMonth = document.getElementById('btnCatMonth');
+            const btnYear = document.getElementById('btnCatYear');
+            if (period === 'month') {
+                btnMonth.style.background = 'var(--primary)'; btnMonth.style.color = 'white';
+                btnYear.style.background = 'transparent'; btnYear.style.color = 'var(--text-muted)';
+            } else {
+                btnYear.style.background = 'var(--primary)'; btnYear.style.color = 'white';
+                btnMonth.style.background = 'transparent'; btnMonth.style.color = 'var(--text-muted)';
+            }
+            renderCharts(cachedTransactions);
+        }
+
+        function switchTrendChartPeriod(period) {
+            playSound('click');
+            trendChartPeriod = period;
+            const btnDaily = document.getElementById('btnTrendDaily');
+            const btnMonthly = document.getElementById('btnTrendMonthly');
+            const sub = document.getElementById('trendChartSub');
+            if (period === 'daily') {
+                btnDaily.style.background = 'var(--primary)'; btnDaily.style.color = 'white';
+                btnMonthly.style.background = 'transparent'; btnMonthly.style.color = 'var(--text-muted)';
+                if (sub) sub.innerText = '이번 달 일별';
+            } else {
+                btnMonthly.style.background = 'var(--primary)'; btnMonthly.style.color = 'white';
+                btnDaily.style.background = 'transparent'; btnDaily.style.color = 'var(--text-muted)';
+                if (sub) sub.innerText = `${new Date().getFullYear()}년 월별(1~12월)`;
+            }
+            renderCharts(cachedTransactions);
+        }
+
         function renderCharts(transactions) {
             if (typeof Chart === 'undefined') return;
             const isDark = document.documentElement.dataset.theme === 'dark';
             const textColor = isDark ? '#f8fafc' : '#0f172a';
             const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
-            const expenses = (transactions || []).filter(t => t.type !== '수입');
+            const now = new Date();
+            const curYear = now.getFullYear().toString();
+            const curMonth = now.toISOString().substring(0, 7);
 
-            // 1. 카테고리별 지출 집계
-            const catMap = {};
-            expenses.forEach(t => {
-                const cat = t.category || '기타';
-                catMap[cat] = (catMap[cat] || 0) + Number(t.amount || 0);
+            // 1. 카테고리별 지출 집계 (월간 vs 연간)
+            const allExpenses = (transactions || []).filter(t => t.type !== '수입');
+            const catExpenses = allExpenses.filter(t => {
+                if (catChartPeriod === 'month') return String(t.date).startsWith(curMonth);
+                return String(t.date).startsWith(curYear);
             });
+
+            const catMap = {};
+            let catTotal = 0;
+            catExpenses.forEach(t => {
+                const cat = t.category || '기타';
+                const amt = Number(t.amount || 0);
+                catMap[cat] = (catMap[cat] || 0) + amt;
+                catTotal += amt;
+            });
+
+            const elChartTotal = document.getElementById('chartExpenseTotal');
+            if (elChartTotal) elChartTotal.innerText = catTotal.toLocaleString() + '원';
 
             const catLabels = Object.keys(catMap);
             const catData = Object.values(catMap);
@@ -1740,15 +1883,31 @@
                 });
             }
 
-            // 2. 일자별 지출 추이 집계
-            const dateMap = {};
-            expenses.forEach(t => {
-                const d = String(t.date).substring(5); // MM-DD
-                dateMap[d] = (dateMap[d] || 0) + Number(t.amount || 0);
-            });
+            // 2. 일자별 / 월별 지출 추이 집계 (당월 일별 vs 올해 1~12월)
+            let trendLabels = [];
+            let trendData = [];
 
-            const sortedDates = Object.keys(dateMap).sort();
-            const dateData = sortedDates.map(d => dateMap[d]);
+            if (trendChartPeriod === 'daily') {
+                const dailyExpenses = allExpenses.filter(t => String(t.date).startsWith(curMonth));
+                const dateMap = {};
+                dailyExpenses.forEach(t => {
+                    const d = String(t.date).substring(5); // MM-DD
+                    dateMap[d] = (dateMap[d] || 0) + Number(t.amount || 0);
+                });
+                trendLabels = Object.keys(dateMap).sort();
+                trendData = trendLabels.map(d => dateMap[d]);
+                if (trendLabels.length === 0) { trendLabels = ['내역 없음']; trendData = [0]; }
+            } else {
+                // 연간 월별 1월 ~ 12월
+                const yearlyExpenses = allExpenses.filter(t => String(t.date).startsWith(curYear));
+                const monthArr = new Array(12).fill(0);
+                yearlyExpenses.forEach(t => {
+                    const m = parseInt(String(t.date).substring(5, 7), 10);
+                    if (m >= 1 && m <= 12) monthArr[m - 1] += Number(t.amount || 0);
+                });
+                trendLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+                trendData = monthArr;
+            }
 
             const canvasDaily = document.getElementById('dailyChart');
             if (canvasDaily) {
@@ -1757,10 +1916,10 @@
                 dailyChartInstance = new Chart(ctxDaily, {
                     type: 'bar',
                     data: {
-                        labels: sortedDates.length > 0 ? sortedDates : ['내역 없음'],
+                        labels: trendLabels,
                         datasets: [{
                             label: '지출액',
-                            data: dateData.length > 0 ? dateData : [0],
+                            data: trendData,
                             backgroundColor: isDark ? '#3b82f6cc' : '#2563ebcc',
                             borderColor: isDark ? '#60a5fa' : '#1d4ed8',
                             borderWidth: 1.5,
@@ -1796,6 +1955,7 @@
                 });
             }
         }
+
 
         function renderDashboardGoals(goals) {
             const container = document.getElementById('dashboardGoalsWidget');
@@ -1963,18 +2123,21 @@
             return defaults;
         }
 
-        function saveUserAssets(assets) {
+        function saveUserAssets(assets, syncItem = null, action = 'saveAsset') {
             localStorage.setItem('user_custom_assets', JSON.stringify(assets));
             renderAssetsAndInvUI();
             recalculateGlobalNetWorth();
+            if (syncItem) {
+                callGasApi(action, syncItem).catch(() => {});
+            }
         }
 
         function clearAllAssets() {
             if (!confirm('등록된 모든 보유 자산(현금/예적금 등)을 삭제하고 깨끗하게 비우시겠습니까?')) return;
             playSound('click');
-            saveUserAssets([]);
+            saveUserAssets([], {}, 'clearAssets');
             cancelAssetForm();
-            alert('보유 자산 목록이 초기화되었습니다. [➕ 자산 추가]로 실제 보유 자산을 등록해보세요!');
+            showToast('보유 자산 목록이 초기화되었습니다.', 'warning');
         }
 
         function restoreDefaultAssets() {
@@ -1986,6 +2149,7 @@
             ];
             saveUserAssets(defaults);
             cancelAssetForm();
+            showToast('기본 자산 샘플이 복원되었습니다.', 'info');
         }
 
         function toggleAssetForm() {
@@ -2028,22 +2192,26 @@
             const category = document.getElementById('inputAssetCategory').value;
             const amount = parseInt(document.getElementById('inputAssetAmount').value, 10);
 
-            if (!name) { alert('자산명을 입력해주세요.'); return; }
-            if (isNaN(amount) || amount < 0) { alert('올바른 금액을 입력해주세요.'); return; }
+            if (!name) { showToast('자산명을 입력해주세요.', 'warning'); return; }
+            if (isNaN(amount) || amount < 0) { showToast('올바른 금액을 입력해주세요.', 'warning'); return; }
 
             playSound('coin');
             const assets = getUserAssets();
+            let syncItem = null;
             if (editingAssetId) {
                 const idx = assets.findIndex(a => a.id === editingAssetId);
                 if (idx >= 0) {
                     assets[idx] = { id: editingAssetId, name, category, amount };
+                    syncItem = assets[idx];
                 }
-                alert(`[${name}] 자산 정보가 수정되었습니다!`);
+                showToast(`[${name}] 자산 정보가 수정되었습니다!`, 'success');
             } else {
-                assets.push({ id: 'asset_' + Date.now(), name, category, amount });
-                alert(`[${name}] 자산이 성공적으로 등록되었습니다!`);
+                const newAsset = { id: 'asset_' + Date.now(), name, category, amount };
+                assets.push(newAsset);
+                syncItem = newAsset;
+                showToast(`[${name}] 자산이 등록되었습니다!`, 'success');
             }
-            saveUserAssets(assets);
+            saveUserAssets(assets, syncItem, 'saveAsset');
             cancelAssetForm();
         }
 
@@ -2051,8 +2219,10 @@
             if (!confirm('이 자산 항목을 삭제하시겠습니까?')) return;
             playSound('click');
             let assets = getUserAssets();
+            const target = assets.find(a => a.id === id);
             assets = assets.filter(a => a.id !== id);
-            saveUserAssets(assets);
+            saveUserAssets(assets, { id, name: target?.name }, 'deleteAsset');
+            showToast('자산 항목이 삭제되었습니다.', 'info');
         }
 
         // 📈 주식 / 투자 관리
@@ -2069,18 +2239,21 @@
             return defaults;
         }
 
-        function saveUserInvestments(invs) {
+        function saveUserInvestments(invs, syncItem = null, action = 'saveInvestment') {
             localStorage.setItem('user_custom_investments', JSON.stringify(invs));
             renderAssetsAndInvUI();
             recalculateGlobalNetWorth();
+            if (syncItem) {
+                callGasApi(action, syncItem).catch(() => {});
+            }
         }
 
         function clearAllInvestments() {
             if (!confirm('등록된 모든 주식/투자 종목을 삭제하고 깨끗하게 비우시겠습니까?')) return;
             playSound('click');
-            saveUserInvestments([]);
+            saveUserInvestments([], {}, 'clearInvestments');
             cancelInvForm();
-            alert('주식/투자 종목 목록이 초기화되었습니다. [➕ 종목 추가]로 실제 보유 주식을 등록해보세요!');
+            showToast('주식/투자 종목 목록이 초기화되었습니다.', 'warning');
         }
 
         function restoreDefaultInvestments() {
@@ -2092,6 +2265,7 @@
             ];
             saveUserInvestments(defaults);
             cancelInvForm();
+            showToast('기본 주식/투자 샘플이 복원되었습니다.', 'info');
         }
 
         function toggleInvForm() {
@@ -2142,24 +2316,28 @@
             const avgPrice = parseFloat(document.getElementById('inputInvAvgPrice').value);
             const curPrice = parseFloat(document.getElementById('inputInvCurrentPrice').value);
 
-            if (!name) { alert('종목명을 입력해주세요.'); return; }
-            if (isNaN(shares) || shares <= 0) { alert('보유 수량을 올바르게 입력해주세요.'); return; }
-            if (isNaN(avgPrice) || avgPrice < 0) { alert('평균 매수가를 입력해주세요.'); return; }
-            if (isNaN(curPrice) || curPrice < 0) { alert('현재가를 입력해주세요.'); return; }
+            if (!name) { showToast('종목명을 입력해주세요.', 'warning'); return; }
+            if (isNaN(shares) || shares <= 0) { showToast('보유 수량을 올바르게 입력해주세요.', 'warning'); return; }
+            if (isNaN(avgPrice) || avgPrice < 0) { showToast('평균 매수가를 입력해주세요.', 'warning'); return; }
+            if (isNaN(curPrice) || curPrice < 0) { showToast('현재가를 입력해주세요.', 'warning'); return; }
 
             playSound('coin');
             const invs = getUserInvestments();
+            let syncItem = null;
             if (editingInvId) {
                 const idx = invs.findIndex(i => i.id === editingInvId);
                 if (idx >= 0) {
                     invs[idx] = { id: editingInvId, name, market, shares, avg_buy_price: avgPrice, current_price: curPrice };
+                    syncItem = invs[idx];
                 }
-                alert(`[${name}] 종목 정보가 수정되었습니다!`);
+                showToast(`[${name}] 종목 정보가 수정되었습니다!`, 'success');
             } else {
-                invs.push({ id: 'inv_' + Date.now(), name, market, shares, avg_buy_price: avgPrice, current_price: curPrice });
-                alert(`[${name}] 종목이 성공적으로 등록되었습니다!`);
+                const newInv = { id: 'inv_' + Date.now(), name, market, shares, avg_buy_price: avgPrice, current_price: curPrice };
+                invs.push(newInv);
+                syncItem = newInv;
+                showToast(`[${name}] 종목이 성공적으로 등록되었습니다!`, 'success');
             }
-            saveUserInvestments(invs);
+            saveUserInvestments(invs, syncItem, 'saveInvestment');
             cancelInvForm();
         }
 
@@ -2167,8 +2345,10 @@
             if (!confirm('이 종목을 삭제하시겠습니까?')) return;
             playSound('click');
             let invs = getUserInvestments();
+            const target = invs.find(i => i.id === id);
             invs = invs.filter(i => i.id !== id);
-            saveUserInvestments(invs);
+            saveUserInvestments(invs, { id, name: target?.name }, 'deleteInvestment');
+            showToast('종목이 삭제되었습니다.', 'info');
         }
 
         function recalculateGlobalNetWorth() {
@@ -2338,17 +2518,20 @@
             return defaults;
         }
 
-        function saveRecurringPlans(plans) {
+        function saveRecurringPlans(plans, syncItem = null, action = 'saveRecurring') {
             localStorage.setItem('user_recurring_plans', JSON.stringify(plans));
             renderRecurringUI();
+            if (syncItem) {
+                callGasApi(action, syncItem).catch(() => {});
+            }
         }
 
         function clearAllRecurringPlans() {
             if (!confirm('등록된 모든 정기 입출금 일정을 삭제하고 깨끗하게 비우시겠습니까?')) return;
             playSound('click');
-            saveRecurringPlans([]);
+            saveRecurringPlans([], {}, 'clearRecurring');
             resetRecForm();
-            alert('모든 일정이 초기화되었습니다! 이제 나만의 진짜 고정 지출/수익을 등록해보세요.');
+            showToast('모든 정기 일정이 초기화되었습니다!', 'warning');
         }
 
         function restoreDefaultRecurringSamples() {
@@ -2361,6 +2544,7 @@
             ];
             saveRecurringPlans(defaults);
             resetRecForm();
+            showToast('기본 정기 일정 샘플이 복원되었습니다.', 'info');
         }
 
         function editRecurringPlan(id) {
@@ -2408,11 +2592,12 @@
             const category = document.getElementById('recCategory').value;
             const payMethod = document.getElementById('recPayMethod').value;
 
-            if (!name) { alert('항목명을 입력해주세요. (예: 월세, 급여, 관리비 등)'); return; }
-            if (!amount || amount <= 0) { alert('0원 이상의 올바른 금액을 입력해주세요.'); return; }
+            if (!name) { showToast('항목명을 입력해주세요.', 'warning'); return; }
+            if (!amount || amount <= 0) { showToast('0원 이상의 올바른 금액을 입력해주세요.', 'warning'); return; }
 
             playSound('coin');
             const plans = getRecurringPlans();
+            let syncItem = null;
 
             if (editingRecId) {
                 const idx = plans.findIndex(p => p.id === editingRecId);
@@ -2426,8 +2611,9 @@
                         amount,
                         pay_method: payMethod
                     };
+                    syncItem = plans[idx];
                 }
-                alert(`[${name}] 정기 일정이 성공적으로 수정되었습니다!`);
+                showToast(`[${name}] 정기 일정이 수정되었습니다!`, 'success');
             } else {
                 const newPlan = {
                     id: 'rec_' + Date.now(),
@@ -2439,10 +2625,11 @@
                     pay_method: payMethod
                 };
                 plans.push(newPlan);
-                alert(`매월 ${day}일 [${name} ${amount.toLocaleString()}원] 정기 일정이 저장되었습니다!`);
+                syncItem = newPlan;
+                showToast(`매월 ${day}일 [${name}] 일정이 등록되었습니다!`, 'success');
             }
 
-            saveRecurringPlans(plans);
+            saveRecurringPlans(plans, syncItem, 'saveRecurring');
             resetRecForm();
         }
 
@@ -2450,9 +2637,11 @@
             if (!confirm('이 정기 일정을 삭제하시겠습니까?')) return;
             playSound('click');
             let plans = getRecurringPlans();
+            const target = plans.find(p => p.id === id);
             plans = plans.filter(p => p.id !== id);
-            saveRecurringPlans(plans);
+            saveRecurringPlans(plans, { id, name: target?.name }, 'deleteRecurring');
             if (editingRecId === id) resetRecForm();
+            showToast('정기 일정이 삭제되었습니다.', 'info');
         }
 
         async function handleApplyRecurringToSheet(id) {
