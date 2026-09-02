@@ -32,10 +32,7 @@
         .pin-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; text-align: center; }
         .pin-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
         .pin-dots { display: flex; gap: 16px; margin-bottom: 36px; }
-        .pin-dot {
-            width: 16px; height: 16px; border-radius: 50%;
-            background: var(--border-color); transition: all 0.15s ease;
-        }
+        .pin-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--border-color); transition: all 0.15s ease; }
         .pin-dot.filled { background: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px rgba(37,99,235,0.4); }
         .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 280px; }
         .pin-btn {
@@ -49,11 +46,7 @@
         .pin-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
         .pin-btn.action { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); }
         
-        @keyframes pinShake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
-        }
+        @keyframes pinShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
         .shake { animation: pinShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 
         /* 🖥️ Header & Navigation */
@@ -75,18 +68,13 @@
 
         /* 📱 Container & Responsive Grid System */
         .container { max-width: 1240px; margin: auto; padding: 16px; }
-        
         .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 
         @media (min-width: 900px) {
             .desktop-nav { display: flex; }
             .tab-bar { display: none !important; }
             body { padding-bottom: 30px; }
-            .desktop-dashboard-grid {
-                grid-template-columns: 1.15fr 1fr;
-                gap: 20px;
-                align-items: start;
-            }
+            .desktop-dashboard-grid { grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start; }
         }
 
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
@@ -103,16 +91,41 @@
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.2rem; font-weight: 900; }
 
-        /* 📋 Smart SMS Paste Box */
-        .sms-paste-box { background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
-        [data-theme='dark'] .sms-paste-box { background: #064e3b33; border-color: #059669; }
-        .sms-textarea { width: 100%; height: 58px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; font-size: 0.85rem; color: var(--text-main); resize: none; margin-top: 6px; }
+        /* 💬 Smart Natural Language / SMS / Bank Auto-Parser Box */
+        .sms-paste-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            border: 2px dashed #38bdf8; border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
+        }
+        [data-theme='dark'] .sms-paste-box {
+            background: linear-gradient(135deg, #064e3b33 0%, #0369a133 100%);
+            border-color: #0284c7;
+        }
+        .sms-textarea {
+            width: 100%; height: 68px; background: var(--bg-card);
+            border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px;
+            font-size: 0.9rem; color: var(--text-main); resize: none; margin-top: 8px;
+            line-height: 1.4;
+        }
+        .parse-preview-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; margin-top: 6px;
+        }
 
         /* 🧮 Calculator Keypad */
         .calc-display { background: var(--bg-subtle); border-radius: 14px; padding: 16px; text-align: right; border: 1.5px solid var(--border-color); margin-bottom: 12px; }
         .calc-formula { font-size: 0.85rem; color: var(--text-muted); min-height: 20px; margin-bottom: 2px; font-family: monospace; }
         .calc-main-amt { font-size: 2.1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
         .calc-korean-word { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+        /* Type Switch (지출 vs 수입) */
+        .type-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; background: var(--bg-subtle); padding: 4px; border-radius: 14px; }
+        .type-btn {
+            border: none; background: transparent; padding: 10px; border-radius: 10px;
+            font-size: 0.95rem; font-weight: 800; color: var(--text-muted); cursor: pointer; transition: all 0.15s ease;
+        }
+        .type-btn.active.expense { background: var(--bg-card); color: var(--expense); box-shadow: 0 2px 6px rgba(239,68,68,0.15); }
+        .type-btn.active.income { background: var(--bg-card); color: var(--income); box-shadow: 0 2px 6px rgba(16,185,129,0.15); }
 
         .calc-quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
         .quick-chip { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px 0; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-align: center; cursor: pointer; }
@@ -167,17 +180,14 @@
 </head>
 <body>
 
-    <!-- 🔒 4자리 PIN 잠금화면 오버레이 -->
+    <!-- 🔒 4자리 PIN 잠금화면 -->
     <div id="pinOverlay" class="pin-overlay">
         <div style="font-size: 2.8rem; margin-bottom: 12px;">🔒</div>
         <h2 id="pinTitle" class="pin-title">비밀번호 4자리를 입력하세요</h2>
         <p id="pinDesc" class="pin-desc">소중한 나의 가계부와 자산을 보호합니다.</p>
         
         <div id="pinDots" class="pin-dots">
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
+            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
         </div>
 
         <div class="pin-grid">
@@ -199,10 +209,9 @@
     <header class="header">
         <div class="logo">👑 <span>스마트 머니 허브</span></div>
         
-        <!-- 🖥️ Desktop Navigation -->
         <nav class="desktop-nav">
             <button class="nav-btn active" onclick="switchTab('tab-dashboard')">📊 대시보드</button>
-            <button class="nav-btn" onclick="switchTab('tab-add')">🧮 지출 입력</button>
+            <button class="nav-btn" onclick="switchTab('tab-add')">🧮 지출/수익 입력</button>
             <button class="nav-btn" onclick="switchTab('tab-goals')">🎯 장기 목표</button>
             <button class="nav-btn" onclick="switchTab('tab-cards')">💳 카드값 대조</button>
             <button class="nav-btn" onclick="switchTab('tab-assets')">🏦 자산/주식</button>
@@ -218,7 +227,7 @@
     </header>
 
     <main class="container">
-        <!-- 구글 시트 URL 설정 배너 -->
+        <!-- 설정 배너 -->
         <div id="urlSettingBox" class="card" style="border-color: var(--primary); display:none;">
             <div class="card-title">
                 <span>⚙️ 가계부 연동 및 보안 설정</span>
@@ -237,7 +246,6 @@
         <!-- 1. 📊 메인 대시보드 탭 -->
         <section id="tab-dashboard" class="tab-content">
             <div class="desktop-dashboard-grid">
-                <!-- Left Column -->
                 <div class="grid-col">
                     <div class="level-banner">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -250,9 +258,7 @@
                                 <strong id="disp-level-target" style="font-size: 1.1rem; color: #fde047;">5,000만</strong>
                             </div>
                         </div>
-                        <div class="progress-bar-bg">
-                            <div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div>
-                        </div>
+                        <div class="progress-bar-bg"><div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.9;">
                             <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
                             <span id="disp-level-pct">진행률 45%</span>
@@ -292,12 +298,11 @@
                     </div>
                 </div>
 
-                <!-- Right Column -->
                 <div class="grid-col">
                     <div class="card">
                         <div class="card-title">
-                            <span>📋 최근 소비 내역</span>
-                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; background: var(--primary); color: white; border: none;" onclick="switchTab('tab-add')">➕ 지출 쓰기</button>
+                            <span>📋 최근 소비/수익 내역</span>
+                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; background: var(--primary); color: white; border: none;" onclick="switchTab('tab-add')">➕ 지출/수익 쓰기</button>
                         </div>
                         <table class="table">
                             <thead><tr><th>날짜</th><th>내용</th><th>결제</th><th class="text-right">금액</th></tr></thead>
@@ -318,23 +323,36 @@
             </div>
         </section>
 
-        <!-- 2. 🧮 지출 입력 탭 -->
+        <!-- 2. 🧮 지출/수익 입력 탭 (스마트 자연어/문자 자동 파서 탑재) -->
         <section id="tab-add" class="tab-content" style="display: none;">
             <div style="max-width: 620px; margin: auto;">
+                <!-- 💬 AI 스마트 텍스트 / 알림톡 / 결제·입금 문자 자동 인식 박스 -->
                 <div class="sms-paste-box">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 800; font-size: 0.88rem; color: #166534;">💬 결제 문자 붙여넣기 (자동 파싱)</span>
-                        <button type="button" class="btn-icon" onclick="pasteFromClipboard()" style="background: #dcfce7; color: #166534; font-size: 0.78rem; border-color: #86efac;">📋 클립보드 읽기</button>
+                        <span style="font-weight: 800; font-size: 0.9rem; color: #0284c7;">💬 텍스트 / 입출금 알림 붙여넣기 (AI 자동인식)</span>
+                        <button type="button" class="btn-icon" onclick="pasteFromClipboard()" style="background: #e0f2fe; color: #0284c7; font-size: 0.8rem; border-color: #7dd3fc;">📋 클립보드 읽기</button>
                     </div>
-                    <textarea id="smsInput" class="sms-textarea" placeholder="카드 승인 문자나 카카오페이 알림을 여기에 붙여넣으면 금액, 카드사, 카테고리가 1초 만에 자동 채워집니다!" oninput="parseSmsText(this.value)"></textarea>
+                    <textarea id="smsInput" class="sms-textarea" placeholder="카드 결제 문자, 은행 입금 문자, 또는 '오늘 점심 12000원 현대카드', '월급 350만원 입금' 처럼 자유롭게 적거나 붙여넣으세요!" oninput="parseNaturalText(this.value)"></textarea>
+                    
+                    <div id="parseBadge" class="parse-preview-badge" style="display: none;">
+                        <span id="badgeIcon">🟢</span>
+                        <span id="badgeText">감지됨</span>
+                    </div>
                 </div>
 
                 <div class="card">
+                    <!-- 수입 vs 지출 선택 스위치 -->
+                    <div class="type-switch">
+                        <button type="button" id="typeExpenseBtn" class="type-btn active expense" onclick="switchTxType('지출')">💸 지출 (Expense)</button>
+                        <button type="button" id="typeIncomeBtn" class="type-btn" onclick="switchTxType('수입')">💵 수익/수입 (Income)</button>
+                    </div>
+
                     <div class="card-title">
-                        <span>🧮 지출 금액 입력</span>
+                        <span id="txTypeTitle">💸 지출 금액 입력</span>
                         <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
                     </div>
 
+                    <!-- 계산기 디스플레이 -->
                     <div class="calc-display">
                         <div id="calcFormula" class="calc-formula"></div>
                         <div id="calcDisplay" class="calc-main-amt">0원</div>
@@ -343,6 +361,7 @@
 
                     <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
 
+                    <!-- 빠른 금액 증감 칩 -->
                     <div class="calc-quick-row">
                         <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
                         <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
@@ -350,6 +369,7 @@
                         <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
                     </div>
 
+                    <!-- 3D 키패드 -->
                     <div class="calc-grid">
                         <div class="calc-key" onclick="pressNum('7')">7</div>
                         <div class="calc-key" onclick="pressNum('8')">8</div>
@@ -375,18 +395,12 @@
                         <div class="calc-key equal" onclick="pressEqual()" style="grid-column: span 2;">= 계산</div>
                     </div>
 
-                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">카테고리</div>
+                    <div id="catSectionTitle" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">카테고리</div>
                     <div class="chip-group" id="categoryChips">
-                        <div class="chip active" onclick="selectCategory('식비', this)">🍚 식비</div>
-                        <div class="chip" onclick="selectCategory('카페', this)">☕ 카페</div>
-                        <div class="chip" onclick="selectCategory('교통', this)">🚗 교통</div>
-                        <div class="chip" onclick="selectCategory('쇼핑', this)">🛒 쇼핑</div>
-                        <div class="chip" onclick="selectCategory('생활', this)">🏠 생활</div>
-                        <div class="chip" onclick="selectCategory('급여/수입', this)">💵 수입</div>
-                        <div class="chip" onclick="selectCategory('기타', this)">📝 기타</div>
+                        <!-- 동적으로 지출/수입 카테고리 렌더링 -->
                     </div>
 
-                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">결제수단</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">결제/수령 수단</div>
                     <div class="chip-group" id="payMethodChips">
                         <div class="chip active" onclick="selectPayMethod('신용카드', '현대카드', this)">💳 현대카드</div>
                         <div class="chip" onclick="selectPayMethod('신용카드', '신한카드', this)">💳 신한카드</div>
@@ -396,14 +410,16 @@
                         <div class="chip" onclick="selectPayMethod('현금/계좌', '', this)">💵 현금/계좌</div>
                     </div>
 
-                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">소비 성격 (자각)</div>
-                    <div class="chip-group" id="cTypeChips">
-                        <div class="chip active" onclick="selectCType('필수', this)">🟢 필수 (Needs)</div>
-                        <div class="chip" onclick="selectCType('선택', this)">🟡 선택 (Wants)</div>
-                        <div class="chip" onclick="selectCType('낭비', this)">🔴 낭비 (Waste)</div>
+                    <div id="cTypeContainer">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">소비 성격 (자각)</div>
+                        <div class="chip-group" id="cTypeChips">
+                            <div class="chip active" onclick="selectCType('필수', this)">🟢 필수 (Needs)</div>
+                            <div class="chip" onclick="selectCType('선택', this)">🟡 선택 (Wants)</div>
+                            <div class="chip" onclick="selectCType('낭비', this)">🔴 낭비 (Waste)</div>
+                        </div>
                     </div>
 
-                    <input type="text" id="txDesc" class="form-control" placeholder="사용처/메모 (예: 스타벅스, 배민)">
+                    <input type="text" id="txDesc" class="form-control" placeholder="사용처/수익처 메모 (예: 스타벅스, 8월 급여, 당근마켓 판매)">
 
                     <button type="button" id="btnSubmitTx" class="btn-submit" onclick="handleSaveTx()">
                         ✨ 쾅! 시트에 저장하기 ✨
@@ -416,16 +432,12 @@
         <section id="tab-goals" class="tab-content" style="display: none;">
             <div class="desktop-dashboard-grid">
                 <div class="card" style="border-color: var(--warning);">
-                    <div class="card-title">
-                        <span>🎯 나의 장기 인생 목표 로드맵</span>
-                    </div>
+                    <div class="card-title"><span>🎯 나의 장기 인생 목표 로드맵</span></div>
                     <div id="goalsListContainer"></div>
                 </div>
 
                 <div class="card" style="border-color: var(--purple);">
-                    <div class="card-title">
-                        <span>📈 복리 스노우볼 미래 자산 예측</span>
-                    </div>
+                    <div class="card-title"><span>📈 복리 스노우볼 미래 자산 예측</span></div>
                     <div style="margin-bottom: 12px;">
                         <label style="font-size:0.85rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
                         <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
@@ -527,8 +539,8 @@
     <!-- 3D 도장 쾅 스탬프 -->
     <div id="stampOverlay" class="stamp-overlay">
         <div class="stamp-box">
-            <div style="font-size: 2.5rem; margin-bottom: 4px;">🌟</div>
-            <h3 style="color: var(--income); margin-bottom: 4px;">현명한 소비 기록!</h3>
+            <div id="stampEmoji" style="font-size: 2.5rem; margin-bottom: 4px;">🌟</div>
+            <h3 id="stampTitle" style="color: var(--income); margin-bottom: 4px;">현명한 소비 기록!</h3>
             <div id="stampAmount" style="font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">0원</div>
             <p style="font-size: 0.8rem; color: var(--text-muted);">구글 시트에 즉시 동기화되었습니다.</p>
         </div>
@@ -537,7 +549,7 @@
     <!-- 📱 Mobile Bottom Tab Bar -->
     <nav class="tab-bar">
         <a class="tab-item active" onclick="switchTab('tab-dashboard')"><span class="tab-icon">📊</span><span>홈</span></a>
-        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>지출입력</span></a>
+        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>지출/수익</span></a>
         <a class="tab-item" onclick="switchTab('tab-goals')"><span class="tab-icon">🎯</span><span>목표</span></a>
         <a class="tab-item" onclick="switchTab('tab-cards')"><span class="tab-icon">💳</span><span>카드대조</span></a>
         <a class="tab-item" onclick="switchTab('tab-assets')"><span class="tab-icon">🏦</span><span>자산</span></a>
@@ -554,18 +566,39 @@
         let isSettingNewPin = false;
         let tempNewPin = "";
 
-        // 🧮 Transaction Calculator State
+        // 🧮 Transaction State
+        let currentTxType = "지출"; // "지출" or "수입"
         let calcExpr = "0";
         let selectedCategory = "식비";
         let selectedPayMethod = "신용카드";
         let selectedCardName = "현대카드";
         let selectedCType = "필수";
 
-        // 💳 Card Reconciliation Calculator State
+        // 💳 Card Rec State
         let recCalcExpr = "0";
+
+        const EXPENSE_CATEGORIES = [
+            { name: '식비', icon: '🍚' },
+            { name: '카페', icon: '☕' },
+            { name: '교통', icon: '🚗' },
+            { name: '쇼핑', icon: '🛒' },
+            { name: '생활', icon: '🏠' },
+            { name: '문화/여가', icon: '🎬' },
+            { name: '기타', icon: '📝' }
+        ];
+
+        const INCOME_CATEGORIES = [
+            { name: '급여/월급', icon: '💰' },
+            { name: '부업/외주', icon: '💼' },
+            { name: '금융/이자', icon: '📈' },
+            { name: '중고/당근', icon: '🥕' },
+            { name: '용돈/상여', icon: '🎁' },
+            { name: '기타수익', icon: '✨' }
+        ];
 
         document.addEventListener('DOMContentLoaded', () => {
             initPinLock();
+            renderCategoryChips();
 
             const savedUrl = localStorage.getItem('gas_app_url') || '';
             if (savedUrl) {
@@ -584,7 +617,7 @@
             loadGameData(true);
         });
 
-        // 🔒 4-Digit PIN Security Logic
+        // 🔒 PIN Logic
         function initPinLock() {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
@@ -592,26 +625,19 @@
             updatePinDots();
 
             if (!savedPin) {
-                // 최초 실행: 비밀번호 설정 모드
                 isSettingNewPin = true;
                 tempNewPin = "";
                 document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
                 document.getElementById('pinDesc').innerText = '가계부 접속 시 사용할 4자리 숫자를 입력하세요.';
                 overlay.style.display = 'flex';
             } else {
-                // 일반 잠금 모드
                 isSettingNewPin = false;
                 document.getElementById('pinTitle').innerText = '🔒 비밀번호 4자리를 입력하세요';
                 document.getElementById('pinDesc').innerText = '소중한 나의 가계부와 자산을 보호합니다.';
                 overlay.style.display = 'flex';
             }
         }
-
-        function lockAppNow() {
-            playSound('click');
-            initPinLock();
-        }
-
+        function lockAppNow() { playSound('click'); initPinLock(); }
         function startPinChange() {
             if (confirm('4자리 비밀번호를 새로 변경하시겠습니까?')) {
                 localStorage.removeItem('app_user_pin');
@@ -619,32 +645,18 @@
                 initPinLock();
             }
         }
-
-        function resetPinCode() {
-            playSound('click');
-            enteredPin = "";
-            updatePinDots();
-        }
-
+        function resetPinCode() { playSound('click'); enteredPin = ""; updatePinDots(); }
         function pressPin(num) {
             playSound('click');
             if (enteredPin.length >= 4) return;
             enteredPin += num;
             updatePinDots();
-
-            if (enteredPin.length === 4) {
-                setTimeout(evaluatePin, 120);
-            }
+            if (enteredPin.length === 4) setTimeout(evaluatePin, 120);
         }
-
         function pressPinBackspace() {
             playSound('click');
-            if (enteredPin.length > 0) {
-                enteredPin = enteredPin.slice(0, -1);
-                updatePinDots();
-            }
+            if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updatePinDots(); }
         }
-
         function updatePinDots() {
             const dots = document.querySelectorAll('#pinDots .pin-dot');
             dots.forEach((dot, idx) => {
@@ -652,15 +664,11 @@
                 else dot.classList.remove('filled');
             });
         }
-
         function evaluatePin() {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
-            const dotsBox = document.getElementById('pinDots');
-
             if (isSettingNewPin) {
                 if (!tempNewPin) {
-                    // 1차 입력 완료 ➔ 확인 재입력 요청
                     playSound('coin');
                     tempNewPin = enteredPin;
                     enteredPin = "";
@@ -669,36 +677,29 @@
                     document.getElementById('pinDesc').innerText = '확인을 위해 동일한 4자리를 입력해주세요.';
                 } else {
                     if (enteredPin === tempNewPin) {
-                        // 일치 ➔ 저장 완료
                         playSound('coin');
                         localStorage.setItem('app_user_pin', enteredPin);
                         alert('4자리 비밀번호가 안전하게 설정되었습니다!');
                         overlay.style.opacity = '0';
                         setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
                     } else {
-                        // 불일치
                         triggerPinShake();
                         alert('비밀번호가 일치하지 않습니다. 처음부터 다시 설정해주세요.');
-                        tempNewPin = "";
-                        enteredPin = "";
-                        updatePinDots();
+                        tempNewPin = ""; enteredPin = ""; updatePinDots();
                         document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
                     }
                 }
             } else {
-                // 잠금 해제 검증
                 if (enteredPin === savedPin) {
                     playSound('coin');
                     overlay.style.opacity = '0';
                     setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
                 } else {
                     triggerPinShake();
-                    enteredPin = "";
-                    updatePinDots();
+                    enteredPin = ""; updatePinDots();
                 }
             }
         }
-
         function triggerPinShake() {
             const dotsBox = document.getElementById('pinDots');
             dotsBox.classList.add('shake');
@@ -706,7 +707,48 @@
             setTimeout(() => dotsBox.classList.remove('shake'), 400);
         }
 
-        // 💬 Smart SMS & Kakao Parser
+        // 🔄 Type Switch (지출 vs 수입)
+        function switchTxType(type) {
+            playSound('click');
+            currentTxType = type;
+            const expBtn = document.getElementById('typeExpenseBtn');
+            const incBtn = document.getElementById('typeIncomeBtn');
+            const cTypeContainer = document.getElementById('cTypeContainer');
+            const title = document.getElementById('txTypeTitle');
+
+            if (type === '지출') {
+                expBtn.className = 'type-btn active expense';
+                incBtn.className = 'type-btn';
+                title.innerText = '💸 지출 금액 입력';
+                title.style.color = 'var(--expense)';
+                cTypeContainer.style.display = 'block';
+                selectedCategory = '식비';
+            } else {
+                incBtn.className = 'type-btn active income';
+                expBtn.className = 'type-btn';
+                title.innerText = '💵 수익/수입 금액 입력';
+                title.style.color = 'var(--income)';
+                cTypeContainer.style.display = 'none';
+                selectedCategory = '급여/월급';
+            }
+            renderCategoryChips();
+            updateCalcDisplay();
+        }
+
+        function renderCategoryChips() {
+            const container = document.getElementById('categoryChips');
+            container.innerHTML = '';
+            const list = currentTxType === '지출' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+            list.forEach((c, idx) => {
+                const div = document.createElement('div');
+                div.className = 'chip' + (c.name === selectedCategory ? ' active' : '');
+                div.innerHTML = `${c.icon} ${c.name}`;
+                div.onclick = () => selectCategory(c.name, div);
+                container.appendChild(div);
+            });
+        }
+
+        // 💬 Smart NLP & SMS/Bank Automatic Text Parser
         async function pasteFromClipboard() {
             playSound('click');
             try {
@@ -714,7 +756,7 @@
                     const text = await navigator.clipboard.readText();
                     if (text) {
                         document.getElementById('smsInput').value = text;
-                        parseSmsText(text);
+                        parseNaturalText(text);
                     }
                 } else {
                     alert('문자 내용을 입력창에 직접 길게 눌러 [붙여넣기] 해주세요!');
@@ -724,67 +766,129 @@
             }
         }
 
-        function parseSmsText(text) {
-            if (!text || text.trim() === '') return;
-            playSound('coin');
+        function parseNaturalText(text) {
+            if (!text || text.trim() === '') {
+                document.getElementById('parseBadge').style.display = 'none';
+                return;
+            }
 
-            // 1. 금액 추출
+            let recognizedType = '지출';
             let amount = 0;
-            const amtMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
-            if (amtMatch) {
-                amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
+            let cat = '';
+            let pMethod = '신용카드';
+            let cardName = '현대카드';
+            let desc = '';
+
+            // 1. 수입 vs 지출 판별 키워드
+            const incomeKeywords = ['입금', '수입', '급여', '월급', '보냈습니다', '이자', '배당', '환급', '수익', '캐시백', '용돈', '판매', '정산', '당근'];
+            const expenseKeywords = ['출금', '승인', '결제', '사용', '일시불', '체크', '지출', '구입', '산'];
+
+            const hasIncome = incomeKeywords.some(k => text.includes(k));
+            const hasExpense = expenseKeywords.some(k => text.includes(k));
+
+            if (hasIncome && !hasExpense) recognizedType = '수입';
+            else recognizedType = '지출';
+
+            // 2. 한국어 복합 금액 단위 파싱 (예: 350만원, 3만 5천원, 15,000원, 50000)
+            const koreanAmtMatch = text.match(/([0-9.]+)\s*억\s*([0-9.]+)?\s*만?원?/);
+            const manAmtMatch = text.match(/([0-9.]+)\s*만\s*([0-9.]+)?\s*천?원?/);
+            const wonMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+            const plainNumMatch = text.match(/\b([1-9][0-9]{3,9})\b/);
+
+            if (koreanAmtMatch) {
+                const eok = parseFloat(koreanAmtMatch[1]) * 100000000;
+                const man = koreanAmtMatch[2] ? parseFloat(koreanAmtMatch[2]) * 10000 : 0;
+                amount = Math.round(eok + man);
+            } else if (manAmtMatch) {
+                const man = parseFloat(manAmtMatch[1]) * 10000;
+                const cheon = manAmtMatch[2] ? parseFloat(manAmtMatch[2]) * 1000 : 0;
+                amount = Math.round(man + cheon);
+            } else if (wonMatch) {
+                amount = parseInt(wonMatch[1].replace(/,/g, ''), 10);
+            } else if (plainNumMatch) {
+                amount = parseInt(plainNumMatch[1], 10);
+            }
+
+            // 3. 결제 수단 및 은행 추출
+            if (text.includes('신한')) { cardName = '신한카드'; pMethod = '신용카드'; }
+            else if (text.includes('삼성')) { cardName = '삼성카드'; pMethod = '신용카드'; }
+            else if (text.includes('국민') || text.includes('KB')) { cardName = 'KB국민카드'; pMethod = '신용카드'; }
+            else if (text.includes('현대')) { cardName = '현대카드'; pMethod = '신용카드'; }
+            else if (text.includes('카카오뱅크') || text.includes('체크')) { pMethod = '체크카드'; cardName = '체크카드'; }
+            else if (text.includes('계좌') || text.includes('통장') || text.includes('현금') || text.includes('송금') || recognizedType === '수입') {
+                pMethod = '현금/계좌'; cardName = '';
+            }
+
+            // 4. 카테고리 및 사용처 추론
+            if (recognizedType === '지출') {
+                if (text.includes('스타벅스') || text.includes('커피') || text.includes('카페') || text.includes('투썸') || text.includes('이디야') || text.includes('메가')) {
+                    cat = '카페'; desc = '카페 음료';
+                } else if (text.includes('배민') || text.includes('배달의민족') || text.includes('식당') || text.includes('요기요') || text.includes('쿠팡이츠') || text.includes('버거') || text.includes('순대국') || text.includes('밥') || text.includes('식사') || text.includes('점심') || text.includes('저녁')) {
+                    cat = '식비'; desc = '식사/외식';
+                } else if (text.includes('택시') || text.includes('주유') || text.includes('교통') || text.includes('코레일') || text.includes('티머니') || text.includes('버스') || text.includes('지하철')) {
+                    cat = '교통'; desc = '교통비';
+                } else if (text.includes('쿠팡') || text.includes('마트') || text.includes('쇼핑') || text.includes('컬리') || text.includes('올리브영') || text.includes('네이버페이') || text.includes('백화점')) {
+                    cat = '쇼핑'; desc = '쇼핑/생필품';
+                } else if (text.includes('관리비') || text.includes('한전') || text.includes('가스') || text.includes('월세')) {
+                    cat = '생활'; desc = '주거/생활비';
+                } else {
+                    cat = '식비';
+                }
+            } else {
+                // 수입 카테고리
+                if (text.includes('급여') || text.includes('월급') || text.includes('보너스') || text.includes('상여')) {
+                    cat = '급여/월급'; desc = '월급여';
+                } else if (text.includes('부업') || text.includes('외주') || text.includes('알바') || text.includes('수당')) {
+                    cat = '부업/외주'; desc = '부수입';
+                } else if (text.includes('이자') || text.includes('배당') || text.includes('주식') || text.includes('수익금')) {
+                    cat = '금융/이자'; desc = '금융수익';
+                } else if (text.includes('당근') || text.includes('중고') || text.includes('판매') || text.includes('번개')) {
+                    cat = '중고/당근'; desc = '중고판매';
+                } else {
+                    cat = '기타수익'; desc = '수익금';
+                }
+            }
+
+            // 가맹점 이름 추출 시도
+            const storeMatch = text.match(/([가-힣A-Za-z0-9]+(?:\([주]\)|점|스토어|마트|샵|식당|치킨|피자))/);
+            if (storeMatch) desc = storeMatch[1];
+            else if (!desc) {
+                const words = text.split(/\s+/).filter(w => !w.match(/[0-9]/) && w.length >= 2);
+                if (words.length > 0) desc = words[0];
+            }
+
+            // 5. 폼에 반영
+            if (amount > 0) {
+                playSound('coin');
+                switchTxType(recognizedType);
                 calcExpr = String(amount);
                 updateCalcDisplay();
+
+                if (desc) document.getElementById('txDesc').value = desc;
+
+                // 카테고리 칩 활성화
+                selectedCategory = cat;
+                renderCategoryChips();
+
+                // 결제수단 칩 활성화
+                selectedPayMethod = pMethod;
+                selectedCardName = cardName;
+                document.querySelectorAll('#payMethodChips .chip').forEach(el => {
+                    if (el.innerText.includes(cardName) || (pMethod === '현금/계좌' && el.innerText.includes('현금'))) {
+                        document.querySelectorAll('#payMethodChips .chip').forEach(c => c.classList.remove('active'));
+                        el.classList.add('active');
+                    }
+                });
+
+                // 배지 표시
+                const badge = document.getElementById('parseBadge');
+                badge.style.display = 'inline-flex';
+                document.getElementById('badgeIcon').innerText = recognizedType === '수입' ? '💵' : '💸';
+                document.getElementById('badgeText').innerText = `[${recognizedType} 감지] ${amount.toLocaleString()}원 · ${cat} · ${desc || '기록'}`;
             }
-
-            // 2. 카드사 추출
-            let cName = '현대카드';
-            let pMethod = '신용카드';
-            if (text.includes('신한')) cName = '신한카드';
-            else if (text.includes('삼성')) cName = '삼성카드';
-            else if (text.includes('국민') || text.includes('KB')) cName = 'KB국민카드';
-            else if (text.includes('롯데')) cName = '롯데카드';
-            else if (text.includes('카카오뱅크') || text.includes('체크')) { pMethod = '체크카드'; cName = '체크카드'; }
-            else if (text.includes('계좌') || text.includes('입금') || text.includes('출금')) { pMethod = '현금/계좌'; cName = ''; }
-
-            selectedPayMethod = pMethod;
-            selectedCardName = cName;
-            document.querySelectorAll('#payMethodChips .chip').forEach(el => {
-                if (el.innerText.includes(cName) || (pMethod === '현금/계좌' && el.innerText.includes('현금'))) {
-                    document.querySelectorAll('#payMethodChips .chip').forEach(c => c.classList.remove('active'));
-                    el.classList.add('active');
-                }
-            });
-
-            // 3. 카테고리 & 사용처 자동 추출
-            let cat = '식비';
-            let desc = '';
-            if (text.includes('스타벅스') || text.includes('커피') || text.includes('카페') || text.includes('투썸') || text.includes('이디야') || text.includes('메가')) {
-                cat = '카페'; desc = '카페 음료';
-            } else if (text.includes('배민') || text.includes('배달의민족') || text.includes('식당') || text.includes('요기요') || text.includes('쿠팡이츠') || text.includes('버거')) {
-                cat = '식비'; desc = '외식/식비';
-            } else if (text.includes('택시') || text.includes('주유') || text.includes('교통') || text.includes('코레일') || text.includes('티머니')) {
-                cat = '교통'; desc = '교통비';
-            } else if (text.includes('쿠팡') || text.includes('마트') || text.includes('쇼핑') || text.includes('컬리') || text.includes('올리브영') || text.includes('네이버페이')) {
-                cat = '쇼핑'; desc = '쇼핑/생필품';
-            } else if (text.includes('관리비') || text.includes('한전') || text.includes('가스') || text.includes('월세')) {
-                cat = '생활'; desc = '생활비';
-            }
-
-            const storeMatch = text.match(/([가-힣A-Za-z0-9]+(?:\([주]\)|점|스토어|마트|샵|점))/) || text.match(/\b([가-힣A-Za-z]{2,8}(?:점|마트|샵|푸드|치킨|피자))\b/);
-            if (storeMatch) desc = storeMatch[1];
-            if (desc) document.getElementById('txDesc').value = desc;
-
-            selectedCategory = cat;
-            document.querySelectorAll('#categoryChips .chip').forEach(el => {
-                if (el.innerText.includes(cat)) {
-                    document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('active'));
-                    el.classList.add('active');
-                }
-            });
         }
 
-        // 🧮 Transaction Calculator
+        // 🧮 Calculator Keypad
         function pressNum(num) {
             playSound('click');
             if (calcExpr === "0") calcExpr = num;
@@ -842,14 +946,24 @@
                 vBox.style.display = 'none';
             } else {
                 vBox.style.display = 'block';
-                if (amt < 8000) vBox.innerText = `☕ 아메리카노 약 ${(amt/4500).toFixed(1)}잔 분량`;
-                else if (amt < 25000) vBox.innerText = `🍚 든든한 찌개 백반 약 ${(amt/10000).toFixed(1)}끼 분량`;
-                else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
-                else vBox.innerText = `🛒 일주일치 식료품 장보기 또는 생활비 분량`;
+                if (currentTxType === '수입') {
+                    vBox.style.background = '#f0fdf4';
+                    vBox.style.borderColor = '#bbf7d0';
+                    vBox.style.color = '#15803d';
+                    vBox.innerText = `🌱 순자산을 불려주는 소중한 수입입니다! (+${formatWealth(amt)})`;
+                } else {
+                    vBox.style.background = '#eff6ff';
+                    vBox.style.borderColor = '#bfdbfe';
+                    vBox.style.color = '#1e40af';
+                    if (amt < 8000) vBox.innerText = `☕ 아메리카노 약 ${(amt/4500).toFixed(1)}잔 분량`;
+                    else if (amt < 25000) vBox.innerText = `🍚 든든한 찌개 백반 약 ${(amt/10000).toFixed(1)}끼 분량`;
+                    else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
+                    else vBox.innerText = `🛒 일주일치 식료품 장보기 또는 생활비 분량`;
+                }
             }
         }
 
-        // 💳 Card Reconciliation Calculator
+        // 💳 Card Rec Keypad
         function pressRecNum(num) {
             playSound('click');
             if (recCalcExpr === "0") recCalcExpr = num;
@@ -863,11 +977,7 @@
             else recCalcExpr += op;
             updateRecCalcDisplay();
         }
-        function pressRecClear() {
-            playSound('click');
-            recCalcExpr = "0";
-            updateRecCalcDisplay();
-        }
+        function pressRecClear() { playSound('click'); recCalcExpr = "0"; updateRecCalcDisplay(); }
         function pressRecBackspace() {
             playSound('click');
             if (recCalcExpr.length <= 1) recCalcExpr = "0";
@@ -929,9 +1039,9 @@
                 payment_method: selectedPayMethod,
                 card_name: selectedCardName,
                 category: selectedCategory,
-                consumption_type: selectedCType,
+                consumption_type: currentTxType === '수입' ? '수입' : selectedCType,
                 description: document.getElementById('txDesc').value.trim() || selectedCategory,
-                type: selectedCategory === '급여/수입' ? '수입' : '지출'
+                type: currentTxType
             };
 
             const btn = document.getElementById('btnSubmitTx');
@@ -942,11 +1052,12 @@
             btn.disabled = false;
             btn.innerText = '✨ 쾅! 시트에 저장하기 ✨';
 
-            showStamp(payload.amount);
+            showStamp(payload.amount, currentTxType);
             calcExpr = "0";
             updateCalcDisplay();
             document.getElementById('txDesc').value = '';
             document.getElementById('smsInput').value = '';
+            document.getElementById('parseBadge').style.display = 'none';
 
             setTimeout(() => {
                 switchTab('tab-dashboard');
@@ -964,11 +1075,13 @@
             loadGameData(true);
         }
 
-        function showStamp(amt) {
+        function showStamp(amt, type = '지출') {
             playSound('coin');
             if (navigator.vibrate) navigator.vibrate([50, 50, 80]);
-            confetti({ particleCount: 40, spread: 55, origin: { y: 0.6 } });
-            document.getElementById('stampAmount').innerText = amt.toLocaleString() + '원';
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            document.getElementById('stampAmount').innerText = (type === '수입' ? '+' : '') + amt.toLocaleString() + '원';
+            document.getElementById('stampEmoji').innerText = type === '수입' ? '💰' : '🌟';
+            document.getElementById('stampTitle').innerText = type === '수입' ? '소중한 수익 입금 기록!' : '현명한 소비 기록!';
             const overlay = document.getElementById('stampOverlay');
             overlay.style.display = 'flex';
             setTimeout(() => overlay.style.display = 'none', 1000);
@@ -1017,6 +1130,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
             document.getElementById(tabId).style.display = 'block';
             
             const tabs = ['tab-dashboard', 'tab-add', 'tab-goals', 'tab-cards', 'tab-assets'];
@@ -1118,7 +1232,7 @@
             tbody.innerHTML = '';
             const txList = res.transactions || [];
             if (txList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">최근 지출 내역이 없습니다. (🧮 지출을 입력해보세요!)</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">최근 지출/수익 내역이 없습니다.</td></tr>';
             } else {
                 txList.slice(0, 10).forEach(t => {
                     const tr = document.createElement('tr');
