@@ -316,9 +316,9 @@
         <section id="tab-dashboard" class="tab-content">
             <div class="dash-section-stack">
                 
-                <!-- 👑 1단 (맨 위): 나의 순자산/레벨 & 장기 목표 / 카드 현황 (50% : 50%) -->
+                <!-- 👑 1단 (맨 위): 나의 순자산/레벨 & 장기 목표 / 신용카드 현황 (50% : 50%) -->
                 <div class="dash-kpi-grid">
-                    <!-- 좌측: 레벨 퀘스트 & 총 순자산 및 월간 통계 -->
+                    <!-- 좌측: 레벨 퀘스트 & 총 순자산 카드 -->
                     <div style="display: flex; flex-direction: column; gap: 14px;">
                         <div class="level-banner">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -365,22 +365,42 @@
                         </div>
                     </div>
 
-                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 현황 -->
+                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 이번달 현황 (총자산과 1:1 대칭 카드) -->
                     <div style="display: flex; flex-direction: column; gap: 14px;">
-                        <div class="card" style="border-color: var(--warning); margin-bottom: 0;">
-                            <div class="card-title">
+                        <div class="card" style="border-color: var(--warning); margin-bottom: 0; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div class="card-title" style="margin-bottom: 6px;">
                                 <span>🎯 장기 인생 목표 진행 현황</span>
                                 <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
                             </div>
                             <div id="dashboardGoalsWidget"></div>
                         </div>
 
-                        <div class="card" style="margin-bottom: 0;">
-                            <div class="card-title">
-                                <span>💳 신용카드 이번 달 현황</span>
-                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
+                        <!-- 💳 신용카드 이번달 현황 (나의 총자산 카드와 1:1 동일한 규격) -->
+                        <div class="card" style="border-left: 5px solid var(--expense); margin-bottom: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💳 이번 달 신용카드 총 지출액</span>
+                                <button class="btn-icon" style="font-size: 0.78rem; padding: 3px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
                             </div>
-                            <div id="dashboardCardsWidget"></div>
+                            <div id="disp-cards-total" style="font-size: 2rem; font-weight: 900; color: var(--expense); margin: 4px 0 6px 0;">0원</div>
+                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 6px;">
+                                <span>🔍 청구 대조: <strong id="disp-cards-rec-status" style="color:var(--income);">정상 일치</strong></span>
+                                <span>💳 결제 카드: <strong id="disp-cards-count" style="color:var(--text-main);">0개 카드</strong></span>
+                            </div>
+                            
+                            <div class="stat-grid" id="dashboardCardsStatGrid">
+                                <div class="stat-box" style="border-left: 3px solid var(--primary);">
+                                    <div class="stat-label">현대카드</div>
+                                    <div class="stat-val" style="color: var(--primary); font-size: 1.05rem;">0원</div>
+                                </div>
+                                <div class="stat-box" style="border-left: 3px solid var(--purple);">
+                                    <div class="stat-label">신한카드</div>
+                                    <div class="stat-val" style="color: var(--purple); font-size: 1.05rem;">0원</div>
+                                </div>
+                                <div class="stat-box" style="border-left: 3px solid var(--warning);">
+                                    <div class="stat-label">기타카드</div>
+                                    <div class="stat-val" style="color: var(--warning); font-size: 1.05rem;">0원</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1503,21 +1523,56 @@
         }
 
         function renderDashboardCards(cards) {
-            const container = document.getElementById('dashboardCardsWidget');
-            container.innerHTML = '';
-            if (cards.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">이번 달 카드 지출 내역이 없습니다.</div>';
-                return;
+            const list = cards || [];
+            const totalSpent = list.reduce((acc, c) => acc + (Number(c.spent_amount) || 0), 0);
+            const count = list.length;
+            
+            const totalEl = document.getElementById('disp-cards-total');
+            if (totalEl) totalEl.innerText = totalSpent.toLocaleString() + '원';
+            
+            const countEl = document.getElementById('disp-cards-count');
+            if (countEl) countEl.innerText = `${count}개 카드`;
+
+            const statusEl = document.getElementById('disp-cards-rec-status');
+            const hasDiff = list.some(c => c.status && c.status.includes('불일치'));
+            if (statusEl) {
+                statusEl.innerText = hasDiff ? '⚠️ 대조 필요' : '정상 일치';
+                statusEl.style.color = hasDiff ? 'var(--expense)' : 'var(--income)';
             }
-            cards.slice(0, 3).forEach(c => {
-                const div = document.createElement('div');
-                div.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color); font-size:0.88rem; color:var(--text-main);';
-                div.innerHTML = `
-                    <span>💳 ${c.card_name}</span>
-                    <span><strong style="color:var(--text-main);">${c.spent_amount.toLocaleString()}원</strong> <small class="text-muted">(${c.status})</small></span>
-                `;
-                container.appendChild(div);
-            });
+
+            const grid = document.getElementById('dashboardCardsStatGrid');
+            if (grid) {
+                grid.innerHTML = '';
+                if (list.length === 0) {
+                    grid.innerHTML = `
+                        <div class="stat-box" style="grid-column: span 3; color: var(--text-muted); font-size: 0.85rem; padding: 12px;">
+                            이번 달 기록된 카드 지출이 없습니다.
+                        </div>
+                    `;
+                } else {
+                    const cardColors = ['var(--primary)', 'var(--purple)', 'var(--warning)', 'var(--income)'];
+                    list.slice(0, 3).forEach((c, idx) => {
+                        const col = cardColors[idx % cardColors.length];
+                        const box = document.createElement('div');
+                        box.className = 'stat-box';
+                        box.style.borderLeft = `3px solid ${col}`;
+                        box.innerHTML = `
+                            <div class="stat-label" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.card_name}</div>
+                            <div class="stat-val" style="color: ${col}; font-size: 1.05rem;">${(Number(c.spent_amount) || 0).toLocaleString()}원</div>
+                        `;
+                        grid.appendChild(box);
+                    });
+                    
+                    // If fewer than 3 cards, pad with placeholders or balance grid
+                    if (list.length === 1) {
+                        grid.style.gridTemplateColumns = '1fr';
+                    } else if (list.length === 2) {
+                        grid.style.gridTemplateColumns = '1fr 1fr';
+                    } else {
+                        grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                    }
+                }
+            }
         }
 
         function renderGoals(goals) {
