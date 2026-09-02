@@ -10,27 +10,42 @@
         :root {
             --bg-body: #f8fafc; --bg-card: #ffffff; --bg-subtle: #f1f5f9;
             --text-main: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0;
-            --primary: #2563eb; --income: #10b981; --expense: #ef4444; --warning: #f59e0b; --purple: #8b5cf6;
+            --primary: #2563eb; --income: #10b981; --expense: #ef4444; --warning: #d97706; --purple: #8b5cf6;
             --key-bg: #ffffff; --key-shadow: #cbd5e1; --key-active: #e2e8f0;
             --badge-bg: #eff6ff; --badge-text: #1e40af;
             --sms-box-bg: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
             --sms-box-border: #38bdf8;
             --sms-box-title: #0284c7;
+            --track-bg: #e2e8f0;
+            --val-box-bg: #eff6ff; --val-box-border: #bfdbfe; --val-box-text: #1e40af;
+            --val-box-inc-bg: #f0fdf4; --val-box-inc-border: #bbf7d0; --val-box-inc-text: #15803d;
         }
         [data-theme='dark'] {
             --bg-body: #090d16; --bg-card: #1e293b; --bg-subtle: #0f172a;
             --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155;
             --primary: #3b82f6; --income: #34d399; --expense: #f87171; --warning: #fbbf24; --purple: #a78bfa;
             --key-bg: #334155; --key-shadow: #0f172a; --key-active: #1e293b;
-            --badge-bg: #1e3a8a33; --badge-text: #93c5fd;
+            --badge-bg: #1e3a8a44; --badge-text: #93c5fd;
             --sms-box-bg: linear-gradient(135deg, #064e3b33 0%, #0369a133 100%);
             --sms-box-border: #0284c7;
             --sms-box-title: #38bdf8;
+            --track-bg: #334155;
+            --val-box-bg: #1e3a8a33; --val-box-border: #2563eb; --val-box-text: #93c5fd;
+            --val-box-inc-bg: #064e3b33; --val-box-inc-border: #059669; --val-box-inc-text: #34d399;
             color-scheme: dark;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
+        /* 🌟 Universal Dark Mode Text Safety */
+        h1, h2, h3, h4, h5, h6, strong, b, label, span, p, div, tr, td, th {
+            color: inherit;
+        }
+        .text-muted { color: var(--text-muted) !important; }
+        .text-primary { color: var(--primary) !important; }
+        .text-income { color: var(--income) !important; }
+        .text-expense { color: var(--expense) !important; }
+
         /* 🔒 PIN Lock Screen Overlay */
         .pin-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -86,17 +101,19 @@
             .desktop-dashboard-grid { grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start; }
         }
 
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); color: var(--text-main); }
         .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
 
         /* 👑 Level Banner */
-        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 18px 22px; border-radius: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(37,99,235,0.22); }
+        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white !important; padding: 18px 22px; border-radius: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(37,99,235,0.22); }
+        .level-banner * { color: white !important; }
+        .level-banner #disp-level-target { color: #fde047 !important; }
         .level-tag { background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
         .progress-bar-bg { height: 10px; background: rgba(255,255,255,0.25); border-radius: 5px; overflow: hidden; margin: 10px 0 6px 0; }
         .progress-bar-fill { height: 100%; background: #10b981; border-radius: 5px; transition: width 0.5s ease; }
 
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-        .stat-box { background: var(--bg-subtle); padding: 14px; border-radius: 14px; text-align: center; }
+        .stat-box { background: var(--bg-subtle); padding: 14px; border-radius: 14px; text-align: center; color: var(--text-main); }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.2rem; font-weight: 900; }
 
@@ -164,8 +181,8 @@
         .chip.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
 
         .form-control { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px; }
-        select, input[type="date"], input[type="text"], input[type="url"], input[type="number"] {
-            background: var(--bg-card); color: var(--text-main); border: 1.5px solid var(--border-color);
+        select, option, input[type="date"], input[type="text"], input[type="url"], input[type="number"] {
+            background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1.5px solid var(--border-color);
         }
 
         /* Mobile Tab Bar */
@@ -180,15 +197,20 @@
         }
         .btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e40af; }
 
-        .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; text-align: center; }
-        [data-theme='dark'] .value-box { background: #1e3a8a33; border-color: #2563eb; color: #93c5fd; }
+        .value-box {
+            background: var(--val-box-bg); border: 1px solid var(--val-box-border); color: var(--val-box-text);
+            padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; text-align: center;
+        }
+        .value-box.income {
+            background: var(--val-box-inc-bg); border-color: var(--val-box-inc-border); color: var(--val-box-inc-text);
+        }
         
         .stamp-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
         .stamp-box { background: var(--bg-card); color: var(--text-main); border: 4px solid var(--income); border-radius: 24px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes stampSlam { 0% { opacity: 0; transform: scale(2) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
 
         .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: var(--text-main); }
-        .table th, .table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .table th, .table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-main); }
         .table th { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; }
         .text-right { text-align: right; }
     </style>
@@ -284,8 +306,8 @@
                         <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
                         <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 6px 0 8px 0;">0원</div>
                         <div style="display: flex; gap: 14px; font-size: 0.88rem;">
-                            <span>📈 주식/투자: <strong id="disp-inv">0원</strong></span>
-                            <span>🏦 현금/예금: <strong id="disp-cash">0원</strong></span>
+                            <span>📈 주식/투자: <strong id="disp-inv" style="color:var(--text-main);">0원</strong></span>
+                            <span>🏦 현금/예금: <strong id="disp-cash" style="color:var(--text-main);">0원</strong></span>
                         </div>
                     </div>
 
@@ -448,11 +470,11 @@
                     <div class="card-title"><span>📈 복리 스노우볼 미래 자산 예측</span></div>
                     <div style="margin-bottom: 12px;">
                         <label style="font-size:0.85rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
-                        <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
+                        <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%; accent-color: var(--primary);" oninput="updateSimulation()">
                     </div>
                     <div style="margin-bottom: 16px;">
                         <label style="font-size:0.85rem; color:var(--text-muted);">연 복리 수익률: <b id="lblAnnualRate" style="color:var(--purple);">7%</b></label>
-                        <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%;" oninput="updateSimulation()">
+                        <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%; accent-color: var(--purple);" oninput="updateSimulation()">
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                         <div class="stat-box" style="border-left: 3px solid var(--primary);">
@@ -549,7 +571,7 @@
         <div class="stamp-box">
             <div id="stampEmoji" style="font-size: 2.5rem; margin-bottom: 4px;">🌟</div>
             <h3 id="stampTitle" style="color: var(--income); margin-bottom: 4px;">현명한 소비 기록!</h3>
-            <div id="stampAmount" style="font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">0원</div>
+            <div id="stampAmount" style="font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; color: var(--text-main);">0원</div>
             <p style="font-size: 0.8rem; color: var(--text-muted);">구글 시트에 즉시 동기화되었습니다.</p>
         </div>
     </div>
@@ -944,14 +966,10 @@
             } else {
                 vBox.style.display = 'block';
                 if (currentTxType === '수입') {
-                    vBox.style.background = document.documentElement.dataset.theme === 'dark' ? '#064e3b33' : '#f0fdf4';
-                    vBox.style.borderColor = document.documentElement.dataset.theme === 'dark' ? '#059669' : '#bbf7d0';
-                    vBox.style.color = document.documentElement.dataset.theme === 'dark' ? '#34d399' : '#15803d';
+                    vBox.className = 'value-box income';
                     vBox.innerText = `🌱 순자산을 불려주는 소중한 수입입니다! (+${formatWealth(amt)})`;
                 } else {
-                    vBox.style.background = document.documentElement.dataset.theme === 'dark' ? '#1e3a8a33' : '#eff6ff';
-                    vBox.style.borderColor = document.documentElement.dataset.theme === 'dark' ? '#2563eb' : '#bfdbfe';
-                    vBox.style.color = document.documentElement.dataset.theme === 'dark' ? '#93c5fd' : '#1e40af';
+                    vBox.className = 'value-box';
                     if (amt < 8000) vBox.innerText = `☕ 아메리카노 약 ${(amt/4500).toFixed(1)}잔 분량`;
                     else if (amt < 25000) vBox.innerText = `🍚 든든한 찌개 백반 약 ${(amt/10000).toFixed(1)}끼 분량`;
                     else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
@@ -1238,8 +1256,8 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${String(t.date).substring(5)}</td>
-                        <td><strong>${t.category}</strong> <small class="text-muted">${t.description || ''}</small></td>
-                        <td><small>${t.payment_method === '신용카드' ? (t.card_name || '신용') : '현금'}</small></td>
+                        <td><strong style="color:var(--text-main);">${t.category}</strong> <small class="text-muted">${t.description || ''}</small></td>
+                        <td><small style="color:var(--text-muted);">${t.payment_method === '신용카드' ? (t.card_name || '신용') : '현금'}</small></td>
                         <td class="text-right" style="font-weight:700; color:${t.type==='수입'?'var(--income)':'var(--text-main)'};">
                             ${t.type==='수입'?'+':''}${t.amount.toLocaleString()}원
                         </td>
@@ -1268,10 +1286,10 @@
                 div.style.marginBottom = '10px';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:4px;">
-                        <strong>${g.icon} ${g.name}</strong>
+                        <strong style="color:var(--text-main);">${g.icon} ${g.name}</strong>
                         <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (D-${g.d_day})</span>
                     </div>
-                    <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                    <div style="height:8px; background:var(--track-bg); border-radius:4px; overflow:hidden;">
                         <div style="height:100%; width:${g.progress_rate}%; background:var(--warning);"></div>
                     </div>
                 `;
@@ -1288,10 +1306,10 @@
             }
             cards.slice(0, 3).forEach(c => {
                 const div = document.createElement('div');
-                div.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color); font-size:0.88rem;';
+                div.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color); font-size:0.88rem; color:var(--text-main);';
                 div.innerHTML = `
                     <span>💳 ${c.card_name}</span>
-                    <span><strong>${c.spent_amount.toLocaleString()}원</strong> <small class="text-muted">(${c.status})</small></span>
+                    <span><strong style="color:var(--text-main);">${c.spent_amount.toLocaleString()}원</strong> <small class="text-muted">(${c.status})</small></span>
                 `;
                 container.appendChild(div);
             });
@@ -1302,7 +1320,7 @@
             container.innerHTML = '';
             goals.forEach((g) => {
                 const card = document.createElement('div');
-                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:12px;';
+                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:12px; color:var(--text-main);';
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                         <strong style="font-size:1.05rem; color:var(--text-main);">${g.icon} ${g.name}</strong>
@@ -1310,9 +1328,9 @@
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">
                         <span>모은 금액: <strong style="color:var(--primary);">${g.current_amount.toLocaleString()}원</strong></span>
-                        <span>목표: <strong>${g.target_amount.toLocaleString()}원</strong></span>
+                        <span>목표: <strong style="color:var(--text-main);">${g.target_amount.toLocaleString()}원</strong></span>
                     </div>
-                    <div style="height:10px; background:#e2e8f0; border-radius:5px; overflow:hidden; margin-bottom:6px;">
+                    <div style="height:10px; background:var(--track-bg); border-radius:5px; overflow:hidden; margin-bottom:6px;">
                         <div style="height:100%; width:${g.progress_rate}%; background:linear-gradient(90deg, #3b82f6, #10b981);"></div>
                     </div>
                     <div style="font-size:0.8rem; color:var(--text-muted); text-align:right;">매월 권장 저축: <b style="color:var(--income);">${(g.monthly_required/10000).toLocaleString()}만원</b></div>
@@ -1361,7 +1379,7 @@
                         <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">${c.status}</span>
                     </div>
                     <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <span class="text-muted">기록 합계:</span><strong>${c.spent_amount.toLocaleString()}원</strong>
+                        <span class="text-muted">기록 합계:</span><strong style="color:var(--text-main);">${c.spent_amount.toLocaleString()}원</strong>
                     </div>
                     ${c.billed_amount > 0 ? `<div style="font-size:0.9rem; display:flex; justify-content:space-between;"><span class="text-muted">청구 금액:</span><strong style="color:var(--primary);">${c.billed_amount.toLocaleString()}원</strong></div>` : ''}
                 `;
@@ -1375,8 +1393,8 @@
             aContainer.innerHTML = '';
             (nw.assets_list || []).forEach(a => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem;';
-                row.innerHTML = `<span>${a.name}</span><strong>${a.amount.toLocaleString()}원</strong>`;
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem; color:var(--text-main);';
+                row.innerHTML = `<span>${a.name}</span><strong style="color:var(--text-main);">${a.amount.toLocaleString()}원</strong>`;
                 aContainer.appendChild(row);
             });
 
@@ -1384,8 +1402,8 @@
             iContainer.innerHTML = '';
             (nw.investments_list || []).forEach(inv => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem;';
-                row.innerHTML = `<span><strong>${inv.name}</strong> (${inv.shares}주)</span><strong>${inv.total_eval.toLocaleString()}원</strong>`;
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem; color:var(--text-main);';
+                row.innerHTML = `<span><strong style="color:var(--text-main);">${inv.name}</strong> (${inv.shares}주)</span><strong style="color:var(--text-main);">${inv.total_eval.toLocaleString()}원</strong>`;
                 iContainer.appendChild(row);
             });
         }
