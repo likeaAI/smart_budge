@@ -19,93 +19,134 @@
             --primary: #3b82f6; --purple: #a78bfa;
             --key-bg: #334155; --key-shadow: #0f172a; --key-active: #1e293b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
-        .header { background: var(--bg-card); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
-        .header-actions { display: flex; gap: 6px; align-items: center; }
-        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; }
-        .sync-indicator { font-size: 0.72rem; color: var(--income); font-weight: 700; }
+        /* 🖥️ Header & Navigation */
+        .header { background: var(--bg-card); padding: 14px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.2rem; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .desktop-nav { display: none; gap: 6px; }
+        .nav-btn {
+            background: transparent; border: 1.5px solid transparent; padding: 7px 14px;
+            border-radius: 10px; font-size: 0.9rem; font-weight: 700; color: var(--text-muted);
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .nav-btn:hover { background: var(--bg-subtle); color: var(--text-main); }
+        .nav-btn.active { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+        [data-theme='dark'] .nav-btn.active { background: #1e3a8a; color: #93c5fd; border-color: #2563eb; }
+
+        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 7px 11px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; font-weight: 600; }
+        .sync-indicator { font-size: 0.75rem; color: var(--income); font-weight: 700; }
+
+        /* 📱 Container & Responsive Grid System */
+        .container { max-width: 1240px; margin: auto; padding: 16px; }
         
-        .container { max-width: 540px; margin: auto; padding: 12px; }
-        
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-        .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* 📱 Mobile Level Banner */
-        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 14px 16px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 6px 16px rgba(37,99,235,0.2); }
-        .level-tag { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
-        .progress-bar-bg { height: 8px; background: rgba(255,255,255,0.25); border-radius: 4px; overflow: hidden; margin: 8px 0 4px 0; }
-        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 4px; transition: width 0.5s ease; }
-        
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-        .stat-box { background: var(--bg-subtle); padding: 10px; border-radius: 12px; text-align: center; }
-        .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 2px; }
-        .stat-val { font-size: 1.05rem; font-weight: 800; }
-        
-        /* 🧮 Mobile Calculator UI */
-        .calc-display { background: var(--bg-subtle); border-radius: 14px; padding: 14px; text-align: right; border: 1.5px solid var(--border-color); margin-bottom: 10px; }
-        .calc-formula { font-size: 0.82rem; color: var(--text-muted); min-height: 18px; margin-bottom: 2px; font-family: monospace; }
-        .calc-main-amt { font-size: 1.85rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
-        .calc-korean-word { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-        
-        .calc-quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-        .quick-chip { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 8px 0; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-align: center; cursor: pointer; }
-        .quick-chip:active { background: var(--key-active); transform: scale(0.96); }
-        
-        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .desktop-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 900px) {
+            .desktop-nav { display: flex; }
+            .tab-bar { display: none !important; }
+            body { padding-bottom: 30px; }
+            .desktop-dashboard-grid {
+                grid-template-columns: 1.15fr 1fr;
+                gap: 20px;
+                align-items: start;
+            }
+            .grid-span-2 { grid-column: span 2; }
+        }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* 👑 Level Banner */
+        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 18px 22px; border-radius: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(37,99,235,0.22); }
+        .level-tag { background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .progress-bar-bg { height: 10px; background: rgba(255,255,255,0.25); border-radius: 5px; overflow: hidden; margin: 10px 0 6px 0; }
+        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 5px; transition: width 0.5s ease; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stat-box { background: var(--bg-subtle); padding: 14px; border-radius: 14px; text-align: center; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
+        .stat-val { font-size: 1.2rem; font-weight: 900; }
+
+        /* 🧮 Calculator Keypad */
+        .calc-display { background: var(--bg-subtle); border-radius: 14px; padding: 16px; text-align: right; border: 1.5px solid var(--border-color); margin-bottom: 12px; }
+        .calc-formula { font-size: 0.85rem; color: var(--text-muted); min-height: 20px; margin-bottom: 2px; font-family: monospace; }
+        .calc-main-amt { font-size: 2.1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
+        .calc-korean-word { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+        .calc-quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .quick-chip { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px 0; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-align: center; cursor: pointer; }
+        .quick-chip:active { background: var(--key-active); transform: scale(0.97); }
+
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
         .calc-key {
             background: var(--key-bg); border: 1.5px solid var(--border-color);
-            border-radius: 14px; box-shadow: 0 3px 0 var(--key-shadow);
-            font-size: 1.25rem; font-weight: 700; color: var(--text-main);
-            height: 52px; display: flex; align-items: center; justify-content: center;
+            border-radius: 14px; box-shadow: 0 4px 0 var(--key-shadow);
+            font-size: 1.35rem; font-weight: 700; color: var(--text-main);
+            height: 56px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none; transition: transform 0.05s ease, box-shadow 0.05s ease;
         }
-        .calc-key:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
-        .calc-key.op { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; box-shadow: 0 3px 0 #93c5fd; }
-        .calc-key.clear { background: #fef2f2; color: var(--expense); border-color: #fecaca; box-shadow: 0 3px 0 #fca5a5; }
-        .calc-key.equal { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 3px 0 #1e40af; }
-        
-        /* 🏷️ Category Chips */
-        .chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .calc-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
+        .calc-key.op { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; box-shadow: 0 4px 0 #93c5fd; }
+        .calc-key.clear { background: #fef2f2; color: var(--expense); border-color: #fecaca; box-shadow: 0 4px 0 #fca5a5; }
+        .calc-key.equal { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 4px 0 #1e40af; }
+
+        /* 🏷️ Chips */
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
         .chip {
             background: var(--bg-subtle); border: 1.5px solid var(--border-color);
-            border-radius: 20px; padding: 7px 12px; font-size: 0.82rem; font-weight: 600;
+            border-radius: 20px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600;
             color: var(--text-muted); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;
         }
         .chip.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
-        
-        .form-control { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; }
-        
+
+        .form-control { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px; }
+
+        /* Mobile Tab Bar */
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 58px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .tab-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; padding: 4px 6px; text-decoration: none; }
         .tab-item.active { color: var(--primary); font-weight: 700; }
         .tab-icon { font-size: 1.2rem; }
-        
+
         .btn-submit {
-            width: 100%; height: 50px; border-radius: 14px; background: var(--primary); color: white;
-            font-size: 1.05rem; font-weight: 800; border: none; box-shadow: 0 4px 0 #1e40af; cursor: pointer;
+            width: 100%; height: 52px; border-radius: 14px; background: var(--primary); color: white;
+            font-size: 1.1rem; font-weight: 800; border: none; box-shadow: 0 4px 0 #1e40af; cursor: pointer;
         }
         .btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e40af; }
-        
-        .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 10px; text-align: center; }
+
+        .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; text-align: center; }
         .stamp-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .stamp-box { background: var(--bg-card); border: 4px solid var(--income); border-radius: 20px; padding: 24px; text-align: center; width: 290px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .stamp-box { background: var(--bg-card); border: 4px solid var(--income); border-radius: 24px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes stampSlam { 0% { opacity: 0; transform: scale(2) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
-        
-        .table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .table th, .table td { padding: 9px 6px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        .table th { color: var(--text-muted); font-size: 0.75rem; }
+
+        .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .table th, .table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .table th { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; }
         .text-right { text-align: right; }
     </style>
 </head>
 <body>
     <header class="header">
-        <div class="logo">👑 <span>스마트 가계부</span></div>
+        <div class="logo">👑 <span>스마트 머니 허브</span></div>
+        
+        <!-- 🖥️ Desktop Navigation -->
+        <nav class="desktop-nav">
+            <button class="nav-btn active" onclick="switchTab('tab-dashboard')">📊 대시보드</button>
+            <button class="nav-btn" onclick="switchTab('tab-add')">🧮 지출 입력</button>
+            <button class="nav-btn" onclick="switchTab('tab-goals')">🎯 장기 목표</button>
+            <button class="nav-btn" onclick="switchTab('tab-cards')">💳 카드값 대조</button>
+            <button class="nav-btn" onclick="switchTab('tab-assets')">🏦 자산/주식</button>
+        </nav>
+
         <div class="header-actions">
             <span id="syncIndicator" class="sync-indicator">● 동기화됨</span>
-            <button class="btn-icon" onclick="toggleUrlSetting()" title="구글 연동 설정">⚙️</button>
+            <button class="btn-icon" onclick="toggleUrlSetting()" title="구글 연동 설정">⚙️ 설정</button>
             <button class="btn-icon" id="soundBtn" onclick="toggleSound()">⌨️</button>
             <button class="btn-icon" onclick="toggleTheme()">🌓</button>
         </div>
@@ -119,194 +160,219 @@
                 <button class="btn-icon" onclick="saveGasUrl()" style="font-weight: 700;">💾 저장</button>
             </div>
             <input type="url" id="inputGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-            <small class="text-muted" style="display:block; font-size: 0.75rem;">
+            <small class="text-muted" style="display:block; font-size: 0.8rem;">
                 💡 구글 스프레드시트 ➔ [Apps Script] ➔ [배포 URL]을 입력하시면 실시간 동기화됩니다.
             </small>
         </div>
 
-        <!-- 👑 자산 퀘스트 레벨 배너 -->
-        <div class="level-banner">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
-                    <h3 id="disp-level-title" style="margin-top: 3px; font-size: 1.05rem;">종잣돈 빌더 (LV.3)</h3>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.7rem; opacity: 0.85;">다음 레벨까지</div>
-                    <strong id="disp-level-target" style="font-size: 0.95rem; color: #fde047;">5,000만</strong>
-                </div>
-            </div>
-            <div class="progress-bar-bg">
-                <div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; opacity: 0.9;">
-                <span>순자산: <b id="disp-networth-mini">0원</b></span>
-                <span id="disp-level-pct">진행률 45%</span>
-            </div>
-        </div>
-
-        <!-- 1. 📊 메인 대시보드 탭 -->
+        <!-- 1. 📊 메인 대시보드 탭 (데스크탑 와이드 2열 그리드) -->
         <section id="tab-dashboard" class="tab-content">
-            <div class="card" style="border-left: 4px solid var(--primary);">
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
-                <div id="disp-networth" style="font-size: 1.6rem; font-weight: 900; color: var(--primary); margin: 3px 0 5px 0;">0원</div>
-                <div style="display: flex; gap: 8px; font-size: 0.8rem;">
-                    <span>📈 주식: <strong id="disp-inv">0원</strong></span>
-                    <span>🏦 현금: <strong id="disp-cash">0원</strong></span>
-                </div>
-            </div>
+            <div class="desktop-dashboard-grid">
+                <!-- Left Column: 자산 & 목표 & 통계 -->
+                <div class="grid-col">
+                    <!-- 👑 자산 퀘스트 레벨 배너 -->
+                    <div class="level-banner">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
+                                <h3 id="disp-level-title" style="margin-top: 4px; font-size: 1.2rem;">종잣돈 빌더 (LV.3)</h3>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; opacity: 0.85;">다음 레벨까지</div>
+                                <strong id="disp-level-target" style="font-size: 1.1rem; color: #fde047;">5,000만</strong>
+                            </div>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.9;">
+                            <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
+                            <span id="disp-level-pct">진행률 45%</span>
+                        </div>
+                    </div>
 
-            <div class="stat-grid">
-                <div class="stat-box" style="border-left: 3px solid var(--expense);">
-                    <div class="stat-label">이번 달 지출</div>
-                    <div id="disp-expense" class="stat-val" style="color: var(--expense);">0원</div>
-                </div>
-                <div class="stat-box" style="border-left: 3px solid var(--income);">
-                    <div class="stat-label">이번 달 수입</div>
-                    <div id="disp-income" class="stat-val" style="color: var(--income);">0원</div>
-                </div>
-                <div class="stat-box" style="border-left: 3px solid var(--warning);">
-                    <div class="stat-label">자각 점수</div>
-                    <div id="disp-score" class="stat-val" style="color: var(--warning);">100점</div>
-                </div>
-            </div>
+                    <!-- 순자산 카드 -->
+                    <div class="card" style="border-left: 5px solid var(--primary);">
+                        <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
+                        <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 6px 0 8px 0;">0원</div>
+                        <div style="display: flex; gap: 14px; font-size: 0.88rem;">
+                            <span>📈 주식/투자: <strong id="disp-inv">0원</strong></span>
+                            <span>🏦 현금/예금: <strong id="disp-cash">0원</strong></span>
+                        </div>
+                    </div>
 
-            <!-- 최근 소비 내역 테이블 -->
-            <div class="card">
-                <div class="card-title">
-                    <span>📋 최근 소비 내역</span>
-                    <button class="btn-icon" style="font-size: 0.75rem; padding: 3px 8px;" onclick="switchTab('tab-add')">➕ 지출 쓰기</button>
+                    <!-- 월간 수입/지출 통계 -->
+                    <div class="stat-grid">
+                        <div class="stat-box" style="border-left: 3px solid var(--expense);">
+                            <div class="stat-label">이번 달 지출</div>
+                            <div id="disp-expense" class="stat-val" style="color: var(--expense);">0원</div>
+                        </div>
+                        <div class="stat-box" style="border-left: 3px solid var(--income);">
+                            <div class="stat-label">이번 달 수입</div>
+                            <div id="disp-income" class="stat-val" style="color: var(--income);">0원</div>
+                        </div>
+                        <div class="stat-box" style="border-left: 3px solid var(--warning);">
+                            <div class="stat-label">소비 자각 점수</div>
+                            <div id="disp-score" class="stat-val" style="color: var(--warning);">100점</div>
+                        </div>
+                    </div>
+
+                    <!-- 장기 목표 요약 위젯 -->
+                    <div class="card" style="border-color: var(--warning);">
+                        <div class="card-title">
+                            <span>🎯 장기 인생 목표 진행 현황</span>
+                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
+                        </div>
+                        <div id="dashboardGoalsWidget"></div>
+                    </div>
                 </div>
-                <table class="table">
-                    <thead><tr><th>날짜</th><th>내용</th><th>결제</th><th class="text-right">금액</th></tr></thead>
-                    <tbody id="recent-tx-tbody">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 14px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
-                    </tbody>
-                </table>
+
+                <!-- Right Column: 최근 소비 내역 & 카드값 대조 -->
+                <div class="grid-col">
+                    <div class="card">
+                        <div class="card-title">
+                            <span>📋 최근 소비 내역</span>
+                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; background: var(--primary); color: white; border: none;" onclick="switchTab('tab-add')">➕ 지출 쓰기</button>
+                        </div>
+                        <table class="table">
+                            <thead><tr><th>날짜</th><th>내용</th><th>결제</th><th class="text-right">금액</th></tr></thead>
+                            <tbody id="recent-tx-tbody">
+                                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <span>💳 신용카드 이번 달 현황</span>
+                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
+                        </div>
+                        <div id="dashboardCardsWidget"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- 2. 🧮 모바일 계산기 지출 입력 탭 -->
+        <!-- 2. 🧮 지출 입력 탭 (데스크탑에서는 중앙 정렬 카드) -->
         <section id="tab-add" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title">
-                    <span>🧮 지출 금액 입력</span>
-                    <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 3px 6px; border-radius: 8px; font-size: 0.8rem;">
+            <div style="max-width: 600px; margin: auto;">
+                <div class="card">
+                    <div class="card-title">
+                        <span>🧮 지출 금액 입력</span>
+                        <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
+                    </div>
+
+                    <!-- 🧮 계산기 디스플레이 -->
+                    <div class="calc-display">
+                        <div id="calcFormula" class="calc-formula"></div>
+                        <div id="calcDisplay" class="calc-main-amt">0원</div>
+                        <div id="calcKoreanWord" class="calc-korean-word">0원</div>
+                    </div>
+
+                    <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
+
+                    <!-- ⚡ 빠른 금액 증감 칩 -->
+                    <div class="calc-quick-row">
+                        <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
+                        <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
+                        <div class="quick-chip" onclick="addQuickAmt(50000)">+5만</div>
+                        <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
+                    </div>
+
+                    <!-- ⌨️ 3D 계산기 키패드 -->
+                    <div class="calc-grid">
+                        <div class="calc-key" onclick="pressNum('7')">7</div>
+                        <div class="calc-key" onclick="pressNum('8')">8</div>
+                        <div class="calc-key" onclick="pressNum('9')">9</div>
+                        <div class="calc-key op" onclick="pressOp('/')">÷</div>
+
+                        <div class="calc-key" onclick="pressNum('4')">4</div>
+                        <div class="calc-key" onclick="pressNum('5')">5</div>
+                        <div class="calc-key" onclick="pressNum('6')">6</div>
+                        <div class="calc-key op" onclick="pressOp('*')">×</div>
+
+                        <div class="calc-key" onclick="pressNum('1')">1</div>
+                        <div class="calc-key" onclick="pressNum('2')">2</div>
+                        <div class="calc-key" onclick="pressNum('3')">3</div>
+                        <div class="calc-key op" onclick="pressOp('-')">-</div>
+
+                        <div class="calc-key clear" onclick="pressClear()">C</div>
+                        <div class="calc-key" onclick="pressNum('0')">0</div>
+                        <div class="calc-key" onclick="pressNum('00')">00</div>
+                        <div class="calc-key op" onclick="pressOp('+')">+</div>
+
+                        <div class="calc-key" onclick="pressBackspace()" style="grid-column: span 2;">⌫ 지우기</div>
+                        <div class="calc-key equal" onclick="pressEqual()" style="grid-column: span 2;">= 계산</div>
+                    </div>
+
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">카테고리</div>
+                    <div class="chip-group" id="categoryChips">
+                        <div class="chip active" onclick="selectCategory('식비', this)">🍚 식비</div>
+                        <div class="chip" onclick="selectCategory('카페', this)">☕ 카페</div>
+                        <div class="chip" onclick="selectCategory('교통', this)">🚗 교통</div>
+                        <div class="chip" onclick="selectCategory('쇼핑', this)">🛒 쇼핑</div>
+                        <div class="chip" onclick="selectCategory('생활', this)">🏠 생활</div>
+                        <div class="chip" onclick="selectCategory('급여/수입', this)">💵 수입</div>
+                        <div class="chip" onclick="selectCategory('기타', this)">📝 기타</div>
+                    </div>
+
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">결제수단</div>
+                    <div class="chip-group" id="payMethodChips">
+                        <div class="chip active" onclick="selectPayMethod('신용카드', '현대카드', this)">💳 현대카드</div>
+                        <div class="chip" onclick="selectPayMethod('신용카드', '신한카드', this)">💳 신한카드</div>
+                        <div class="chip" onclick="selectPayMethod('신용카드', '삼성카드', this)">💳 삼성카드</div>
+                        <div class="chip" onclick="selectPayMethod('신용카드', 'KB국민카드', this)">💳 국민카드</div>
+                        <div class="chip" onclick="selectPayMethod('체크카드', '', this)">💳 체크카드</div>
+                        <div class="chip" onclick="selectPayMethod('현금/계좌', '', this)">💵 현금/계좌</div>
+                    </div>
+
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">소비 성격 (자각)</div>
+                    <div class="chip-group" id="cTypeChips">
+                        <div class="chip active" onclick="selectCType('필수', this)">🟢 필수 (Needs)</div>
+                        <div class="chip" onclick="selectCType('선택', this)">🟡 선택 (Wants)</div>
+                        <div class="chip" onclick="selectCType('낭비', this)">🔴 낭비 (Waste)</div>
+                    </div>
+
+                    <input type="text" id="txDesc" class="form-control" placeholder="사용처/메모 (예: 스타벅스, 배민)">
+
+                    <button type="button" id="btnSubmitTx" class="btn-submit" onclick="handleSaveTx()">
+                        ✨ 쾅! 시트에 저장하기 ✨
+                    </button>
                 </div>
-
-                <!-- 🧮 계산기 디스플레이 -->
-                <div class="calc-display">
-                    <div id="calcFormula" class="calc-formula"></div>
-                    <div id="calcDisplay" class="calc-main-amt">0원</div>
-                    <div id="calcKoreanWord" class="calc-korean-word">0원</div>
-                </div>
-
-                <!-- ☕ 지출 가치 자각 박스 -->
-                <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
-
-                <!-- ⚡ 빠른 금액 증감 칩 -->
-                <div class="calc-quick-row">
-                    <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
-                    <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
-                    <div class="quick-chip" onclick="addQuickAmt(50000)">+5만</div>
-                    <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
-                </div>
-
-                <!-- ⌨️ 3D 계산기 키패드 -->
-                <div class="calc-grid">
-                    <div class="calc-key" onclick="pressNum('7')">7</div>
-                    <div class="calc-key" onclick="pressNum('8')">8</div>
-                    <div class="calc-key" onclick="pressNum('9')">9</div>
-                    <div class="calc-key op" onclick="pressOp('/')">÷</div>
-
-                    <div class="calc-key" onclick="pressNum('4')">4</div>
-                    <div class="calc-key" onclick="pressNum('5')">5</div>
-                    <div class="calc-key" onclick="pressNum('6')">6</div>
-                    <div class="calc-key op" onclick="pressOp('*')">×</div>
-
-                    <div class="calc-key" onclick="pressNum('1')">1</div>
-                    <div class="calc-key" onclick="pressNum('2')">2</div>
-                    <div class="calc-key" onclick="pressNum('3')">3</div>
-                    <div class="calc-key op" onclick="pressOp('-')">-</div>
-
-                    <div class="calc-key clear" onclick="pressClear()">C</div>
-                    <div class="calc-key" onclick="pressNum('0')">0</div>
-                    <div class="calc-key" onclick="pressNum('00')">00</div>
-                    <div class="calc-key op" onclick="pressOp('+')">+</div>
-
-                    <div class="calc-key" onclick="pressBackspace()" style="grid-column: span 2;">⌫ 지우기</div>
-                    <div class="calc-key equal" onclick="pressEqual()" style="grid-column: span 2;">= 계산</div>
-                </div>
-
-                <!-- 🏷️ 카테고리 칩 -->
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">카테고리</div>
-                <div class="chip-group" id="categoryChips">
-                    <div class="chip active" onclick="selectCategory('식비', this)">🍚 식비</div>
-                    <div class="chip" onclick="selectCategory('카페', this)">☕ 카페</div>
-                    <div class="chip" onclick="selectCategory('교통', this)">🚗 교통</div>
-                    <div class="chip" onclick="selectCategory('쇼핑', this)">🛒 쇼핑</div>
-                    <div class="chip" onclick="selectCategory('생활', this)">🏠 생활</div>
-                    <div class="chip" onclick="selectCategory('급여/수입', this)">💵 수입</div>
-                    <div class="chip" onclick="selectCategory('기타', this)">📝 기타</div>
-                </div>
-
-                <!-- 💳 결제수단 칩 -->
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">결제수단</div>
-                <div class="chip-group" id="payMethodChips">
-                    <div class="chip active" onclick="selectPayMethod('신용카드', '현대카드', this)">💳 현대카드</div>
-                    <div class="chip" onclick="selectPayMethod('신용카드', '신한카드', this)">💳 신한카드</div>
-                    <div class="chip" onclick="selectPayMethod('신용카드', '삼성카드', this)">💳 삼성카드</div>
-                    <div class="chip" onclick="selectPayMethod('신용카드', 'KB국민카드', this)">💳 국민카드</div>
-                    <div class="chip" onclick="selectPayMethod('체크카드', '', this)">💳 체크카드</div>
-                    <div class="chip" onclick="selectPayMethod('현금/계좌', '', this)">💵 현금/계좌</div>
-                </div>
-
-                <!-- 🧠 소비 성격 칩 -->
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">소비 성격 (자각)</div>
-                <div class="chip-group" id="cTypeChips">
-                    <div class="chip active" onclick="selectCType('필수', this)">🟢 필수 (Needs)</div>
-                    <div class="chip" onclick="selectCType('선택', this)">🟡 선택 (Wants)</div>
-                    <div class="chip" onclick="selectCType('낭비', this)">🔴 낭비 (Waste)</div>
-                </div>
-
-                <input type="text" id="txDesc" class="form-control" placeholder="사용처/메모 (예: 스타벅스, 배민)">
-
-                <button type="button" id="btnSubmitTx" class="btn-submit" onclick="handleSaveTx()">
-                    ✨ 쾅! 시트에 저장하기 ✨
-                </button>
             </div>
         </section>
 
         <!-- 3. 🎯 장기 로드맵 탭 -->
         <section id="tab-goals" class="tab-content" style="display: none;">
-            <div class="card" style="border-color: var(--warning);">
-                <div class="card-title">
-                    <span>🎯 장기 인생 목표 로드맵</span>
-                </div>
-                <div id="goalsListContainer"></div>
-            </div>
-
-            <!-- 복리 시뮬레이터 -->
-            <div class="card" style="border-color: var(--purple);">
-                <div class="card-title">
-                    <span>📈 복리 스노우볼 자산 예측</span>
-                </div>
-                <div style="margin-bottom: 8px;">
-                    <label style="font-size:0.8rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
-                    <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <label style="font-size:0.8rem; color:var(--text-muted);">연 복리 수익률: <b id="lblAnnualRate" style="color:var(--purple);">7%</b></label>
-                    <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%;" oninput="updateSimulation()">
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <div class="stat-box" style="border-left: 3px solid var(--primary);">
-                        <div class="stat-label">5년 뒤 예상</div>
-                        <strong id="simYear5" style="color:var(--primary); font-size:1rem;">0원</strong>
+            <div class="desktop-dashboard-grid">
+                <div class="card" style="border-color: var(--warning);">
+                    <div class="card-title">
+                        <span>🎯 나의 장기 인생 목표 로드맵</span>
                     </div>
-                    <div class="stat-box" style="border-left: 3px solid var(--income);">
-                        <div class="stat-label">10년 뒤 (스노우볼)</div>
-                        <strong id="simYear10" style="color:var(--income); font-size:1rem;">0원</strong>
+                    <div id="goalsListContainer"></div>
+                </div>
+
+                <div class="card" style="border-color: var(--purple);">
+                    <div class="card-title">
+                        <span>📈 복리 스노우볼 미래 자산 예측</span>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size:0.85rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
+                        <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size:0.85rem; color:var(--text-muted);">연 복리 수익률: <b id="lblAnnualRate" style="color:var(--purple);">7%</b></label>
+                        <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%;" oninput="updateSimulation()">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div class="stat-box" style="border-left: 3px solid var(--primary);">
+                            <div class="stat-label">5년 뒤 예상 자산</div>
+                            <strong id="simYear5" style="color:var(--primary); font-size:1.15rem;">0원</strong>
+                        </div>
+                        <div class="stat-box" style="border-left: 3px solid var(--income);">
+                            <div class="stat-label">10년 뒤 (스노우볼)</div>
+                            <strong id="simYear10" style="color:var(--income); font-size:1.15rem;">0원</strong>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -314,31 +380,35 @@
 
         <!-- 4. 💳 카드값 대조 탭 -->
         <section id="tab-cards" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title">💳 신용카드 청구서 대조</div>
-                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                    <select id="recCardName" class="form-control" style="flex: 1; margin: 0;">
-                        <option value="현대카드">현대카드</option>
-                        <option value="신한카드">신한카드</option>
-                        <option value="삼성카드">삼성카드</option>
-                        <option value="KB국민카드">KB국민카드</option>
-                    </select>
-                    <input type="number" id="recBilledAmt" class="form-control" placeholder="청구금액" style="flex: 1.5; margin: 0;">
+            <div style="max-width: 800px; margin: auto;">
+                <div class="card">
+                    <div class="card-title">💳 신용카드 청구서 대조 검증</div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select id="recCardName" class="form-control" style="flex: 1; margin: 0;">
+                            <option value="현대카드">현대카드</option>
+                            <option value="신한카드">신한카드</option>
+                            <option value="삼성카드">삼성카드</option>
+                            <option value="KB국민카드">KB국민카드</option>
+                        </select>
+                        <input type="number" id="recBilledAmt" class="form-control" placeholder="실제 청구금액(원)" style="flex: 1.5; margin: 0;">
+                    </div>
+                    <button type="button" class="btn-submit" style="height: 46px; font-size: 1rem;" onclick="handleReconcileCard()">🔍 청구서 대조 검증</button>
                 </div>
-                <button type="button" class="btn-submit" style="height: 42px; font-size: 0.95rem;" onclick="handleReconcileCard()">🔍 청구서 대조 검증</button>
+                <div id="cardsSummaryList"></div>
             </div>
-            <div id="cardsSummaryList"></div>
         </section>
 
         <!-- 5. 🏦 자산/주식 탭 -->
         <section id="tab-assets" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title">🏦 보유 자산 / 원금</div>
-                <div id="assetsListContainer"></div>
-            </div>
-            <div class="card">
-                <div class="card-title">📈 주식 / 투자 포트폴리오</div>
-                <div id="invListContainer"></div>
+            <div class="desktop-dashboard-grid">
+                <div class="card">
+                    <div class="card-title">🏦 보유 자산 / 원금</div>
+                    <div id="assetsListContainer"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">📈 주식 / 투자 포트폴리오</div>
+                    <div id="invListContainer"></div>
+                </div>
             </div>
         </section>
     </main>
@@ -348,12 +418,12 @@
         <div class="stamp-box">
             <div style="font-size: 2.5rem; margin-bottom: 4px;">🌟</div>
             <h3 style="color: var(--income); margin-bottom: 4px;">현명한 소비 기록!</h3>
-            <div id="stampAmount" style="font-size: 1.25rem; font-weight: 900; margin-bottom: 4px;">0원</div>
-            <p style="font-size: 0.75rem; color: var(--text-muted);">구글 시트에 즉시 동기화되었습니다.</p>
+            <div id="stampAmount" style="font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">0원</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">구글 시트에 즉시 동기화되었습니다.</p>
         </div>
     </div>
 
-    <!-- 📱 하단 모바일 탭 바 -->
+    <!-- 📱 Mobile Bottom Tab Bar -->
     <nav class="tab-bar">
         <a class="tab-item active" onclick="switchTab('tab-dashboard')"><span class="tab-icon">📊</span><span>홈</span></a>
         <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>지출입력</span></a>
@@ -432,7 +502,6 @@
         function pressEqual() {
             playSound('coin');
             try {
-                // 안전한 수식 평가
                 const sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
                 const res = Function(`'use strict'; return (${sanitized})`)();
                 calcExpr = String(Math.round(res) || 0);
@@ -546,7 +615,6 @@
             setTimeout(() => overlay.style.display = 'none', 1000);
         }
 
-        // Web Audio Sound Engine
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -589,10 +657,18 @@
             playSound('click');
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
             document.getElementById(tabId).style.display = 'block';
+            
             const tabs = ['tab-dashboard', 'tab-add', 'tab-goals', 'tab-cards', 'tab-assets'];
             const idx = tabs.indexOf(tabId);
-            if (idx >= 0) document.querySelectorAll('.tab-item')[idx].classList.add('active');
+            if (idx >= 0) {
+                const mobItems = document.querySelectorAll('.tab-item');
+                if (mobItems[idx]) mobItems[idx].classList.add('active');
+                const deskItems = document.querySelectorAll('.nav-btn');
+                if (deskItems[idx]) deskItems[idx].classList.add('active');
+            }
         }
 
         function setSyncStatus(status) {
@@ -685,9 +761,9 @@
             tbody.innerHTML = '';
             const txList = res.transactions || [];
             if (txList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 14px 0;">최근 지출 내역이 없습니다. (🧮 지출을 입력해보세요!)</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">최근 지출 내역이 없습니다. (🧮 지출을 입력해보세요!)</td></tr>';
             } else {
-                txList.slice(0, 8).forEach(t => {
+                txList.slice(0, 10).forEach(t => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${String(t.date).substring(5)}</td>
@@ -701,10 +777,53 @@
                 });
             }
 
+            renderDashboardGoals(res.goals || []);
+            renderDashboardCards(res.cards_summary || []);
             renderCardsSummary(res.cards_summary);
             renderAssetsAndInv(res.net_worth);
             renderGoals(res.goals || []);
             updateSimulation();
+        }
+
+        function renderDashboardGoals(goals) {
+            const container = document.getElementById('dashboardGoalsWidget');
+            container.innerHTML = '';
+            if (goals.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">설정된 장기 목표가 없습니다.</div>';
+                return;
+            }
+            goals.slice(0, 2).forEach(g => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '10px';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:4px;">
+                        <strong>${g.icon} ${g.name}</strong>
+                        <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (D-${g.d_day})</span>
+                    </div>
+                    <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                        <div style="height:100%; width:${g.progress_rate}%; background:var(--warning);"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderDashboardCards(cards) {
+            const container = document.getElementById('dashboardCardsWidget');
+            container.innerHTML = '';
+            if (cards.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">이번 달 카드 지출 내역이 없습니다.</div>';
+                return;
+            }
+            cards.slice(0, 3).forEach(c => {
+                const div = document.createElement('div');
+                div.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color); font-size:0.88rem;';
+                div.innerHTML = `
+                    <span>💳 ${c.card_name}</span>
+                    <span><strong>${c.spent_amount.toLocaleString()}원</strong> <small class="text-muted">(${c.status})</small></span>
+                `;
+                container.appendChild(div);
+            });
         }
 
         function renderGoals(goals) {
@@ -712,19 +831,20 @@
             container.innerHTML = '';
             goals.forEach((g) => {
                 const card = document.createElement('div');
-                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; padding:12px; margin-bottom:8px;';
+                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:12px;';
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <strong>${g.icon} ${g.name}</strong>
-                        <span style="font-size:0.75rem; font-weight:700; color:var(--primary);">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '완료'}</span>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <strong style="font-size:1.05rem;">${g.icon} ${g.name}</strong>
+                        <span style="font-size:0.85rem; font-weight:800; color:var(--primary);">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '완료'}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-                        <span>모은 금액: ${g.current_amount.toLocaleString()}원</span>
-                        <span>목표: ${g.target_amount.toLocaleString()}원</span>
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">
+                        <span>모은 금액: <strong style="color:var(--primary);">${g.current_amount.toLocaleString()}원</strong></span>
+                        <span>목표: <strong>${g.target_amount.toLocaleString()}원</strong></span>
                     </div>
-                    <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; margin:6px 0;">
-                        <div style="height:100%; width:${g.progress_rate}%; background:var(--income);"></div>
+                    <div style="height:10px; background:#e2e8f0; border-radius:5px; overflow:hidden; margin-bottom:6px;">
+                        <div style="height:100%; width:${g.progress_rate}%; background:linear-gradient(90deg, #3b82f6, #10b981);"></div>
                     </div>
+                    <div style="font-size:0.8rem; color:var(--text-muted); text-align:right;">매월 권장 저축: <b style="color:var(--income);">${(g.monthly_required/10000).toLocaleString()}만원</b></div>
                 `;
                 container.appendChild(card);
             });
@@ -765,14 +885,14 @@
                 const div = document.createElement('div');
                 div.className = 'card';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <strong>💳 ${c.card_name}</strong>
-                        <span style="font-size:0.75rem; font-weight:700;">${c.status}</span>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <strong style="font-size:1.05rem;">💳 ${c.card_name}</strong>
+                        <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">${c.status}</span>
                     </div>
-                    <div style="font-size:0.82rem; display:flex; justify-content:space-between;">
+                    <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:4px;">
                         <span class="text-muted">기록 합계:</span><strong>${c.spent_amount.toLocaleString()}원</strong>
                     </div>
-                    ${c.billed_amount > 0 ? `<div style="font-size:0.82rem; display:flex; justify-content:space-between;"><span class="text-muted">청구 금액:</span><strong style="color:var(--primary);">${c.billed_amount.toLocaleString()}원</strong></div>` : ''}
+                    ${c.billed_amount > 0 ? `<div style="font-size:0.9rem; display:flex; justify-content:space-between;"><span class="text-muted">청구 금액:</span><strong style="color:var(--primary);">${c.billed_amount.toLocaleString()}원</strong></div>` : ''}
                 `;
                 container.appendChild(div);
             });
@@ -784,7 +904,7 @@
             aContainer.innerHTML = '';
             (nw.assets_list || []).forEach(a => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color); font-size:0.85rem;';
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem;';
                 row.innerHTML = `<span>${a.name}</span><strong>${a.amount.toLocaleString()}원</strong>`;
                 aContainer.appendChild(row);
             });
@@ -793,7 +913,7 @@
             iContainer.innerHTML = '';
             (nw.investments_list || []).forEach(inv => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color); font-size:0.85rem;';
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem;';
                 row.innerHTML = `<span><strong>${inv.name}</strong> (${inv.shares}주)</span><strong>${inv.total_eval.toLocaleString()}원</strong>`;
                 iContainer.appendChild(row);
             });
