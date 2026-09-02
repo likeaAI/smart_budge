@@ -2,90 +2,110 @@
 <html lang="ko" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트 머니 허브 — 장기 인생 목표 & 자산 성장 시스템</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>스마트 머니 허브</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --bg-body: #f8fafc; --bg-card: #ffffff; --bg-subtle: #f1f5f9;
-            --text-main: #0f172a; --text-muted: #64748b; --border-color: #cbd5e1;
+            --text-main: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0;
             --primary: #2563eb; --income: #10b981; --expense: #ef4444; --warning: #f59e0b; --purple: #8b5cf6;
+            --key-bg: #ffffff; --key-shadow: #cbd5e1; --key-active: #e2e8f0;
         }
         [data-theme='dark'] {
             --bg-body: #090d16; --bg-card: #1e293b; --bg-subtle: #0f172a;
             --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155;
             --primary: #3b82f6; --purple: #a78bfa;
+            --key-bg: #334155; --key-shadow: #0f172a; --key-active: #1e293b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg-body); color: var(--text-main); padding-bottom: 80px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
-        .header { background: var(--bg-card); padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
-        .header-actions { display: flex; gap: 8px; align-items: center; }
-        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-        .sync-indicator { font-size: 0.72rem; color: var(--income); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+        .header { background: var(--bg-card); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+        .header-actions { display: flex; gap: 6px; align-items: center; }
+        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; }
+        .sync-indicator { font-size: 0.72rem; color: var(--income); font-weight: 700; }
         
-        .container { max-width: 680px; margin: auto; padding: 14px; }
+        .container { max-width: 540px; margin: auto; padding: 12px; }
         
-        .keycap-btn, .btn {
-            position: relative; border-radius: 10px; border: 1.5px solid var(--border-color);
-            background: var(--bg-card); box-shadow: 0 4px 0 var(--border-color);
-            transition: all 0.08s ease; cursor: pointer; user-select: none; font-weight: 600; padding: 10px 14px;
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 📱 Mobile Level Banner */
+        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 14px 16px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 6px 16px rgba(37,99,235,0.2); }
+        .level-tag { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .progress-bar-bg { height: 8px; background: rgba(255,255,255,0.25); border-radius: 4px; overflow: hidden; margin: 8px 0 4px 0; }
+        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 4px; transition: width 0.5s ease; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .stat-box { background: var(--bg-subtle); padding: 10px; border-radius: 12px; text-align: center; }
+        .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 2px; }
+        .stat-val { font-size: 1.05rem; font-weight: 800; }
+        
+        /* 🧮 Mobile Calculator UI */
+        .calc-display { background: var(--bg-subtle); border-radius: 14px; padding: 14px; text-align: right; border: 1.5px solid var(--border-color); margin-bottom: 10px; }
+        .calc-formula { font-size: 0.82rem; color: var(--text-muted); min-height: 18px; margin-bottom: 2px; font-family: monospace; }
+        .calc-main-amt { font-size: 1.85rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
+        .calc-korean-word { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        
+        .calc-quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+        .quick-chip { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 8px 0; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-align: center; cursor: pointer; }
+        .quick-chip:active { background: var(--key-active); transform: scale(0.96); }
+        
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .calc-key {
+            background: var(--key-bg); border: 1.5px solid var(--border-color);
+            border-radius: 14px; box-shadow: 0 3px 0 var(--key-shadow);
+            font-size: 1.25rem; font-weight: 700; color: var(--text-main);
+            height: 52px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none; transition: transform 0.05s ease, box-shadow 0.05s ease;
         }
-        .keycap-btn:active, .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--border-color); }
-        .btn-primary { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 4px 0 #1e40af; }
-        .btn-purple { background: var(--purple); color: white; border-color: #6d28d9; box-shadow: 0 4px 0 #5b21b6; }
+        .calc-key:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
+        .calc-key.op { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; box-shadow: 0 3px 0 #93c5fd; }
+        .calc-key.clear { background: #fef2f2; color: var(--expense); border-color: #fecaca; box-shadow: 0 3px 0 #fca5a5; }
+        .calc-key.equal { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 3px 0 #1e40af; }
         
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-        .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        /* 🏷️ Category Chips */
+        .chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .chip {
+            background: var(--bg-subtle); border: 1.5px solid var(--border-color);
+            border-radius: 20px; padding: 7px 12px; font-size: 0.82rem; font-weight: 600;
+            color: var(--text-muted); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;
+        }
+        .chip.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
         
-        /* Level Banner */
-        .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 14px 18px; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 8px 20px rgba(37,99,235,0.25); }
-        .level-tag { background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        .form-control { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; }
         
-        .progress-bar-bg { height: 10px; background: rgba(255,255,255,0.25); border-radius: 5px; overflow: hidden; margin: 8px 0 4px 0; }
-        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 5px; transition: width 0.5s ease; }
-        
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
-        .stat-box { background: var(--bg-subtle); padding: 12px; border-radius: 10px; text-align: center; }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
-        .stat-val { font-size: 1.15rem; font-weight: 800; }
-        
-        .form-group { margin-bottom: 12px; }
-        .form-label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
-        .form-control { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 1rem; }
-        .form-row { display: flex; gap: 8px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .tab-item { display: flex; flex-direction: column; align-items: center; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; padding: 4px 8px; text-decoration: none; }
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 58px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .tab-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; padding: 4px 6px; text-decoration: none; }
         .tab-item.active { color: var(--primary); font-weight: 700; }
-        .tab-icon { font-size: 1.25rem; }
+        .tab-icon { font-size: 1.2rem; }
         
-        .goal-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; overflow: hidden; }
-        .goal-card.top-priority { border-color: var(--warning); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15); }
+        .btn-submit {
+            width: 100%; height: 50px; border-radius: 14px; background: var(--primary); color: white;
+            font-size: 1.05rem; font-weight: 800; border: none; box-shadow: 0 4px 0 #1e40af; cursor: pointer;
+        }
+        .btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e40af; }
         
-        .sim-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
-        .sim-box { background: var(--bg-subtle); padding: 12px; border-radius: 10px; border-left: 3px solid var(--purple); }
-        
-        .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; margin-top: 6px; display: none; }
+        .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 10px; text-align: center; }
         .stamp-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .stamp-box { background: var(--bg-card); border: 4px solid var(--income); border-radius: 20px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .stamp-box { background: var(--bg-card); border: 4px solid var(--income); border-radius: 20px; padding: 24px; text-align: center; width: 290px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes stampSlam { 0% { opacity: 0; transform: scale(2) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
         
-        .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .table th, .table td { padding: 10px 8px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        .table th { color: var(--text-muted); font-size: 0.8rem; }
+        .table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .table th, .table td { padding: 9px 6px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .table th { color: var(--text-muted); font-size: 0.75rem; }
         .text-right { text-align: right; }
     </style>
 </head>
 <body>
     <header class="header">
-        <div class="logo">👑 <span>스마트 머니 허브</span></div>
+        <div class="logo">👑 <span>스마트 가계부</span></div>
         <div class="header-actions">
             <span id="syncIndicator" class="sync-indicator">● 동기화됨</span>
-            <button class="btn-icon" onclick="toggleUrlSetting()" title="구글 연동 설정">⚙️ 설정</button>
+            <button class="btn-icon" onclick="toggleUrlSetting()" title="구글 연동 설정">⚙️</button>
             <button class="btn-icon" id="soundBtn" onclick="toggleSound()">⌨️</button>
             <button class="btn-icon" onclick="toggleTheme()">🌓</button>
         </div>
@@ -95,12 +115,12 @@
         <!-- 구글 시트 URL 설정 배너 -->
         <div id="urlSettingBox" class="card" style="border-color: var(--primary); display:none;">
             <div class="card-title">
-                <span>🔗 구글 Apps Script Web App URL 연동</span>
-                <button class="keycap-btn" onclick="saveGasUrl()" style="padding: 4px 10px; font-size: 0.8rem;">💾 저장</button>
+                <span>🔗 구글 Apps Script 연동 URL</span>
+                <button class="btn-icon" onclick="saveGasUrl()" style="font-weight: 700;">💾 저장</button>
             </div>
             <input type="url" id="inputGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-            <small class="text-muted" style="display:block; margin-top: 6px;">
-                💡 구글 스프레드시트 ➔ [Apps Script] ➔ [배포 URL]을 입력하시면 실시간 구글 시트 DB와 연동됩니다.
+            <small class="text-muted" style="display:block; font-size: 0.75rem;">
+                💡 구글 스프레드시트 ➔ [Apps Script] ➔ [배포 URL]을 입력하시면 실시간 동기화됩니다.
             </small>
         </div>
 
@@ -109,18 +129,18 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
-                    <h3 id="disp-level-title" style="margin-top: 4px; font-size: 1.15rem;">종잣돈 빌더 (LV.3)</h3>
+                    <h3 id="disp-level-title" style="margin-top: 3px; font-size: 1.05rem;">종잣돈 빌더 (LV.3)</h3>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; opacity: 0.85;">다음 레벨까지</div>
-                    <strong id="disp-level-target" style="font-size: 1rem; color: #fde047;">5,000만</strong>
+                    <div style="font-size: 0.7rem; opacity: 0.85;">다음 레벨까지</div>
+                    <strong id="disp-level-target" style="font-size: 0.95rem; color: #fde047;">5,000만</strong>
                 </div>
             </div>
             <div class="progress-bar-bg">
                 <div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; opacity: 0.9;">
-                <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; opacity: 0.9;">
+                <span>순자산: <b id="disp-networth-mini">0원</b></span>
                 <span id="disp-level-pct">진행률 45%</span>
             </div>
         </div>
@@ -128,11 +148,11 @@
         <!-- 1. 📊 메인 대시보드 탭 -->
         <section id="tab-dashboard" class="tab-content">
             <div class="card" style="border-left: 4px solid var(--primary);">
-                <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
-                <div id="disp-networth" style="font-size: 1.75rem; font-weight: 900; color: var(--primary); margin: 4px 0 6px 0;">0원</div>
-                <div style="display: flex; gap: 8px; font-size: 0.85rem;">
-                    <span>📈 주식/투자: <strong id="disp-inv">0원</strong></span>
-                    <span>🏦 현금/예금: <strong id="disp-cash">0원</strong></span>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
+                <div id="disp-networth" style="font-size: 1.6rem; font-weight: 900; color: var(--primary); margin: 3px 0 5px 0;">0원</div>
+                <div style="display: flex; gap: 8px; font-size: 0.8rem;">
+                    <span>📈 주식: <strong id="disp-inv">0원</strong></span>
+                    <span>🏦 현금: <strong id="disp-cash">0원</strong></span>
                 </div>
             </div>
 
@@ -151,205 +171,144 @@
                 </div>
             </div>
 
-            <!-- 대표 장기 목표 위젯 -->
-            <div class="card" style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-subtle) 100%); border-color: var(--warning);">
-                <div class="card-title">
-                    <span>🎯 최우선 장기 목표</span>
-                    <button class="keycap-btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
-                </div>
-                <div id="topGoalWidget">
-                    <div style="font-weight: 700; font-size: 1rem; margin-bottom: 4px;">🌱 1억 시드머니 모으기</div>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
-                        <span>모은 금액: <strong style="color: var(--primary);" id="topGoalCur">0원</strong></span>
-                        <span>목표: <strong id="topGoalTarget">100,000,000원</strong></span>
-                    </div>
-                    <div style="height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin: 8px 0;">
-                        <div id="topGoalBar" style="height: 100%; width: 10%; background: var(--warning); border-radius: 5px;"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- 최근 소비 내역 테이블 -->
             <div class="card">
                 <div class="card-title">
                     <span>📋 최근 소비 내역</span>
-                    <button class="keycap-btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="switchTab('tab-add')">➕ 지출 입력</button>
+                    <button class="btn-icon" style="font-size: 0.75rem; padding: 3px 8px;" onclick="switchTab('tab-add')">➕ 지출 쓰기</button>
                 </div>
                 <table class="table">
                     <thead><tr><th>날짜</th><th>내용</th><th>결제</th><th class="text-right">금액</th></tr></thead>
                     <tbody id="recent-tx-tbody">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 18px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 14px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 2. 🎯 장기 목표 & 로드맵 탭 -->
-        <section id="tab-goals" class="tab-content" style="display: none;">
-            <div class="card" style="border-color: var(--warning); background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-subtle) 100%);">
+        <!-- 2. 🧮 모바일 계산기 지출 입력 탭 -->
+        <section id="tab-add" class="tab-content" style="display: none;">
+            <div class="card">
                 <div class="card-title">
-                    <span>🎯 나의 장기 인생 목표 로드맵</span>
-                    <button class="keycap-btn btn-purple" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleAddGoalForm()">➕ 새 목표 등록</button>
-                </div>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
-                    오늘 아끼고 저축한 돈이 내 미래의 집, 자유, 은퇴를 얼마나 앞당기는지 실시간으로 추적합니다.
-                </p>
-
-                <!-- 새 목표 추가 폼 -->
-                <form id="addGoalForm" style="display: none; background: var(--bg-card); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border-color); margin-bottom: 14px;" onsubmit="handleSaveGoal(event)">
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1.5;">
-                            <label class="form-label">목표명</label>
-                            <input type="text" id="gName" class="form-control" placeholder="예: 3억 내 집 마련, 세계일주" required>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">아이콘</label>
-                            <select id="gIcon" class="form-control">
-                                <option value="🌱">🌱 시드</option>
-                                <option value="🏠">🏠 내집</option>
-                                <option value="🏖️">🏖️ 은퇴/자유</option>
-                                <option value="💍">💍 결혼</option>
-                                <option value="🚗">🚗 드림카</option>
-                                <option value="✈️">✈️ 여행</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1.2;">
-                            <label class="form-label">목표 금액 (원)</label>
-                            <input type="number" id="gTargetAmt" class="form-control" placeholder="100000000" min="100000" required>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">목표 기한</label>
-                            <input type="date" id="gTargetDate" class="form-control" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">🎯 로드맵에 목표 저장</button>
-                </form>
-
-                <div id="goalsListContainer"></div>
-            </div>
-
-            <!-- 📈 복리 시뮬레이터 -->
-            <div class="card" style="border-color: var(--purple);">
-                <div class="card-title">
-                    <span>📈 복리 스노우볼 미래 자산 시뮬레이터</span>
-                </div>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-                    현재 순자산에 <b>매월 저축하는 금액</b>과 <b>연 복리 수익률</b>을 결합했을 때 5년, 10년, 20년 뒤 예상 자산입니다.
-                </p>
-
-                <div class="form-row" style="margin-bottom: 10px;">
-                    <div style="flex: 1;">
-                        <label class="form-label">매월 저축/투자액: <b id="lblMonthlySave" style="color: var(--primary);">100만원</b></label>
-                        <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
-                    </div>
-                    <div style="flex: 1;">
-                        <label class="form-label">연 예상 수익률: <b id="lblAnnualRate" style="color: var(--purple);">7%</b></label>
-                        <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%;" oninput="updateSimulation()">
-                    </div>
+                    <span>🧮 지출 금액 입력</span>
+                    <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 3px 6px; border-radius: 8px; font-size: 0.8rem;">
                 </div>
 
-                <div class="sim-grid">
-                    <div class="sim-box">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">3년 뒤 예상 자산</div>
-                        <strong id="simYear3" style="font-size: 1.15rem; color: var(--primary);">0원</strong>
-                    </div>
-                    <div class="sim-box">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">5년 뒤 예상 자산</div>
-                        <strong id="simYear5" style="font-size: 1.15rem; color: var(--primary);">0원</strong>
-                    </div>
-                    <div class="sim-box" style="border-left-color: var(--warning);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">10년 뒤 (스노우볼 본격화)</div>
-                        <strong id="simYear10" style="font-size: 1.25rem; color: var(--warning);">0원</strong>
-                    </div>
-                    <div class="sim-box" style="border-left-color: var(--income);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">20년 뒤 (경제적 자유/은퇴)</div>
-                        <strong id="simYear20" style="font-size: 1.35rem; color: var(--income); font-weight: 900;">0원</strong>
-                    </div>
+                <!-- 🧮 계산기 디스플레이 -->
+                <div class="calc-display">
+                    <div id="calcFormula" class="calc-formula"></div>
+                    <div id="calcDisplay" class="calc-main-amt">0원</div>
+                    <div id="calcKoreanWord" class="calc-korean-word">0원</div>
                 </div>
+
+                <!-- ☕ 지출 가치 자각 박스 -->
+                <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
+
+                <!-- ⚡ 빠른 금액 증감 칩 -->
+                <div class="calc-quick-row">
+                    <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
+                    <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
+                    <div class="quick-chip" onclick="addQuickAmt(50000)">+5만</div>
+                    <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
+                </div>
+
+                <!-- ⌨️ 3D 계산기 키패드 -->
+                <div class="calc-grid">
+                    <div class="calc-key" onclick="pressNum('7')">7</div>
+                    <div class="calc-key" onclick="pressNum('8')">8</div>
+                    <div class="calc-key" onclick="pressNum('9')">9</div>
+                    <div class="calc-key op" onclick="pressOp('/')">÷</div>
+
+                    <div class="calc-key" onclick="pressNum('4')">4</div>
+                    <div class="calc-key" onclick="pressNum('5')">5</div>
+                    <div class="calc-key" onclick="pressNum('6')">6</div>
+                    <div class="calc-key op" onclick="pressOp('*')">×</div>
+
+                    <div class="calc-key" onclick="pressNum('1')">1</div>
+                    <div class="calc-key" onclick="pressNum('2')">2</div>
+                    <div class="calc-key" onclick="pressNum('3')">3</div>
+                    <div class="calc-key op" onclick="pressOp('-')">-</div>
+
+                    <div class="calc-key clear" onclick="pressClear()">C</div>
+                    <div class="calc-key" onclick="pressNum('0')">0</div>
+                    <div class="calc-key" onclick="pressNum('00')">00</div>
+                    <div class="calc-key op" onclick="pressOp('+')">+</div>
+
+                    <div class="calc-key" onclick="pressBackspace()" style="grid-column: span 2;">⌫ 지우기</div>
+                    <div class="calc-key equal" onclick="pressEqual()" style="grid-column: span 2;">= 계산</div>
+                </div>
+
+                <!-- 🏷️ 카테고리 칩 -->
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">카테고리</div>
+                <div class="chip-group" id="categoryChips">
+                    <div class="chip active" onclick="selectCategory('식비', this)">🍚 식비</div>
+                    <div class="chip" onclick="selectCategory('카페', this)">☕ 카페</div>
+                    <div class="chip" onclick="selectCategory('교통', this)">🚗 교통</div>
+                    <div class="chip" onclick="selectCategory('쇼핑', this)">🛒 쇼핑</div>
+                    <div class="chip" onclick="selectCategory('생활', this)">🏠 생활</div>
+                    <div class="chip" onclick="selectCategory('급여/수입', this)">💵 수입</div>
+                    <div class="chip" onclick="selectCategory('기타', this)">📝 기타</div>
+                </div>
+
+                <!-- 💳 결제수단 칩 -->
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">결제수단</div>
+                <div class="chip-group" id="payMethodChips">
+                    <div class="chip active" onclick="selectPayMethod('신용카드', '현대카드', this)">💳 현대카드</div>
+                    <div class="chip" onclick="selectPayMethod('신용카드', '신한카드', this)">💳 신한카드</div>
+                    <div class="chip" onclick="selectPayMethod('신용카드', '삼성카드', this)">💳 삼성카드</div>
+                    <div class="chip" onclick="selectPayMethod('신용카드', 'KB국민카드', this)">💳 국민카드</div>
+                    <div class="chip" onclick="selectPayMethod('체크카드', '', this)">💳 체크카드</div>
+                    <div class="chip" onclick="selectPayMethod('현금/계좌', '', this)">💵 현금/계좌</div>
+                </div>
+
+                <!-- 🧠 소비 성격 칩 -->
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">소비 성격 (자각)</div>
+                <div class="chip-group" id="cTypeChips">
+                    <div class="chip active" onclick="selectCType('필수', this)">🟢 필수 (Needs)</div>
+                    <div class="chip" onclick="selectCType('선택', this)">🟡 선택 (Wants)</div>
+                    <div class="chip" onclick="selectCType('낭비', this)">🔴 낭비 (Waste)</div>
+                </div>
+
+                <input type="text" id="txDesc" class="form-control" placeholder="사용처/메모 (예: 스타벅스, 배민)">
+
+                <button type="button" id="btnSubmitTx" class="btn-submit" onclick="handleSaveTx()">
+                    ✨ 쾅! 시트에 저장하기 ✨
+                </button>
             </div>
         </section>
 
-        <!-- 3. ✍️ 지출 입력 탭 -->
-        <section id="tab-add" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title">✍️ 소비 기록 & 자각</div>
-                <form id="addTxForm" onsubmit="handleSaveTx(event)">
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">날짜</label>
-                            <input type="date" id="txDate" class="form-control" required>
-                        </div>
-                        <div class="form-group" style="flex: 1.5;">
-                            <label class="form-label">금액 (원)</label>
-                            <input type="number" id="txAmount" class="form-control" placeholder="0" min="1" required oninput="onAmountInput(this.value)">
-                        </div>
+        <!-- 3. 🎯 장기 로드맵 탭 -->
+        <section id="tab-goals" class="tab-content" style="display: none;">
+            <div class="card" style="border-color: var(--warning);">
+                <div class="card-title">
+                    <span>🎯 장기 인생 목표 로드맵</span>
+                </div>
+                <div id="goalsListContainer"></div>
+            </div>
+
+            <!-- 복리 시뮬레이터 -->
+            <div class="card" style="border-color: var(--purple);">
+                <div class="card-title">
+                    <span>📈 복리 스노우볼 자산 예측</span>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <label style="font-size:0.8rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
+                    <input type="range" id="rngMonthlySave" min="200000" max="5000000" step="100000" value="1000000" style="width: 100%;" oninput="updateSimulation()">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size:0.8rem; color:var(--text-muted);">연 복리 수익률: <b id="lblAnnualRate" style="color:var(--purple);">7%</b></label>
+                    <input type="range" id="rngAnnualRate" min="3" max="15" step="1" value="7" style="width: 100%;" oninput="updateSimulation()">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div class="stat-box" style="border-left: 3px solid var(--primary);">
+                        <div class="stat-label">5년 뒤 예상</div>
+                        <strong id="simYear5" style="color:var(--primary); font-size:1rem;">0원</strong>
                     </div>
-
-                    <div id="valueBox" class="value-box">☕ 커피 1잔 상당입니다.</div>
-
-                    <div class="grid-4" style="margin: 8px 0 12px 0;">
-                        <button type="button" class="keycap-btn" onclick="addQuickAmt(5000)">+5천</button>
-                        <button type="button" class="keycap-btn" onclick="addQuickAmt(10000)">+1만</button>
-                        <button type="button" class="keycap-btn" onclick="addQuickAmt(30000)">+3만</button>
-                        <button type="button" class="keycap-btn" onclick="addQuickAmt(50000)">+5만</button>
+                    <div class="stat-box" style="border-left: 3px solid var(--income);">
+                        <div class="stat-label">10년 뒤 (스노우볼)</div>
+                        <strong id="simYear10" style="color:var(--income); font-size:1rem;">0원</strong>
                     </div>
-
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">결제수단</label>
-                            <select id="txPayMethod" class="form-control" onchange="onPayMethodChange(this.value)">
-                                <option value="신용카드">💳 신용카드</option>
-                                <option value="체크카드">💳 체크카드</option>
-                                <option value="현금/계좌">💵 현금/계좌</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1.2;" id="cardNameGroup">
-                            <label class="form-label">카드사</label>
-                            <select id="txCardName" class="form-control">
-                                <option value="현대카드">현대카드</option>
-                                <option value="신한카드">신한카드</option>
-                                <option value="삼성카드">삼성카드</option>
-                                <option value="KB국민카드">KB국민카드</option>
-                                <option value="롯데카드">롯데카드</option>
-                                <option value="기타카드">기타카드</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">카테고리</label>
-                            <select id="txCategory" class="form-control">
-                                <option value="식비">🍚 식비</option>
-                                <option value="카페">☕ 카페</option>
-                                <option value="교통">🚗 교통</option>
-                                <option value="쇼핑">🛒 쇼핑</option>
-                                <option value="생활">🏠 생활</option>
-                                <option value="급여/수입">💵 수입</option>
-                                <option value="기타">📝 기타</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">소비 성격</label>
-                            <select id="txConsumptionType" class="form-control">
-                                <option value="필수">🟢 필수 (Needs)</option>
-                                <option value="선택">🟡 선택 (Wants)</option>
-                                <option value="낭비">🔴 낭비 (Waste)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">사용처 / 메모</label>
-                        <input type="text" id="txDesc" class="form-control" placeholder="예: 스타벅스, 배달의민족, 주유소">
-                    </div>
-
-                    <button type="submit" id="btnSubmitTx" class="btn btn-primary" style="width: 100%; height: 48px; font-size: 1.05rem;">
-                        ✨ 자각하며 시트에 저장하기 ✨
-                    </button>
-                </form>
+                </div>
             </div>
         </section>
 
@@ -357,24 +316,16 @@
         <section id="tab-cards" class="tab-content" style="display: none;">
             <div class="card">
                 <div class="card-title">💳 신용카드 청구서 대조</div>
-                <form id="reconcileForm" onsubmit="handleReconcileCard(event)">
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">카드사</label>
-                            <select id="recCardName" class="form-control">
-                                <option value="현대카드">현대카드</option>
-                                <option value="신한카드">신한카드</option>
-                                <option value="삼성카드">삼성카드</option>
-                                <option value="KB국민카드">KB국민카드</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1.5;">
-                            <label class="form-label">실제 청구금액</label>
-                            <input type="number" id="recBilledAmt" class="form-control" placeholder="0" min="0" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 청구서 대조 검증하기</button>
-                </form>
+                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                    <select id="recCardName" class="form-control" style="flex: 1; margin: 0;">
+                        <option value="현대카드">현대카드</option>
+                        <option value="신한카드">신한카드</option>
+                        <option value="삼성카드">삼성카드</option>
+                        <option value="KB국민카드">KB국민카드</option>
+                    </select>
+                    <input type="number" id="recBilledAmt" class="form-control" placeholder="청구금액" style="flex: 1.5; margin: 0;">
+                </div>
+                <button type="button" class="btn-submit" style="height: 42px; font-size: 0.95rem;" onclick="handleReconcileCard()">🔍 청구서 대조 검증</button>
             </div>
             <div id="cardsSummaryList"></div>
         </section>
@@ -395,20 +346,20 @@
     <!-- 3D 도장 쾅 스탬프 -->
     <div id="stampOverlay" class="stamp-overlay">
         <div class="stamp-box">
-            <div style="font-size: 2.8rem; margin-bottom: 6px;">🌟</div>
-            <h3 style="color: var(--income); margin-bottom: 4px;">현명한 소비 완료!</h3>
-            <div id="stampAmount" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">0원</div>
-            <p id="stampMsg" style="font-size: 0.8rem; color: var(--text-muted);">장기 목표를 향해 한 걸음 더 나아갔습니다!</p>
+            <div style="font-size: 2.5rem; margin-bottom: 4px;">🌟</div>
+            <h3 style="color: var(--income); margin-bottom: 4px;">현명한 소비 기록!</h3>
+            <div id="stampAmount" style="font-size: 1.25rem; font-weight: 900; margin-bottom: 4px;">0원</div>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">구글 시트에 즉시 동기화되었습니다.</p>
         </div>
     </div>
 
-    <!-- 하단 탭 네비게이션 -->
+    <!-- 📱 하단 모바일 탭 바 -->
     <nav class="tab-bar">
         <a class="tab-item active" onclick="switchTab('tab-dashboard')"><span class="tab-icon">📊</span><span>홈</span></a>
-        <a class="tab-item" onclick="switchTab('tab-goals')"><span class="tab-icon">🎯</span><span>장기목표</span></a>
-        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">➕</span><span>입력</span></a>
+        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>지출입력</span></a>
+        <a class="tab-item" onclick="switchTab('tab-goals')"><span class="tab-icon">🎯</span><span>목표</span></a>
         <a class="tab-item" onclick="switchTab('tab-cards')"><span class="tab-icon">💳</span><span>카드대조</span></a>
-        <a class="tab-item" onclick="switchTab('tab-assets')"><span class="tab-icon">🏦</span><span>자산/주식</span></a>
+        <a class="tab-item" onclick="switchTab('tab-assets')"><span class="tab-icon">🏦</span><span>자산</span></a>
     </nav>
 
     <script>
@@ -417,6 +368,13 @@
         let soundEnabled = true;
         let globalNetWorth = 0;
 
+        // 🧮 Calculator State
+        let calcExpr = "0";
+        let selectedCategory = "식비";
+        let selectedPayMethod = "신용카드";
+        let selectedCardName = "현대카드";
+        let selectedCType = "필수";
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedUrl = localStorage.getItem('gas_app_url') || '';
             if (savedUrl) {
@@ -424,24 +382,218 @@
                 document.getElementById('urlSettingBox').style.display = 'none';
             }
 
-            // ⚡ 0.01초 만에 캐시 데이터 즉시 표시 (로딩 대기 없음!)
             const cached = localStorage.getItem('cached_hub_data');
             if (cached) {
                 try { renderData(JSON.parse(cached)); } catch(e) {}
             }
 
             document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
-            document.getElementById('gTargetDate').value = '2028-12-31';
-            
-            // 백그라운드 자동 동기화
+            updateCalcDisplay();
             loadGameData(true);
         });
 
-        // 📱 스마트폰 화면을 다시 켤 때 (포커스 복귀 시) 자동 무음 동기화
         window.addEventListener('focus', () => { loadGameData(true); });
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') loadGameData(true);
         });
+
+        // 🧮 Calculator Functions
+        function pressNum(num) {
+            playSound('click');
+            if (calcExpr === "0") calcExpr = num;
+            else calcExpr += num;
+            updateCalcDisplay();
+        }
+
+        function pressOp(op) {
+            playSound('click');
+            const last = calcExpr.slice(-1);
+            if (['+', '-', '*', '/'].includes(last)) {
+                calcExpr = calcExpr.slice(0, -1) + op;
+            } else {
+                calcExpr += op;
+            }
+            updateCalcDisplay();
+        }
+
+        function pressClear() {
+            playSound('click');
+            calcExpr = "0";
+            updateCalcDisplay();
+        }
+
+        function pressBackspace() {
+            playSound('click');
+            if (calcExpr.length <= 1) calcExpr = "0";
+            else calcExpr = calcExpr.slice(0, -1);
+            updateCalcDisplay();
+        }
+
+        function pressEqual() {
+            playSound('coin');
+            try {
+                // 안전한 수식 평가
+                const sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
+                const res = Function(`'use strict'; return (${sanitized})`)();
+                calcExpr = String(Math.round(res) || 0);
+            } catch(e) {
+                calcExpr = "0";
+            }
+            updateCalcDisplay();
+        }
+
+        function addQuickAmt(amt) {
+            playSound('click');
+            let currentVal = getEvaluatedAmount();
+            calcExpr = String(currentVal + amt);
+            updateCalcDisplay();
+        }
+
+        function getEvaluatedAmount() {
+            try {
+                const sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
+                const res = Function(`'use strict'; return (${sanitized})`)();
+                return Math.max(0, Math.round(res) || 0);
+            } catch(e) {
+                return 0;
+            }
+        }
+
+        function updateCalcDisplay() {
+            const amt = getEvaluatedAmount();
+            document.getElementById('calcFormula').innerText = calcExpr.match(/[+\-*/]/) ? calcExpr : '';
+            document.getElementById('calcDisplay').innerText = amt.toLocaleString() + '원';
+            document.getElementById('calcKoreanWord').innerText = formatWealth(amt);
+
+            const vBox = document.getElementById('valueBox');
+            if (amt <= 0) {
+                vBox.style.display = 'none';
+            } else {
+                vBox.style.display = 'block';
+                if (amt < 8000) vBox.innerText = `☕ 아메리카노 약 ${(amt/4500).toFixed(1)}잔 분량`;
+                else if (amt < 25000) vBox.innerText = `🍚 든든한 찌개 백반 약 ${(amt/10000).toFixed(1)}끼 분량`;
+                else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
+                else vBox.innerText = `🛒 일주일치 식료품 장보기 또는 생활비 분량`;
+            }
+        }
+
+        function selectCategory(cat, el) {
+            playSound('click');
+            selectedCategory = cat;
+            document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function selectPayMethod(method, cardName, el) {
+            playSound('click');
+            selectedPayMethod = method;
+            selectedCardName = cardName;
+            document.querySelectorAll('#payMethodChips .chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function selectCType(ctype, el) {
+            playSound('click');
+            selectedCType = ctype;
+            document.querySelectorAll('#cTypeChips .chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        async function handleSaveTx() {
+            const amount = getEvaluatedAmount();
+            if (amount <= 0) {
+                alert('0원 이상의 금액을 입력해주세요!');
+                return;
+            }
+            playSound('click');
+            const payload = {
+                date: document.getElementById('txDate').value,
+                amount: amount,
+                payment_method: selectedPayMethod,
+                card_name: selectedCardName,
+                category: selectedCategory,
+                consumption_type: selectedCType,
+                description: document.getElementById('txDesc').value.trim() || selectedCategory,
+                type: selectedCategory === '급여/수입' ? '수입' : '지출'
+            };
+
+            const btn = document.getElementById('btnSubmitTx');
+            btn.disabled = true;
+            btn.innerText = '⏳ 저장 중...';
+
+            await callGasApi('addTransaction', payload);
+            btn.disabled = false;
+            btn.innerText = '✨ 쾅! 시트에 저장하기 ✨';
+
+            showStamp(payload.amount);
+            calcExpr = "0";
+            updateCalcDisplay();
+            document.getElementById('txDesc').value = '';
+
+            setTimeout(() => {
+                switchTab('tab-dashboard');
+                loadGameData(true);
+            }, 1100);
+        }
+
+        function showStamp(amt) {
+            playSound('coin');
+            if (navigator.vibrate) navigator.vibrate([50, 50, 80]);
+            confetti({ particleCount: 40, spread: 55, origin: { y: 0.6 } });
+            document.getElementById('stampAmount').innerText = amt.toLocaleString() + '원';
+            const overlay = document.getElementById('stampOverlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.display = 'none', 1000);
+        }
+
+        // Web Audio Sound Engine
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function playSound(type = 'click') {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1600, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.035);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.035);
+                } else {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987, now);
+                    osc.frequency.setValueAtTime(1318, now + 0.08);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                }
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + (type === 'click' ? 0.035 : 0.25));
+            } catch(e) {}
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').innerText = soundEnabled ? '⌨️' : '🔇';
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            playSound('click');
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            const tabs = ['tab-dashboard', 'tab-add', 'tab-goals', 'tab-cards', 'tab-assets'];
+            const idx = tabs.indexOf(tabId);
+            if (idx >= 0) document.querySelectorAll('.tab-item')[idx].classList.add('active');
+        }
 
         function setSyncStatus(status) {
             const el = document.getElementById('syncIndicator');
@@ -462,17 +614,11 @@
             box.style.display = box.style.display === 'none' ? 'block' : 'none';
         }
 
-        function toggleAddGoalForm() {
-            playSound('click');
-            const f = document.getElementById('addGoalForm');
-            f.style.display = f.style.display === 'none' ? 'block' : 'none';
-        }
-
         function saveGasUrl() {
             const url = document.getElementById('inputGasUrl').value.trim();
             if (!url) { alert('URL을 입력해주세요.'); return; }
             localStorage.setItem('gas_app_url', url);
-            alert('구글 앱스크립트 연동 URL이 저장되었습니다!');
+            alert('구글 연동 URL이 저장되었습니다!');
             document.getElementById('urlSettingBox').style.display = 'none';
             loadGameData();
         }
@@ -501,58 +647,9 @@
                 setSyncStatus('synced');
                 return resJson;
             } catch(e) {
-                console.error("API Error:", e);
                 setSyncStatus('error');
                 return null;
             }
-        }
-
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-        function playSound(type = 'click') {
-            if (!soundEnabled) return;
-            try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                if (type === 'click') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(1800, now);
-                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
-                } else {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987, now);
-                    osc.frequency.setValueAtTime(1318, now + 0.08);
-                    gain.gain.setValueAtTime(0.18, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                }
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now); osc.stop(now + (type === 'click' ? 0.04 : 0.3));
-            } catch(e) {}
-        }
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            document.getElementById('soundBtn').innerText = soundEnabled ? '⌨️' : '🔇';
-        }
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
-            playSound('click');
-        }
-
-        function switchTab(tabId) {
-            playSound('click');
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).style.display = 'block';
-            const tabs = ['tab-dashboard', 'tab-goals', 'tab-add', 'tab-cards', 'tab-assets'];
-            const idx = tabs.indexOf(tabId);
-            if (idx >= 0) document.querySelectorAll('.tab-item')[idx].classList.add('active');
         }
 
         async function loadGameData(silent = false) {
@@ -568,7 +665,6 @@
             if (!res) return;
             globalNetWorth = res.net_worth?.net_worth || 0;
 
-            // 👑 1. 레벨 배너
             if (res.level) {
                 document.getElementById('disp-level-title').innerText = res.level.title;
                 document.getElementById('disp-level-target').innerText = (res.level.next_target / 100000000 >= 1 ? (res.level.next_target/100000000).toFixed(1)+'억' : (res.level.next_target/10000).toLocaleString()+'만');
@@ -577,7 +673,6 @@
             }
             document.getElementById('disp-networth-mini').innerText = globalNetWorth.toLocaleString() + '원';
 
-            // 💎 2. 순자산 & 자산
             document.getElementById('disp-networth').innerText = globalNetWorth.toLocaleString() + '원';
             document.getElementById('disp-inv').innerText = (res.net_worth?.inv_total_eval || 0).toLocaleString() + '원';
             document.getElementById('disp-cash').innerText = ((res.net_worth?.total_assets || 0) - (res.net_worth?.inv_total_eval || 0)).toLocaleString() + '원';
@@ -585,16 +680,14 @@
             document.getElementById('disp-income').innerText = (res.summary?.total_income || 0).toLocaleString() + '원';
             document.getElementById('disp-score').innerText = (res.summary?.mindful_score ?? 100) + '점';
 
-            // 🎯 3. 장기 목표 렌더링
-            renderGoals(res.goals || []);
-
-            // 4. 최근 거래 테이블
+            // 최근 거래 목록
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
-            if (!res.transactions || res.transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 18px 0;">이번 달 가계부 내역이 없습니다. (지출을 입력해보세요!)</td></tr>';
+            const txList = res.transactions || [];
+            if (txList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 14px 0;">최근 지출 내역이 없습니다. (🧮 지출을 입력해보세요!)</td></tr>';
             } else {
-                res.transactions.slice(0, 7).forEach(t => {
+                txList.slice(0, 8).forEach(t => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${String(t.date).substring(5)}</td>
@@ -610,49 +703,27 @@
 
             renderCardsSummary(res.cards_summary);
             renderAssetsAndInv(res.net_worth);
+            renderGoals(res.goals || []);
             updateSimulation();
         }
 
         function renderGoals(goals) {
             const container = document.getElementById('goalsListContainer');
             container.innerHTML = '';
-            if (goals.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding: 20px 0;">등록된 장기 목표가 없습니다. 새 목표를 추가해보세요!</div>';
-                return;
-            }
-
-            // 대표 목표 위젯 업데이트
-            const top = goals[0];
-            document.getElementById('topGoalCur').innerText = top.current_amount.toLocaleString() + '원';
-            document.getElementById('topGoalTarget').innerText = top.target_amount.toLocaleString() + '원';
-            document.getElementById('topGoalBar').style.width = top.progress_rate + '%';
-
-            goals.forEach((g, idx) => {
+            goals.forEach((g) => {
                 const card = document.createElement('div');
-                card.className = `goal-card ${idx === 0 ? 'top-priority' : ''}`;
+                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; padding:12px; margin-bottom:8px;';
                 card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <div style="font-size: 1.05rem; font-weight: 800;">
-                            <span>${g.icon} ${g.name}</span>
-                            <span style="font-size: 0.75rem; background: var(--bg-subtle); padding: 2px 8px; border-radius: 6px; margin-left: 6px; color: var(--text-muted);">${g.category}</span>
-                        </div>
-                        <span style="font-size: 0.82rem; font-weight: 800; color: ${g.d_day > 0 ? 'var(--primary)' : 'var(--expense)'};">
-                            ${g.d_day > 0 ? 'D-' + g.d_day + '일' : '기한 종료'}
-                        </span>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <strong>${g.icon} ${g.name}</strong>
+                        <span style="font-size:0.75rem; font-weight:700; color:var(--primary);">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '완료'}</span>
                     </div>
-
-                    <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
-                        <span>모은 금액: <strong style="color: var(--primary);">${g.current_amount.toLocaleString()}원</strong></span>
-                        <span>목표: <strong>${g.target_amount.toLocaleString()}원</strong></span>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
+                        <span>모은 금액: ${g.current_amount.toLocaleString()}원</span>
+                        <span>목표: ${g.target_amount.toLocaleString()}원</span>
                     </div>
-
-                    <div style="height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 8px;">
-                        <div style="height: 100%; width: ${g.progress_rate}%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: 6px; transition: width 0.6s ease;"></div>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 8px;">
-                        <span>달성률: <b style="color: var(--text-main);">${g.progress_rate}%</b> (남은 금액: ${(g.remaining_amount/10000).toLocaleString()}만원)</span>
-                        <span>매월 권장 저축: <b style="color: var(--income);">${(g.monthly_required/10000).toLocaleString()}만원/월</b></span>
+                    <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; margin:6px 0;">
+                        <div style="height:100%; width:${g.progress_rate}%; background:var(--income);"></div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -666,15 +737,10 @@
             document.getElementById('lblAnnualRate').innerText = (aRate * 100) + '%';
 
             const p = globalNetWorth;
-            const y3 = calculateFutureValue(p, mSave, aRate, 3);
             const y5 = calculateFutureValue(p, mSave, aRate, 5);
             const y10 = calculateFutureValue(p, mSave, aRate, 10);
-            const y20 = calculateFutureValue(p, mSave, aRate, 20);
-
-            document.getElementById('simYear3').innerText = formatWealth(y3);
             document.getElementById('simYear5').innerText = formatWealth(y5);
             document.getElementById('simYear10').innerText = formatWealth(y10);
-            document.getElementById('simYear20').innerText = formatWealth(y20);
         }
 
         function calculateFutureValue(p, pmt, rate, years) {
@@ -692,46 +758,21 @@
             return (Math.round(num / 10000)).toLocaleString() + '만원';
         }
 
-        async function handleSaveGoal(e) {
-            e.preventDefault();
-            playSound('coin');
-            const payload = {
-                name: document.getElementById('gName').value,
-                icon: document.getElementById('gIcon').value,
-                target_amount: Number(document.getElementById('gTargetAmt').value),
-                target_date: document.getElementById('gTargetDate').value,
-                category: '인생목표'
-            };
-            await callGasApi('saveGoal', payload);
-            alert('새로운 장기 목표가 구글 시트에 저장되었습니다!');
-            document.getElementById('addGoalForm').style.display = 'none';
-            loadGameData(true);
-        }
-
         function renderCardsSummary(cards) {
             const container = document.getElementById('cardsSummaryList');
             container.innerHTML = '';
-            if (!cards || cards.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);">이번 달 카드 내역이 없습니다.</div>';
-                return;
-            }
-            cards.forEach(c => {
-                const isMatch = c.billed_amount > 0 && c.difference === 0;
+            (cards || []).forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'card';
-                div.style.borderLeft = `4px solid ${isMatch ? 'var(--income)' : 'var(--primary)'}`;
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                         <strong>💳 ${c.card_name}</strong>
-                        <span style="font-size:0.8rem; font-weight:700; color:${isMatch?'var(--income)':'var(--text-muted)'}">${c.status}</span>
+                        <span style="font-size:0.75rem; font-weight:700;">${c.status}</span>
                     </div>
-                    <div style="font-size:0.88rem; display:flex; justify-content:space-between;">
+                    <div style="font-size:0.82rem; display:flex; justify-content:space-between;">
                         <span class="text-muted">기록 합계:</span><strong>${c.spent_amount.toLocaleString()}원</strong>
                     </div>
-                    <div style="font-size:0.88rem; display:flex; justify-content:space-between;">
-                        <span class="text-muted">청구서 금액:</span><strong style="color:var(--primary);">${c.billed_amount.toLocaleString()}원</strong>
-                    </div>
-                    ${c.billed_amount > 0 ? `<div style="font-size:0.9rem; font-weight:800; margin-top:4px; color:${isMatch?'var(--income)':'var(--expense)'}">차액: ${c.difference.toLocaleString()}원</div>` : ''}
+                    ${c.billed_amount > 0 ? `<div style="font-size:0.82rem; display:flex; justify-content:space-between;"><span class="text-muted">청구 금액:</span><strong style="color:var(--primary);">${c.billed_amount.toLocaleString()}원</strong></div>` : ''}
                 `;
                 container.appendChild(div);
             });
@@ -743,7 +784,7 @@
             aContainer.innerHTML = '';
             (nw.assets_list || []).forEach(a => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color);';
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color); font-size:0.85rem;';
                 row.innerHTML = `<span>${a.name}</span><strong>${a.amount.toLocaleString()}원</strong>`;
                 aContainer.appendChild(row);
             });
@@ -752,83 +793,19 @@
             iContainer.innerHTML = '';
             (nw.investments_list || []).forEach(inv => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color);';
+                row.style.cssText = 'display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color); font-size:0.85rem;';
                 row.innerHTML = `<span><strong>${inv.name}</strong> (${inv.shares}주)</span><strong>${inv.total_eval.toLocaleString()}원</strong>`;
                 iContainer.appendChild(row);
             });
         }
 
-        async function handleSaveTx(e) {
-            e.preventDefault();
-            playSound('click');
-            const payload = {
-                date: document.getElementById('txDate').value,
-                amount: Number(document.getElementById('txAmount').value),
-                payment_method: document.getElementById('txPayMethod').value,
-                card_name: document.getElementById('txCardName').value,
-                category: document.getElementById('txCategory').value,
-                consumption_type: document.getElementById('txConsumptionType').value,
-                description: document.getElementById('txDesc').value,
-                type: document.getElementById('txCategory').value === '급여/수입' ? '수입' : '지출'
-            };
-            const btn = document.getElementById('btnSubmitTx');
-            btn.disabled = true;
-            btn.innerText = '⏳ 저장 중...';
-            
-            await callGasApi('addTransaction', payload);
-            btn.disabled = false;
-            btn.innerText = '✨ 자각하며 시트에 저장하기 ✨';
-            showStamp(payload.amount);
-            document.getElementById('txAmount').value = '';
-            document.getElementById('txDesc').value = '';
-            document.getElementById('valueBox').style.display = 'none';
-            setTimeout(() => { switchTab('tab-dashboard'); loadGameData(true); }, 1200);
-        }
-
-        async function handleReconcileCard(e) {
-            e.preventDefault();
-            playSound('click');
+        async function handleReconcileCard() {
             const card_name = document.getElementById('recCardName').value;
             const billed_amount = Number(document.getElementById('recBilledAmt').value);
-            const res = await callGasApi('reconcileCard', { billing_month: currentMonth, card_name, billed_amount });
-            if (res && res.result) {
-                playSound('coin');
-                alert(`[${card_name}] 청구서 대조 완료! (차액: ${res.result.difference.toLocaleString()}원)`);
-                loadGameData(true);
-            }
-        }
-
-        function showStamp(amt) {
-            playSound('coin');
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-            document.getElementById('stampAmount').innerText = amt.toLocaleString() + '원';
-            const overlay = document.getElementById('stampOverlay');
-            overlay.style.display = 'flex';
-            setTimeout(() => overlay.style.display = 'none', 1100);
-        }
-
-        function onAmountInput(val) {
-            playSound('click');
-            const num = parseInt(val, 10);
-            const box = document.getElementById('valueBox');
-            if (!num || num <= 0) { box.style.display = 'none'; return; }
-            box.style.display = 'block';
-            if (num < 8000) box.innerText = `☕ 아메리카노 약 ${(num/4500).toFixed(1)}잔 분량`;
-            else if (num < 25000) box.innerText = `🍚 든든한 찌개 백반 약 ${(num/10000).toFixed(1)}끼 분량`;
-            else if (num < 60000) box.innerText = `🍗 바삭한 치킨 약 ${(num/23000).toFixed(1)}마리 분량`;
-            else box.innerText = `🛒 일주일치 식료품 장보기 또는 생활비 분량`;
-        }
-
-        function addQuickAmt(amt) {
-            playSound('click');
-            const input = document.getElementById('txAmount');
-            input.value = (Number(input.value) || 0) + amt;
-            onAmountInput(input.value);
-        }
-
-        function onPayMethodChange(val) {
-            playSound('click');
-            document.getElementById('cardNameGroup').style.display = val === '현금/계좌' ? 'none' : 'block';
+            if (!billed_amount) { alert('청구금액을 입력해주세요.'); return; }
+            await callGasApi('reconcileCard', { billing_month: currentMonth, card_name, billed_amount });
+            alert(`[${card_name}] 청구서 대조 완료!`);
+            loadGameData(true);
         }
     </script>
 </body>
