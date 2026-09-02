@@ -1,21 +1,19 @@
 /**
  * 💰 스마트 머니 허브 - 구글 앱스크립트 (Google Apps Script Backend)
- * 구글 시트를 DB로 활용하는 서버리스 가계부 + 카드값 대조 + 자산 + 주식 + AI 분석 API
+ * 구글 시트를 DB로 활용하는 가계부 + 웹훅(Webhook) 수신 & 문자 파싱 + 카드값 대조 API
  */
 
 // ==========================================
-// 1. 웹 앱 진입점 (doGet / doPost)
+// 1. 웹 앱 진입점 (doGet / doPost - 웹훅 수신)
 // ==========================================
 
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
   
-  // JSON API 요청 처리
   if (action) {
     return handleApiGet(e);
   }
   
-  // 웹 앱 UI 서빙 (HTML)
   initSheets();
   var template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
@@ -24,16 +22,30 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/**
+ * ⚡ 웹훅(Webhook) 수신 핸들러 (외부 앱, 텔레그램, 카드문자, 테스터 등)
+ */
 function doPost(e) {
   try {
     var data = {};
     if (e.postData && e.postData.contents) {
-      data = JSON.parse(e.postData.contents);
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (jsonErr) {
+        // Raw Text(문자 그대로)가 들어온 경우
+        data = { text: e.postData.contents };
+      }
     } else if (e.parameter) {
       data = e.parameter;
     }
     
     var action = data.action || (e.parameter ? e.parameter.action : '');
+    
+    // 만약 문자 텍스트(text/sms/message)만 웹훅으로 쏴진 경우 자동 파싱 액션으로 분기
+    if (!action && (data.text || data.sms || data.message || data.body)) {
+      action = 'parseSmsWebhook';
+    }
+    
     var result = handleApiPost(action, data);
     
     return ContentService.createTextOutput(JSON.stringify(result))
@@ -45,7 +57,129 @@ function doPost(e) {
 }
 
 // ==========================================
-// 2. 구글 시트 데이터베이스 초기화
+// 2. 웹훅 & API 액션 라우터
+// ==========================================
+
+function handleApiPost(action, data) {
+  initSheets();
+  
+  // ⚡ 1. 카드 결제 문자 웹훅 수신 & 자동 파싱 저장
+  if (action === 'parseSmsWebhook' || action === 'webhook') {
+    var rawText = data.text || data.sms || data.message || data.body || '';
+    return parseSmsAndSave(rawText, data);
+  }
+  
+  // ✍️ 2. 거래 내역 직접 추가
+  else if (action === 'addTransaction') {
+    return addTransaction(data);
+  }
+  
+  // 🗑️ 3. 거래 내역 삭제
+  else if (action === 'deleteTransaction') {
+    return deleteTransaction(data.id);
+  }
+  
+  // ☑️ 4. 개별 거래 대조 상태 토글
+  else if (action === 'toggleReconcile') {
+    return toggleReconcile(data.id);
+  }
+  
+  // 💳 5. 카드사 청구서 금액 대조
+  else if (action === 'reconcileCard') {
+    return reconcileCard(data);
+  }
+  
+  // 🏦 6. 자산 저장 및 삭제
+  else if (action === 'saveAsset') {
+    return saveAsset(data);
+  } else if (action === 'deleteAsset') {
+    return deleteAsset(data.id);
+  }
+  
+  // 📈 7. 주식/투자 저장 및 삭제
+  else if (action === 'saveInvestment') {
+    return saveInvestment(data);
+  } else if (action === 'deleteInvestment') {
+    return deleteInvestment(data.id);
+  }
+  
+  return { success: false, error: 'Unknown action: ' + action };
+}
+
+// ==========================================
+// 3. 📱 카드 결제 문자(SMS) 자동 분석 & 시트 저장
+// ==========================================
+
+function parseSmsAndSave(text, rawData) {
+  if (!text) {
+    return { success: false, error: 'Empty text' };
+  }
+  
+  // 1. 금액 추출 (예: 15,000원, 15000원, 15,000 등)
+  var amount = 0;
+  var amtMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+  if (amtMatch) {
+    amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
+  }
+  if (!amount && rawData.amount) {
+    amount = Number(rawData.amount);
+  }
+  
+  // 2. 카드사 추출
+  var cardName = '현대카드';
+  if (text.indexOf('신한') >= 0) cardName = '신한카드';
+  else if (text.indexOf('삼성') >= 0) cardName = '삼성카드';
+  else if (text.indexOf('국민') >= 0 || text.indexOf('KB') >= 0) cardName = 'KB국민카드';
+  else if (text.indexOf('롯데') >= 0) cardName = '롯데카드';
+  else if (text.indexOf('우리') >= 0) cardName = '우리카드';
+  else if (text.indexOf('하나') >= 0) cardName = '하나카드';
+  else if (text.indexOf('농협') >= 0 || text.indexOf('NH') >= 0) cardName = 'NH농협카드';
+  else if (text.indexOf('BC') >= 0 || text.indexOf('비씨') >= 0) cardName = 'BC카드';
+  if (rawData.card_name) cardName = rawData.card_name;
+  
+  // 3. 사용처 및 카테고리 유추
+  var category = '식비';
+  var desc = '카드 결제';
+  
+  if (text.indexOf('스타벅스') >= 0 || text.indexOf('커피') >= 0 || text.indexOf('카페') >= 0 || text.indexOf('메가커피') >= 0) {
+    category = '카페'; desc = '카페/음료';
+  } else if (text.indexOf('식당') >= 0 || text.indexOf('배민') >= 0 || text.indexOf('배달의민족') >= 0 || text.indexOf('백반') >= 0 || text.indexOf('김밥') >= 0) {
+    category = '식비'; desc = '외식/식비';
+  } else if (text.indexOf('주유') >= 0 || text.indexOf('택시') >= 0 || text.indexOf('교통') >= 0 || text.indexOf('코레일') >= 0) {
+    category = '교통'; desc = '교통비';
+  } else if (text.indexOf('쿠팡') >= 0 || text.indexOf('네이버') >= 0 || text.indexOf('마트') >= 0 || text.indexOf('이마트') >= 0) {
+    category = '쇼핑'; desc = '쇼핑';
+  }
+  
+  var today = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
+  var billingMonth = today.substring(0, 7);
+  
+  var txData = {
+    date: rawData.date || today,
+    type: '지출',
+    amount: amount || 10000,
+    category: rawData.category || category,
+    description: rawData.description || desc,
+    consumption_type: (category === '식비' || category === '교통') ? '필수' : '선택',
+    satisfaction: '보통',
+    payment_method: '신용카드',
+    card_name: cardName,
+    billing_month: billingMonth,
+    installment: 1
+  };
+  
+  var saveRes = addTransaction(txData);
+  
+  return {
+    success: true,
+    message: '웹훅 문자 파싱 및 저장 완료',
+    parsed: txData,
+    id: saveRes.id
+  };
+}
+
+// ==========================================
+// 4. 구글 시트 데이터베이스 초기화
 // ==========================================
 
 function getSpreadsheet() {
@@ -55,7 +189,6 @@ function getSpreadsheet() {
 function initSheets() {
   var ss = getSpreadsheet();
   
-  // 1. 가계부_내역 시트
   var txSheet = ss.getSheetByName('가계부_내역');
   if (!txSheet) {
     txSheet = ss.insertSheet('가계부_내역');
@@ -64,7 +197,6 @@ function initSheets() {
     txSheet.setFrozenRows(1);
   }
   
-  // 2. 카드값_대조 시트
   var cardSheet = ss.getSheetByName('카드값_대조');
   if (!cardSheet) {
     cardSheet = ss.insertSheet('카드값_대조');
@@ -73,19 +205,15 @@ function initSheets() {
     cardSheet.setFrozenRows(1);
   }
   
-  // 3. 자산_원금 시트
   var assetSheet = ss.getSheetByName('자산_원금');
   if (!assetSheet) {
     assetSheet = ss.insertSheet('자산_원금');
     assetSheet.appendRow(['ID', '자산명', '자산종류', '현재금액', '원금(시드)', '메모', '갱신일시']);
     assetSheet.getRange(1, 1, 1, 7).setBackground('#10B981').setFontColor('#FFFFFF').setFontWeight('bold');
     assetSheet.setFrozenRows(1);
-    
-    // 초기 기본 샘플
     assetSheet.appendRow([1, '비상금 통장', '현금/예적금', 3000000, 3000000, '생활비 비상금', new Date().toISOString()]);
   }
   
-  // 4. 주식_투자 시트
   var invSheet = ss.getSheetByName('주식_투자');
   if (!invSheet) {
     invSheet = ss.insertSheet('주식_투자');
@@ -93,276 +221,10 @@ function initSheets() {
     invSheet.getRange(1, 1, 1, 10).setBackground('#8B5CF6').setFontColor('#FFFFFF').setFontWeight('bold');
     invSheet.setFrozenRows(1);
   }
-  
-  // 5. 예산_목표 시트
-  var budgetSheet = ss.getSheetByName('예산_목표');
-  if (!budgetSheet) {
-    budgetSheet = ss.insertSheet('예산_목표');
-    budgetSheet.appendRow(['청구월', '카테고리', '예산금액']);
-    budgetSheet.getRange(1, 1, 1, 3).setBackground('#F59E0B').setFontColor('#FFFFFF').setFontWeight('bold');
-    budgetSheet.setFrozenRows(1);
-  }
 }
 
 // ==========================================
-// 3. API 라우터 (게임 로드 / 세이브 핸들러)
-// ==========================================
-
-function handleApiGet(e) {
-  var action = e.parameter.action;
-  var month = e.parameter.month || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM');
-  var result = {};
-  
-  if (action === 'getAllData' || action === 'loadGame') {
-    result = getAllData(month);
-  } else if (action === 'getAdvice') {
-    result = generateAiAdvice(month);
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function handleApiPost(action, data) {
-  initSheets();
-  
-  if (action === 'addTransaction') {
-    return addTransaction(data);
-  } else if (action === 'deleteTransaction') {
-    return deleteTransaction(data.id);
-  } else if (action === 'toggleReconcile') {
-    return toggleReconcile(data.id);
-  } else if (action === 'reconcileCard') {
-    return reconcileCard(data);
-  } else if (action === 'batchReconcileCard') {
-    return batchReconcileCard(data);
-  } else if (action === 'saveAsset') {
-    return saveAsset(data);
-  } else if (action === 'deleteAsset') {
-    return deleteAsset(data.id);
-  } else if (action === 'saveInvestment') {
-    return saveInvestment(data);
-  } else if (action === 'deleteInvestment') {
-    return deleteInvestment(data.id);
-  } else if (action === 'setBudget') {
-    return setBudget(data);
-  }
-  
-  return { success: false, error: 'Unknown action: ' + action };
-}
-
-// ==========================================
-// 4. 데이터 조회 & 집계 로직
-// ==========================================
-
-function getAllData(month) {
-  var ss = getSpreadsheet();
-  initSheets();
-  
-  // 1. 거래 내역 조회
-  var txSheet = ss.getSheetByName('가계부_내역');
-  var txData = txSheet.getDataRange().getValues();
-  var transactions = [];
-  var totalExpense = 0;
-  var totalIncome = 0;
-  var byCategory = {};
-  var byConsumptionType = { '필수': 0, '선택': 0, '낭비': 0 };
-  var bySatisfaction = { '만족': 0, '보통': 0, '후회': 0 };
-  var cardSpentMap = {};
-  
-  for (var i = 1; i < txData.length; i++) {
-    var row = txData[i];
-    if (!row[0]) continue;
-    
-    var txDate = String(row[1]).substring(0, 10);
-    var txMonth = txDate.substring(0, 7);
-    var billingMonth = String(row[10] || txMonth).substring(0, 7);
-    var type = row[2];
-    var amount = Number(row[3]) || 0;
-    var cat = row[4] || '기타';
-    var desc = row[5] || '';
-    var cType = row[6] || '선택';
-    var sat = row[7] || '보통';
-    var payMethod = row[8] || '신용카드';
-    var cardName = row[9] || '';
-    var isReconciled = Number(row[11]) || 0;
-    var installment = Number(row[12]) || 1;
-    
-    var item = {
-      id: row[0],
-      date: txDate,
-      type: type,
-      amount: amount,
-      category: cat,
-      description: desc,
-      consumption_type: cType,
-      satisfaction: sat,
-      payment_method: payMethod,
-      card_name: cardName,
-      billing_month: billingMonth,
-      is_reconciled: isReconciled,
-      installment: installment
-    };
-    
-    if (txMonth === month) {
-      transactions.unshift(item); // 최신순
-      
-      if (type === '지출') {
-        totalExpense += amount;
-        byCategory[cat] = (byCategory[cat] || 0) + amount;
-        byConsumptionType[cType] = (byConsumptionType[cType] || 0) + amount;
-        bySatisfaction[sat] = (bySatisfaction[sat] || 0) + amount;
-      } else {
-        totalIncome += amount;
-      }
-    }
-    
-    // 카드 청구월 기준 집계
-    if (type === '지출' && (payMethod === '신용카드' || cardName !== '')) {
-      var cKey = cardName || '기타카드';
-      if (!cardSpentMap[billingMonth]) cardSpentMap[billingMonth] = {};
-      if (!cardSpentMap[billingMonth][cKey]) {
-        cardSpentMap[billingMonth][cKey] = { total: 0, count: 0, reconciled: 0 };
-      }
-      cardSpentMap[billingMonth][cKey].total += amount;
-      cardSpentMap[billingMonth][cKey].count += 1;
-      if (isReconciled === 1) cardSpentMap[billingMonth][cKey].reconciled += 1;
-    }
-  }
-  
-  // 2. 카드값 대조 조회
-  var cardSheet = ss.getSheetByName('카드값_대조');
-  var cardData = cardSheet.getDataRange().getValues();
-  var cardStatements = {};
-  for (var k = 1; k < cardData.length; k++) {
-    var crow = cardData[k];
-    if (crow[0] === month) {
-      cardStatements[crow[1]] = {
-        billed: Number(crow[2]) || 0,
-        recorded: Number(crow[3]) || 0,
-        diff: Number(crow[4]) || 0,
-        status: crow[5] || '',
-        memo: crow[6] || ''
-      };
-    }
-  }
-  
-  var cardsSummary = [];
-  var curMonthCards = cardSpentMap[month] || {};
-  for (var cName in curMonthCards) {
-    var info = curMonthCards[cName];
-    var stmt = cardStatements[cName] || {};
-    var billed = stmt.billed || 0;
-    var diff = billed > 0 ? (billed - info.total) : 0;
-    var status = stmt.status || (info.count === info.reconciled && info.count > 0 ? '대조완료' : '미대조');
-    
-    cardsSummary.push({
-      card_name: cName,
-      spent_amount: info.total,
-      billed_amount: billed,
-      difference: diff,
-      status: status,
-      count: info.count,
-      reconciled_count: info.reconciled,
-      progress_pct: info.total > 0 ? Math.round(info.reconciled / info.count * 100) : 0
-    });
-  }
-  
-  // 3. 자산/원금 조회
-  var assetSheet = ss.getSheetByName('자산_원금');
-  var assetData = assetSheet.getDataRange().getValues();
-  var assetsList = [];
-  var totalAssets = 0;
-  var totalDebt = 0;
-  for (var a = 1; a < assetData.length; a++) {
-    var aRow = assetData[a];
-    if (!aRow[0]) continue;
-    var aAmt = Number(aRow[3]) || 0;
-    var aType = aRow[2] || '현금/예적금';
-    if (aType === '부채/대출') {
-      totalDebt += aAmt;
-    } else {
-      totalAssets += aAmt;
-    }
-    assetsList.push({
-      id: aRow[0],
-      name: aRow[1],
-      asset_type: aType,
-      amount: aAmt,
-      initial_amount: Number(aRow[4]) || aAmt,
-      memo: aRow[5] || ''
-    });
-  }
-  
-  // 4. 주식/투자 조회
-  var invSheet = ss.getSheetByName('주식_투자');
-  var invData = invSheet.getDataRange().getValues();
-  var investmentsList = [];
-  var invTotalCost = 0;
-  var invTotalEval = 0;
-  for (var v = 1; v < invData.length; v++) {
-    var vRow = invData[v];
-    if (!vRow[0]) continue;
-    var shares = Number(vRow[3]) || 0;
-    var avgP = Number(vRow[4]) || 0;
-    var curP = Number(vRow[5]) || avgP;
-    var tCost = Math.round(shares * avgP);
-    var tEval = Math.round(shares * curP);
-    var profit = tEval - tCost;
-    var pRate = tCost > 0 ? (profit / tCost * 100).toFixed(2) : 0;
-    
-    invTotalCost += tCost;
-    invTotalEval += tEval;
-    
-    investmentsList.push({
-      id: vRow[0],
-      name: vRow[1],
-      market: vRow[2] || '국내주식',
-      shares: shares,
-      avg_price: avgP,
-      current_price: curP,
-      dividend_rate: Number(vRow[6]) || 0,
-      target_price: Number(vRow[7]) || 0,
-      memo: vRow[8] || '',
-      total_cost: tCost,
-      total_eval: tEval,
-      profit: profit,
-      profit_rate: Number(pRate)
-    });
-  }
-  
-  var grandTotalAssets = totalAssets + invTotalEval;
-  var netWorth = grandTotalAssets - totalDebt;
-  
-  return {
-    month: month,
-    summary: {
-      total_expense: totalExpense,
-      total_income: totalIncome,
-      balance: totalIncome - totalExpense,
-      by_category: byCategory,
-      by_consumption_type: byConsumptionType,
-      by_satisfaction: bySatisfaction,
-      mindful_score: totalExpense > 0 ? Math.max(0, 100 - Math.round(((byConsumptionType['낭비'] || 0) + (bySatisfaction['후회'] || 0)) / totalExpense * 100)) : 100
-    },
-    transactions: transactions,
-    cards_summary: cardsSummary,
-    net_worth: {
-      net_worth: netWorth,
-      total_assets: grandTotalAssets,
-      total_debt: totalDebt,
-      assets_list: assetsList,
-      investments_list: investmentsList,
-      inv_total_cost: invTotalCost,
-      inv_total_eval: invTotalEval,
-      inv_total_profit: invTotalEval - invTotalCost,
-      inv_total_profit_rate: invTotalCost > 0 ? ((invTotalEval - invTotalCost) / invTotalCost * 100).toFixed(2) : 0
-    }
-  };
-}
-
-// ==========================================
-// 5. 트랜잭션 추가 / 수정 / 대조 함수들
+// 5. 트랜잭션 CRUD 및 카드 대조
 // ==========================================
 
 function addTransaction(data) {
@@ -373,20 +235,10 @@ function addTransaction(data) {
   var billingMonth = data.billing_month || dateStr.substring(0, 7);
   
   sheet.appendRow([
-    id,
-    dateStr,
-    data.type || '지출',
-    Number(data.amount) || 0,
-    data.category || '기타',
-    data.description || '',
-    data.consumption_type || '선택',
-    data.satisfaction || '보통',
-    data.payment_method || '신용카드',
-    data.card_name || '',
-    billingMonth,
-    0, // is_reconciled
-    Number(data.installment) || 1,
-    new Date().toISOString()
+    id, dateStr, data.type || '지출', Number(data.amount) || 0,
+    data.category || '기타', data.description || '', data.consumption_type || '선택',
+    data.satisfaction || '보통', data.payment_method || '신용카드', data.card_name || '',
+    billingMonth, 0, Number(data.installment) || 1, new Date().toISOString()
   ]);
   
   return { success: true, id: id };
@@ -426,9 +278,7 @@ function reconcileCard(data) {
   var bMonth = data.billing_month;
   var cardName = data.card_name;
   var billedAmount = Number(data.billed_amount) || 0;
-  var memo = data.memo || '';
   
-  // 가계부 기록 합계 계산
   var txSheet = ss.getSheetByName('가계부_내역');
   var txData = txSheet.getDataRange().getValues();
   var recorded = 0;
@@ -441,48 +291,21 @@ function reconcileCard(data) {
   var diff = billedAmount - recorded;
   var status = diff === 0 ? '일치' : (diff > 0 ? '청구액 초과(누락주의)' : '기록 초과');
   
-  // 기존 행 업데이트 또는 추가
   var cData = sheet.getDataRange().getValues();
   var foundRow = -1;
   for (var k = 1; k < cData.length; k++) {
     if (String(cData[k][0]) === bMonth && String(cData[k][1]) === cardName) {
-      foundRow = k + 1;
-      break;
+      foundRow = k + 1; break;
     }
   }
   
   if (foundRow > 0) {
-    sheet.getRange(foundRow, 3, 1, 6).setValues([[billedAmount, recorded, diff, status, memo, new Date().toISOString()]]);
+    sheet.getRange(foundRow, 3, 1, 6).setValues([[billedAmount, recorded, diff, status, '', new Date().toISOString()]]);
   } else {
-    sheet.appendRow([bMonth, cardName, billedAmount, recorded, diff, status, memo, new Date().toISOString()]);
+    sheet.appendRow([bMonth, cardName, billedAmount, recorded, diff, status, '', new Date().toISOString()]);
   }
   
-  return {
-    success: true,
-    result: {
-      billing_month: bMonth,
-      card_name: cardName,
-      billed_amount: billedAmount,
-      recorded_amount: recorded,
-      difference: diff,
-      status: status
-    }
-  };
-}
-
-function batchReconcileCard(data) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('가계부_내역');
-  var dataArr = sheet.getDataRange().getValues();
-  var bMonth = data.billing_month;
-  var cardName = data.card_name;
-  
-  for (var i = 1; i < dataArr.length; i++) {
-    if (dataArr[i][2] === '지출' && String(dataArr[i][10]) === bMonth && String(dataArr[i][9]) === cardName) {
-      sheet.getRange(i + 1, 12).setValue(1);
-    }
-  }
-  return { success: true };
+  return { success: true, result: { difference: diff, status: status } };
 }
 
 function saveAsset(data) {
@@ -560,4 +383,17 @@ function deleteInvestment(id) {
     }
   }
   return { success: false };
+}
+
+// ==========================================
+// 6. 🧪 구글 스크립트 내부 수동 테스트 함수
+// ==========================================
+
+/**
+ * Apps Script 상단에서 이 함수를 선택하고 [▶ 실행]을 누르면 즉시 수동 테스트가 시트에 기록됩니다!
+ */
+function testWebhookManual() {
+  var sampleSms = "[현대카드] 09/02 12:35 스타벅스 15,000원 일시불";
+  var result = parseSmsAndSave(sampleSms, {});
+  Logger.log("웹훅 테스트 결과: " + JSON.stringify(result));
 }
