@@ -312,60 +312,96 @@
             </div>
         </div>
 
-        <!-- 1. 📊 메인 대시보드 탭 (균형잡힌 그리드 및 모바일 단일 스트림) -->
+        <!-- 1. 📊 메인 대시보드 탭 (최상단: 순자산/목표 -> 중단: 최근내역 -> 하단: 그래프) -->
         <section id="tab-dashboard" class="tab-content">
             <div class="dash-section-stack">
                 
-                <!-- 👑 상단 1열: 자산 퀘스트 레벨 배너 & 순자산 / 월간 요약 지표 카드 -->
+                <!-- 👑 1단 (맨 위): 나의 순자산/레벨 & 장기 목표 / 카드 현황 (50% : 50%) -->
                 <div class="dash-kpi-grid">
-                    <div class="level-banner">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
-                                <h3 id="disp-level-title" style="margin-top: 4px; font-size: 1.25rem;">종잣돈 빌더 (LV.3)</h3>
+                    <!-- 좌측: 레벨 퀘스트 & 총 순자산 및 월간 통계 -->
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div class="level-banner">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
+                                    <h3 id="disp-level-title" style="margin-top: 4px; font-size: 1.25rem;">종잣돈 빌더 (LV.3)</h3>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.75rem; opacity: 0.85;">다음 레벨까지</div>
+                                    <strong id="disp-level-target" style="font-size: 1.15rem; color: #fde047;">5,000만</strong>
+                                </div>
                             </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 0.75rem; opacity: 0.85;">다음 레벨까지</div>
-                                <strong id="disp-level-target" style="font-size: 1.15rem; color: #fde047;">5,000만</strong>
+                            <div>
+                                <div class="progress-bar-bg"><div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.9;">
+                                    <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
+                                    <span id="disp-level-pct">진행률 45%</span>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <div class="progress-bar-bg"><div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.9;">
-                                <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
-                                <span id="disp-level-pct">진행률 45%</span>
+
+                        <div class="card" style="border-left: 5px solid var(--primary); margin-bottom: 0;">
+                            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
+                            <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 4px 0 6px 0;">0원</div>
+                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 6px;">
+                                <span>📈 주식/투자: <strong id="disp-inv" style="color:var(--text-main);">0원</strong></span>
+                                <span>🏦 현금/예금: <strong id="disp-cash" style="color:var(--text-main);">0원</strong></span>
+                            </div>
+                            
+                            <div class="stat-grid">
+                                <div class="stat-box" style="border-left: 3px solid var(--expense);">
+                                    <div class="stat-label">이번 달 지출</div>
+                                    <div id="disp-expense" class="stat-val" style="color: var(--expense);">0원</div>
+                                </div>
+                                <div class="stat-box" style="border-left: 3px solid var(--income);">
+                                    <div class="stat-label">이번 달 수입</div>
+                                    <div id="disp-income" class="stat-val" style="color: var(--income);">0원</div>
+                                </div>
+                                <div class="stat-box" style="border-left: 3px solid var(--warning);">
+                                    <div class="stat-label">자각 점수</div>
+                                    <div id="disp-score" class="stat-val" style="color: var(--warning);">100점</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card" style="border-left: 5px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
-                        <div>
-                            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
-                            <div id="disp-networth" style="font-size: 1.95rem; font-weight: 900; color: var(--primary); margin: 4px 0 6px 0;">0원</div>
-                            <div style="display: flex; gap: 14px; font-size: 0.85rem;">
-                                <span>📈 주식/투자: <strong id="disp-inv" style="color:var(--text-main);">0원</strong></span>
-                                <span>🏦 현금/예금: <strong id="disp-cash" style="color:var(--text-main);">0원</strong></span>
+                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 현황 -->
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div class="card" style="border-color: var(--warning); margin-bottom: 0;">
+                            <div class="card-title">
+                                <span>🎯 장기 인생 목표 진행 현황</span>
+                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
                             </div>
+                            <div id="dashboardGoalsWidget"></div>
                         </div>
-                        
-                        <div class="stat-grid">
-                            <div class="stat-box" style="border-left: 3px solid var(--expense);">
-                                <div class="stat-label">이번 달 지출</div>
-                                <div id="disp-expense" class="stat-val" style="color: var(--expense);">0원</div>
+
+                        <div class="card" style="margin-bottom: 0;">
+                            <div class="card-title">
+                                <span>💳 신용카드 이번 달 현황</span>
+                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
                             </div>
-                            <div class="stat-box" style="border-left: 3px solid var(--income);">
-                                <div class="stat-label">이번 달 수입</div>
-                                <div id="disp-income" class="stat-val" style="color: var(--income);">0원</div>
-                            </div>
-                            <div class="stat-box" style="border-left: 3px solid var(--warning);">
-                                <div class="stat-label">자각 점수</div>
-                                <div id="disp-score" class="stat-val" style="color: var(--warning);">100점</div>
-                            </div>
+                            <div id="dashboardCardsWidget"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 📊 중단 2열: 카테고리 도넛 차트 & 일자별 지출 추이 그래프 -->
+                <!-- 📋 2단 (중간): 최근 소비/수익 지출 내역 (와이드 테이블) -->
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="card-title">
+                        <span>📋 최근 소비/수익 내역</span>
+                        <button class="btn-icon" style="font-size: 0.85rem; padding: 6px 14px; background: var(--primary); color: white; border: none; font-weight: 700;" onclick="switchTab('tab-add')">➕ 지출/수익 쓰기</button>
+                    </div>
+                    <div class="table-scroll-container">
+                        <table class="table">
+                            <thead><tr><th>날짜</th><th>내용</th><th>결제수단</th><th class="text-right">금액</th></tr></thead>
+                            <tbody id="recent-tx-tbody">
+                                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 📊 3단 (맨 아래): 소비 분석 그래프 (50% : 50% 가로 대칭) -->
                 <div class="dash-chart-grid">
                     <div class="card">
                         <div class="card-title">
@@ -384,44 +420,6 @@
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="dailyChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 📋 하단 3열: 최근 소비/수익 내역 테이블 & 장기 목표 / 카드 위젯 -->
-                <div class="dash-records-grid">
-                    <!-- 최근 소비/수익 내역 (스크롤 탑재) -->
-                    <div class="card">
-                        <div class="card-title">
-                            <span>📋 최근 소비/수익 내역</span>
-                            <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; background: var(--primary); color: white; border: none;" onclick="switchTab('tab-add')">➕ 쓰기</button>
-                        </div>
-                        <div class="table-scroll-container">
-                            <table class="table">
-                                <thead><tr><th>날짜</th><th>내용</th><th>결제</th><th class="text-right">금액</th></tr></thead>
-                                <tbody id="recent-tx-tbody">
-                                    <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 우측/하단 카드: 목표 및 카드 현황 스택 -->
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <div class="card" style="border-color: var(--warning);">
-                            <div class="card-title">
-                                <span>🎯 장기 인생 목표 진행 현황</span>
-                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
-                            </div>
-                            <div id="dashboardGoalsWidget"></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-title">
-                                <span>💳 신용카드 이번 달 현황</span>
-                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
-                            </div>
-                            <div id="dashboardCardsWidget"></div>
                         </div>
                     </div>
                 </div>
