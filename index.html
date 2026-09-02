@@ -14,17 +14,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="머니허브">
 
-    <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 -->
+    <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (var r of registrations) { r.unregister(); }
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (var name of names) caches.delete(name);
-            });
+        const APP_LIVE_VER = '20260903_v4';
+        if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
+            localStorage.setItem('app_cache_ver', APP_LIVE_VER);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var r of regs) { r.unregister(); }
+                });
+            }
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (var n of names) caches.delete(n);
+                });
+            }
+            if (!window.location.search.includes('v=')) {
+                window.location.replace(window.location.pathname + '?v=' + APP_LIVE_VER);
+            }
         }
     </script>
 
@@ -1058,13 +1065,6 @@
             renderRecurringUI();
             renderAssetsAndInvUI();
             loadGameData(true);
-
-            // 📱 PWA Service Worker 등록
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./sw.js').catch(() => {});
-                });
-            }
         });
 
         // 🍞 인앱 플로팅 토스트 시스템
