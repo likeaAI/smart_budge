@@ -344,29 +344,43 @@
                         <div class="card" style="border-left: 5px solid var(--primary); margin-bottom: 0;">
                             <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
                             <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 4px 0 6px 0;">0원</div>
-                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 6px;">
+                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 8px;">
                                 <span>📈 주식/투자: <strong id="disp-inv" style="color:var(--text-main);">0원</strong></span>
                                 <span>🏦 현금/예금: <strong id="disp-cash" style="color:var(--text-main);">0원</strong></span>
                             </div>
                             
-                            <div class="stat-grid">
-                                <div class="stat-box" style="border-left: 3px solid var(--expense);">
-                                    <div class="stat-label">이번 달 지출</div>
-                                    <div id="disp-expense" class="stat-val" style="color: var(--expense);">0원</div>
+                            <!-- 🔄 매달(월간) & 매년(연간) 2중 실시간 카운터 -->
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <!-- 📅 이번 달 (월간) -->
+                                <div style="background: var(--bg-subtle); border-radius: 10px; padding: 8px 12px; border-left: 3px solid var(--primary);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                        <span style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted);">📅 이번 달 (월간)</span>
+                                        <span id="disp-score-badge" style="font-size: 0.75rem; color: var(--warning); font-weight: 700;">자각 100점</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.88rem;">
+                                        <span>지출: <strong id="disp-expense" style="color: var(--expense);">0원</strong></span>
+                                        <span>수입: <strong id="disp-income" style="color: var(--income);">0원</strong></span>
+                                        <span>순잉여: <strong id="disp-balance" style="color: var(--primary);">0원</strong></span>
+                                    </div>
                                 </div>
-                                <div class="stat-box" style="border-left: 3px solid var(--income);">
-                                    <div class="stat-label">이번 달 수입</div>
-                                    <div id="disp-income" class="stat-val" style="color: var(--income);">0원</div>
-                                </div>
-                                <div class="stat-box" style="border-left: 3px solid var(--warning);">
-                                    <div class="stat-label">자각 점수</div>
-                                    <div id="disp-score" class="stat-val" style="color: var(--warning);">100점</div>
+
+                                <!-- 📆 올해 누적 (연간) -->
+                                <div style="background: var(--bg-subtle); border-radius: 10px; padding: 8px 12px; border-left: 3px solid var(--purple);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                        <span style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted);">📆 올해 누적 (연간)</span>
+                                        <span id="disp-year-badge" style="font-size: 0.75rem; color: var(--purple); font-weight: 700;">2026 누적</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.88rem;">
+                                        <span>누적 지출: <strong id="disp-year-expense" style="color: var(--expense);">0원</strong></span>
+                                        <span>누적 수입: <strong id="disp-year-income" style="color: var(--income);">0원</strong></span>
+                                        <span>누적 저축: <strong id="disp-year-balance" style="color: var(--income);">0원</strong></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 이번달 현황 (총자산과 1:1 대칭 카드) -->
+                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 이번달/연간 현황 -->
                     <div style="display: flex; flex-direction: column; gap: 14px;">
                         <div class="card" style="border-color: var(--warning); margin-bottom: 0; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div class="card-title" style="margin-bottom: 6px;">
@@ -376,19 +390,27 @@
                             <div id="dashboardGoalsWidget"></div>
                         </div>
 
-                        <!-- 💳 신용카드 이번달 현황 (나의 총자산 카드와 1:1 동일한 규격) -->
+                        <!-- 💳 신용카드 이번달/연간 현황 -->
                         <div class="card" style="border-left: 5px solid var(--expense); margin-bottom: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💳 이번 달 신용카드 총 지출액</span>
+                                <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💳 신용카드 실시간 사용액</span>
                                 <button class="btn-icon" style="font-size: 0.78rem; padding: 3px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
                             </div>
                             <div id="disp-cards-total" style="font-size: 2rem; font-weight: 900; color: var(--expense); margin: 4px 0 6px 0;">0원</div>
-                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 6px;">
-                                <span>🔍 청구 대조: <strong id="disp-cards-rec-status" style="color:var(--income);">정상 일치</strong></span>
-                                <span>💳 결제 카드: <strong id="disp-cards-count" style="color:var(--text-main);">0개 카드</strong></span>
+                            
+                            <!-- 🔄 카드 매달 & 매년 카운터 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; font-size: 0.82rem;">
+                                <div style="background: var(--bg-subtle); padding: 6px 10px; border-radius: 8px;">
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.74rem;">📅 이번 달 청구 대조</span>
+                                    <strong id="disp-cards-rec-status" style="color: var(--income);">정상 일치</strong>
+                                </div>
+                                <div style="background: var(--bg-subtle); padding: 6px 10px; border-radius: 8px;">
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.74rem;">📆 올해 카드 누적액</span>
+                                    <strong id="disp-cards-year-total" style="color: var(--expense);">0원</strong>
+                                </div>
                             </div>
                             
-                            <div class="stat-grid" id="dashboardCardsStatGrid">
+                            <div class="stat-grid" id="dashboardCardsStatGrid" style="margin-top: 0;">
                                 <div class="stat-box" style="border-left: 3px solid var(--primary);">
                                     <div class="stat-label">현대카드</div>
                                     <div class="stat-val" style="color: var(--primary); font-size: 1.05rem;">0원</div>
@@ -549,19 +571,22 @@
         <!-- 3. 🗓️ 매월 정기 입출금 / 고정 지출·수익 관리 탭 -->
         <section id="tab-recurring" class="tab-content" style="display: none;">
             <div class="dash-section-stack">
-                <!-- 상단 고정비 요약 스탯 -->
+                <!-- 상단 고정비 요약 스탯 (매월 & 매년 2중 카운터) -->
                 <div class="stat-grid" style="margin-top: 0; margin-bottom: 0;">
                     <div class="stat-box" style="border-left: 3px solid var(--income);">
-                        <div class="stat-label">매월 정기 수입 합계</div>
-                        <div id="recSumIncome" class="stat-val" style="color: var(--income);">0원</div>
+                        <div class="stat-label">💵 정기 수입 (매월 / 연간)</div>
+                        <div id="recSumIncome" class="stat-val" style="color: var(--income);">+0원</div>
+                        <div id="recSumYearIncome" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; margin-top: 2px;">연간: +0원</div>
                     </div>
                     <div class="stat-box" style="border-left: 3px solid var(--expense);">
-                        <div class="stat-label">매월 고정 지출 합계</div>
-                        <div id="recSumExpense" class="stat-val" style="color: var(--expense);">0원</div>
+                        <div class="stat-label">💸 고정 지출 (매월 / 연간)</div>
+                        <div id="recSumExpense" class="stat-val" style="color: var(--expense);">-0원</div>
+                        <div id="recSumYearExpense" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; margin-top: 2px;">연간: -0원</div>
                     </div>
                     <div class="stat-box" style="border-left: 3px solid var(--primary);">
-                        <div class="stat-label">가처분 잔여 소득</div>
-                        <div id="recSumNet" class="stat-val" style="color: var(--primary);">0원</div>
+                        <div class="stat-label">💰 가처분 소득 (매월 / 연간)</div>
+                        <div id="recSumNet" class="stat-val" style="color: var(--primary);">+0원</div>
+                        <div id="recSumYearNet" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; margin-top: 2px;">연간: +0원</div>
                     </div>
                 </div>
 
@@ -1571,11 +1596,54 @@
             document.getElementById('disp-inv').innerText = (res.net_worth?.inv_total_eval || 0).toLocaleString() + '원';
             document.getElementById('disp-cash').innerText = ((res.net_worth?.total_assets || 0) - (res.net_worth?.inv_total_eval || 0)).toLocaleString() + '원';
             
-            const expTotal = res.summary?.total_expense || 0;
-            document.getElementById('disp-expense').innerText = expTotal.toLocaleString() + '원';
-            document.getElementById('chartExpenseTotal').innerText = expTotal.toLocaleString() + '원';
-            document.getElementById('disp-income').innerText = (res.summary?.total_income || 0).toLocaleString() + '원';
-            document.getElementById('disp-score').innerText = (res.summary?.mindful_score ?? 100) + '점';
+            // 🔄 매달(월간) & 매년(연간) 2중 실시간 집계
+            const now = new Date();
+            const curYear = now.getFullYear().toString();
+            const curMonth = now.toISOString().substring(0, 7);
+            const txList = cachedTransactions;
+            
+            // 1. 이번 달 집계 (월간)
+            const monthExp = res.summary?.total_expense ?? txList.filter(t => String(t.date).startsWith(curMonth) && t.type === '지출').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+            const monthInc = res.summary?.total_income ?? txList.filter(t => String(t.date).startsWith(curMonth) && t.type === '수입').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+            const monthBal = monthInc - monthExp;
+
+            // 2. 올해 누적 집계 (연간)
+            const yearExp = txList.filter(t => String(t.date).startsWith(curYear) && t.type === '지출').reduce((a, b) => a + (Number(b.amount) || 0), 0) || monthExp;
+            const yearInc = txList.filter(t => String(t.date).startsWith(curYear) && t.type === '수입').reduce((a, b) => a + (Number(b.amount) || 0), 0) || monthInc;
+            const yearBal = yearInc - yearExp;
+
+            // 3. 올해 카드 누적액
+            const yearCardTotal = txList.filter(t => String(t.date).startsWith(curYear) && t.type === '지출' && (t.payment_method === '신용카드' || t.card_name)).reduce((a, b) => a + (Number(b.amount) || 0), 0);
+
+            // 월간 DOM 바인딩
+            const elExp = document.getElementById('disp-expense');
+            if (elExp) elExp.innerText = monthExp.toLocaleString() + '원';
+            const elExpChart = document.getElementById('chartExpenseTotal');
+            if (elExpChart) elExpChart.innerText = monthExp.toLocaleString() + '원';
+            const elInc = document.getElementById('disp-income');
+            if (elInc) elInc.innerText = monthInc.toLocaleString() + '원';
+            const elBal = document.getElementById('disp-balance');
+            if (elBal) {
+                elBal.innerText = (monthBal >= 0 ? '+' : '') + monthBal.toLocaleString() + '원';
+                elBal.style.color = monthBal >= 0 ? 'var(--income)' : 'var(--expense)';
+            }
+            const elScore = document.getElementById('disp-score-badge');
+            if (elScore) elScore.innerText = `자각 ${res.summary?.mindful_score ?? 100}점`;
+
+            // 연간 DOM 바인딩
+            const elYrBadge = document.getElementById('disp-year-badge');
+            if (elYrBadge) elYrBadge.innerText = `${curYear}년 누적`;
+            const elYrExp = document.getElementById('disp-year-expense');
+            if (elYrExp) elYrExp.innerText = yearExp.toLocaleString() + '원';
+            const elYrInc = document.getElementById('disp-year-income');
+            if (elYrInc) elYrInc.innerText = yearInc.toLocaleString() + '원';
+            const elYrBal = document.getElementById('disp-year-balance');
+            if (elYrBal) {
+                elYrBal.innerText = (yearBal >= 0 ? '+' : '') + yearBal.toLocaleString() + '원';
+                elYrBal.style.color = yearBal >= 0 ? 'var(--income)' : 'var(--expense)';
+            }
+            const elYrCard = document.getElementById('disp-cards-year-total');
+            if (elYrCard) elYrCard.innerText = (yearCardTotal > 0 ? yearCardTotal : (res.cards_summary || []).reduce((a, c) => a + (c.spent_amount || 0), 0)).toLocaleString() + '원';
 
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
@@ -2438,15 +2506,27 @@
             const sumNet = sumInc - sumExp;
 
             const elInc = document.getElementById('recSumIncome');
-            if (elInc) elInc.innerText = '+' + sumInc.toLocaleString() + '원';
+            if (elInc) elInc.innerText = '+' + sumInc.toLocaleString() + '원/월';
+
+            const elYrInc = document.getElementById('recSumYearIncome');
+            if (elYrInc) elYrInc.innerText = '연간: +' + (sumInc * 12).toLocaleString() + '원/년';
 
             const elExp = document.getElementById('recSumExpense');
-            if (elExp) elExp.innerText = '-' + sumExp.toLocaleString() + '원';
+            if (elExp) elExp.innerText = '-' + sumExp.toLocaleString() + '원/월';
+
+            const elYrExp = document.getElementById('recSumYearExpense');
+            if (elYrExp) elYrExp.innerText = '연간: -' + (sumExp * 12).toLocaleString() + '원/년';
 
             const elNet = document.getElementById('recSumNet');
             if (elNet) {
-                elNet.innerText = (sumNet >= 0 ? '+' : '') + sumNet.toLocaleString() + '원';
+                elNet.innerText = (sumNet >= 0 ? '+' : '') + sumNet.toLocaleString() + '원/월';
                 elNet.style.color = sumNet >= 0 ? 'var(--primary)' : 'var(--expense)';
+            }
+
+            const elYrNet = document.getElementById('recSumYearNet');
+            if (elYrNet) {
+                elYrNet.innerText = '연간: ' + (sumNet >= 0 ? '+' : '') + (sumNet * 12).toLocaleString() + '원/년';
+                elYrNet.style.color = sumNet >= 0 ? 'var(--primary)' : 'var(--expense)';
             }
 
             const container = document.getElementById('recurringListContainer');
