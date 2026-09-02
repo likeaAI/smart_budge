@@ -1774,7 +1774,6 @@
 
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
-            const txList = cachedTransactions;
             if (txList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">최근 지출/수익 내역이 없습니다.</td></tr>';
             } else {
