@@ -1,6 +1,6 @@
 /**
  * 💰 스마트 머니 허브 - 구글 앱스크립트 (Google Apps Script Backend)
- * 구글 시트를 DB로 활용하는 완전한 가계부 + 웹훅(Webhook) + 카드값 대조 + 순자산/주식 API
+ * 구글 시트를 DB로 활용하는 가계부 + 카드값 대조 + 순자산/주식 + 장기 인생 목표 로드맵 API
  */
 
 // ==========================================
@@ -10,27 +10,16 @@
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
   
-  // 🌐 API 요청 (getAllData 등)
   if (action) {
     return handleApiGet(e);
   }
   
-  // 📱 웹 앱 UI 직접 서빙 (Index.html이 있을 경우)
   initSheets();
-  try {
-    var template = HtmlService.createTemplateFromFile('Index');
-    return template.evaluate()
-      .setTitle('스마트 머니 허브')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  } catch (err) {
-    // Index.html 파일이 없더라도 안내 메시지 및 API 정상 작동
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "running",
-      message: "스마트 머니 허브 API 서버가 정상 작동 중입니다.",
-      sample_data: getAllData(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM'))
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "running",
+    message: "스마트 머니 허브 API 서버 정상 작동 중",
+    data: getAllData(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM'))
+  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -47,14 +36,11 @@ function doPost(e) {
     }
     
     var action = data.action || (e.parameter ? e.parameter.action : '');
-    
-    // 카드 결제 문자(text/sms/message)만 바로 들어온 경우
     if (!action && (data.text || data.sms || data.message || data.body)) {
       action = 'parseSmsWebhook';
     }
     
     var result = handleApiPost(action, data);
-    
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -91,54 +77,32 @@ function handleApiPost(action, data) {
   if (action === 'getAllData') {
     var month = data.month || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM');
     return getAllData(month);
-  }
-  
-  // ⚡ 1. 카드 결제 문자 웹훅 수신 & 자동 파싱 저장
-  else if (action === 'parseSmsWebhook' || action === 'webhook') {
+  } else if (action === 'parseSmsWebhook' || action === 'webhook') {
     var rawText = data.text || data.sms || data.message || data.body || '';
     return parseSmsAndSave(rawText, data);
-  }
-  
-  // ✍️ 2. 거래 내역 직접 추가
-  else if (action === 'addTransaction') {
+  } else if (action === 'addTransaction') {
     return addTransaction(data);
-  }
-  
-  // 🗑️ 3. 거래 내역 삭제
-  else if (action === 'deleteTransaction') {
+  } else if (action === 'deleteTransaction') {
     return deleteTransaction(data.id);
-  }
-  
-  // ☑️ 4. 개별 거래 대조 상태 토글
-  else if (action === 'toggleReconcile') {
+  } else if (action === 'toggleReconcile') {
     return toggleReconcile(data.id);
-  }
-  
-  // 💳 5. 카드사 청구서 금액 대조
-  else if (action === 'reconcileCard') {
+  } else if (action === 'reconcileCard') {
     return reconcileCard(data);
-  }
-  
-  // 🏦 6. 자산 저장 및 삭제
-  else if (action === 'saveAsset') {
+  } else if (action === 'saveAsset') {
     return saveAsset(data);
   } else if (action === 'deleteAsset') {
     return deleteAsset(data.id);
-  }
-  
-  // 📈 7. 주식/투자 저장 및 삭제
-  else if (action === 'saveInvestment') {
+  } else if (action === 'saveInvestment') {
     return saveInvestment(data);
   } else if (action === 'deleteInvestment') {
     return deleteInvestment(data.id);
+  } else if (action === 'saveGoal') {
+    return saveGoal(data);
+  } else if (action === 'deleteGoal') {
+    return deleteGoal(data.id);
   }
-  
   return { success: false, error: 'Unknown POST action: ' + action };
 }
-
-// ==========================================
-// 3. 📊 핵심: 구글 시트 전체 데이터 조회 (getAllData)
-// ==========================================
 
 function formatGASDate(val) {
   if (!val) return Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
@@ -152,10 +116,13 @@ function formatGASDate(val) {
   return s;
 }
 
+// ==========================================
+// 3. 📊 핵심: 전체 데이터 조회 (장기 목표 & 시뮬레이션 포함)
+// ==========================================
+
 function getAllData(month) {
   var ss = getSpreadsheet();
   initSheets();
-  
   if (!month) month = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM');
   
   // 1. 거래 내역 조회
@@ -203,10 +170,8 @@ function getAllData(month) {
       installment: installment
     };
     
-    // 선택된 월의 거래 집계
     if (txMonth === month || month === 'all') {
       transactions.unshift(item);
-      
       if (type === '지출') {
         totalExpense += amount;
         byCategory[cat] = (byCategory[cat] || 0) + amount;
@@ -217,7 +182,6 @@ function getAllData(month) {
       }
     }
     
-    // 카드 청구월 집계
     if (type === '지출' && (payMethod === '신용카드' || cardName !== '')) {
       var cKey = cardName || '기타카드';
       if (!cardSpentMap[billingMonth]) cardSpentMap[billingMonth] = {};
@@ -310,6 +274,71 @@ function getAllData(month) {
   
   var grandAssets = totalAssets + invTotalEval;
   var netWorth = grandAssets - totalDebt;
+  
+  // 5. 🎯 장기 목표(Goals) 및 달성률 계산
+  var goalSheet = ss.getSheetByName('장기_목표');
+  var goalData = goalSheet ? goalSheet.getDataRange().getValues() : [];
+  var goalsList = [];
+  var now = new Date();
+  
+  for (var g = 1; g < goalData.length; g++) {
+    var gRow = goalData[g];
+    if (!gRow[0]) continue;
+    var gTarget = Number(gRow[3]) || 10000000;
+    var gCurrent = Number(gRow[4]) || 0;
+    // 만약 현재 모은 금액이 0이면 순자산 기반으로 자동 매핑 옵션
+    if (gCurrent === 0 && netWorth > 0) gCurrent = Math.min(gTarget, netWorth);
+    
+    var gDateStr = formatGASDate(gRow[5]);
+    var gTargetDate = new Date(gDateStr);
+    var diffTime = gTargetDate.getTime() - now.getTime();
+    var dDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    var monthsRemaining = Math.max(1, Math.ceil(dDay / 30));
+    var remainingAmount = Math.max(0, gTarget - gCurrent);
+    var monthlyRequired = Math.round(remainingAmount / monthsRemaining);
+    var pRate = gTarget > 0 ? Math.min(100, Math.round((gCurrent / gTarget) * 100)) : 0;
+    
+    goalsList.push({
+      id: gRow[0],
+      name: String(gRow[1]),
+      category: String(gRow[2] || '시드머니'),
+      target_amount: gTarget,
+      current_amount: gCurrent,
+      target_date: gDateStr,
+      d_day: dDay,
+      remaining_amount: remainingAmount,
+      monthly_required: monthlyRequired,
+      progress_rate: pRate,
+      icon: String(gRow[6] || '🎯'),
+      memo: String(gRow[7] || '')
+    });
+  }
+  
+  // 6. 📈 10년/20년 복리 스노우볼 시뮬레이션 계산
+  // 가정: 현재 순자산 + 월 저축액(기본 100만원 또는 월 잉여자금) + 연 복리수익률 7%
+  var monthlySaveEst = Math.max(500000, totalIncome - totalExpense > 0 ? (totalIncome - totalExpense) : 1000000);
+  var compoundRates = [0.05, 0.08, 0.10]; // 5%, 8%, 10%
+  var projection = {
+    current_net_worth: netWorth,
+    monthly_save: monthlySaveEst,
+    year_3: Math.round(calculateCompound(netWorth, monthlySaveEst, 0.07, 3)),
+    year_5: Math.round(calculateCompound(netWorth, monthlySaveEst, 0.07, 5)),
+    year_10: Math.round(calculateCompound(netWorth, monthlySaveEst, 0.07, 10)),
+    year_20: Math.round(calculateCompound(netWorth, monthlySaveEst, 0.07, 20))
+  };
+  
+  // 7. 👑 자산 퀘스트 레벨 (Gamer Level System)
+  var wealthLevel = 1;
+  var levelTitle = "새싹 저축가 (LV.1)";
+  var nextLevelTarget = 10000000;
+  if (netWorth >= 1000000000) { wealthLevel = 10; levelTitle = "경제적 자유 마스터 (LV.10)"; nextLevelTarget = 2000000000; }
+  else if (netWorth >= 500000000) { wealthLevel = 8; levelTitle = "자산 포트폴리오 거장 (LV.8)"; nextLevelTarget = 1000000000; }
+  else if (netWorth >= 300000000) { wealthLevel = 6; levelTitle = "탄탄한 자산가 (LV.6)"; nextLevelTarget = 500000000; }
+  else if (netWorth >= 100000000) { wealthLevel = 5; levelTitle = "1억 시드머니 달성가 (LV.5)"; nextLevelTarget = 300000000; }
+  else if (netWorth >= 50000000) { wealthLevel = 4; levelTitle = "스노우볼 가속자 (LV.4)"; nextLevelTarget = 100000000; }
+  else if (netWorth >= 30000000) { wealthLevel = 3; levelTitle = "종잣돈 빌더 (LV.3)"; nextLevelTarget = 50000000; }
+  else if (netWorth >= 10000000) { wealthLevel = 2; levelTitle = "1천만원 시드 개척자 (LV.2)"; nextLevelTarget = 30000000; }
+  
   var mindfulScore = totalExpense > 0 ? Math.max(0, 100 - Math.round(((byConsumptionType['낭비'] || 0) + (bySatisfaction['후회'] || 0)) / totalExpense * 100)) : 100;
   
   return {
@@ -332,17 +361,276 @@ function getAllData(month) {
       assets_list: assetsList,
       investments_list: investmentsList,
       inv_total_eval: invTotalEval
-    }
+    },
+    goals: goalsList,
+    level: {
+      level: wealthLevel,
+      title: levelTitle,
+      next_target: nextLevelTarget,
+      progress_to_next: Math.min(100, Math.round((netWorth / nextLevelTarget) * 100))
+    },
+    projection: projection
   };
 }
 
+function calculateCompound(principal, monthlyPayment, annualRate, years) {
+  var r = annualRate / 12;
+  var n = years * 12;
+  var futureValue = principal * Math.pow(1 + r, n);
+  futureValue += monthlyPayment * ((Math.pow(1 + r, n) - 1) / r);
+  return futureValue;
+}
+
 // ==========================================
-// 4. 📱 카드 결제 문자(SMS) 자동 파싱
+// 4. 구글 시트 테이블 초기화
 // ==========================================
+
+function getSpreadsheet() {
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function initSheets() {
+  var ss = getSpreadsheet();
+  
+  var txSheet = ss.getSheetByName('가계부_내역');
+  if (!txSheet) {
+    txSheet = ss.insertSheet('가계부_내역');
+    txSheet.appendRow(['ID', '날짜', '유형', '금액', '카테고리', '내용/사용처', '소비성격', '만족도', '결제수단', '카드명', '청구월', '대조완료', '할부', '등록일시']);
+    txSheet.getRange(1, 1, 1, 14).setBackground('#2563EB').setFontColor('#FFFFFF').setFontWeight('bold');
+    txSheet.setFrozenRows(1);
+  }
+  
+  var cardSheet = ss.getSheetByName('카드값_대조');
+  if (!cardSheet) {
+    cardSheet = ss.insertSheet('카드값_대조');
+    cardSheet.appendRow(['청구월', '카드명', '실제청구액', '기록합계', '차액', '상태', '메모', '갱신일시']);
+    cardSheet.getRange(1, 1, 1, 8).setBackground('#0284C7').setFontColor('#FFFFFF').setFontWeight('bold');
+    cardSheet.setFrozenRows(1);
+  }
+  
+  var assetSheet = ss.getSheetByName('자산_원금');
+  if (!assetSheet) {
+    assetSheet = ss.insertSheet('자산_원금');
+    assetSheet.appendRow(['ID', '자산명', '자산종류', '현재금액', '원금(시드)', '메모', '갱신일시']);
+    assetSheet.getRange(1, 1, 1, 7).setBackground('#10B981').setFontColor('#FFFFFF').setFontWeight('bold');
+    assetSheet.setFrozenRows(1);
+    assetSheet.appendRow([1, '비상금 통장', '현금/예적금', 3000000, 3000000, '생활비 비상금', new Date().toISOString()]);
+  }
+  
+  var invSheet = ss.getSheetByName('주식_투자');
+  if (!invSheet) {
+    invSheet = ss.insertSheet('주식_투자');
+    invSheet.appendRow(['ID', '종목명', '시장', '보유수량', '평균매수가', '현재가', '배당률(%)', '목표가', '메모', '갱신일시']);
+    invSheet.getRange(1, 1, 1, 10).setBackground('#8B5CF6').setFontColor('#FFFFFF').setFontWeight('bold');
+    invSheet.setFrozenRows(1);
+  }
+  
+  // 🎯 5. 장기_목표 시트
+  var goalSheet = ss.getSheetByName('장기_목표');
+  if (!goalSheet) {
+    goalSheet = ss.insertSheet('장기_목표');
+    goalSheet.appendRow(['ID', '목표명', '카테고리', '목표금액', '현재모은금액', '목표기한', '아이콘', '메모', '갱신일시']);
+    goalSheet.getRange(1, 1, 1, 9).setBackground('#F59E0B').setFontColor('#FFFFFF').setFontWeight('bold');
+    goalSheet.setFrozenRows(1);
+    
+    // 기본 장기 인생 마일스톤 기본값 생성
+    goalSheet.appendRow([101, '1억 시드머니 모으기', '시드머니', 100000000, 3000000, '2028-12-31', '🌱', '투자의 기초 시드머니', new Date().toISOString()]);
+    goalSheet.appendRow([102, '내 집 마련 / 청약 자금', '부동산/주거', 300000000, 0, '2031-12-31', '🏠', '안정적인 주거 환경', new Date().toISOString()]);
+    goalSheet.appendRow([103, '경제적 자유 (파이어족)', '은퇴/자유', 1000000000, 0, '2036-12-31', '🏖️', '배당과 금융소득으로 은퇴', new Date().toISOString()]);
+  }
+}
+
+// ==========================================
+// 5. 목표(Goal) CRUD 함수
+// ==========================================
+
+function saveGoal(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('장기_목표');
+  var id = data.id || new Date().getTime();
+  var name = data.name || '새 장기 목표';
+  var cat = data.category || '시드머니';
+  var targetAmt = Number(data.target_amount) || 10000000;
+  var currentAmt = Number(data.current_amount) || 0;
+  var targetDate = data.target_date || '2030-12-31';
+  var icon = data.icon || '🎯';
+  var memo = data.memo || '';
+  
+  if (data.id) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(data.id)) {
+        sheet.getRange(i + 1, 2, 1, 8).setValues([[name, cat, targetAmt, currentAmt, targetDate, icon, memo, new Date().toISOString()]]);
+        return { success: true };
+      }
+    }
+  }
+  sheet.appendRow([id, name, cat, targetAmt, currentAmt, targetDate, icon, memo, new Date().toISOString()]);
+  return { success: true, id: id };
+}
+
+function deleteGoal(id) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('장기_목표');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1); return { success: true };
+    }
+  }
+  return { success: false };
+}
+
+function addTransaction(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('가계부_내역');
+  var id = new Date().getTime();
+  var dateStr = data.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
+  var billingMonth = data.billing_month || dateStr.substring(0, 7);
+  sheet.appendRow([
+    id, dateStr, data.type || '지출', Number(data.amount) || 0,
+    data.category || '기타', data.description || '', data.consumption_type || '선택',
+    data.satisfaction || '보통', data.payment_method || '신용카드', data.card_name || '',
+    billingMonth, 0, Number(data.installment) || 1, new Date().toISOString()
+  ]);
+  return { success: true, id: id };
+}
+
+function deleteTransaction(id) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('가계부_내역');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1); return { success: true };
+    }
+  }
+  return { success: false };
+}
+
+function toggleReconcile(id) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('가계부_내역');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      var current = Number(data[i][11]) || 0;
+      var nextVal = current === 1 ? 0 : 1;
+      sheet.getRange(i + 1, 12).setValue(nextVal);
+      return { success: true, is_reconciled: nextVal };
+    }
+  }
+  return { success: false };
+}
+
+function reconcileCard(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('카드값_대조');
+  var bMonth = data.billing_month;
+  var cardName = data.card_name;
+  var billedAmount = Number(data.billed_amount) || 0;
+  
+  var txSheet = ss.getSheetByName('가계부_내역');
+  var txData = txSheet.getDataRange().getValues();
+  var recorded = 0;
+  for (var i = 1; i < txData.length; i++) {
+    if (txData[i][2] === '지출' && formatGASDate(txData[i][10]).substring(0,7) === bMonth && String(txData[i][9]) === cardName) {
+      recorded += Number(txData[i][3]) || 0;
+    }
+  }
+  var diff = billedAmount - recorded;
+  var status = diff === 0 ? '일치' : (diff > 0 ? '청구액 초과(누락주의)' : '기록 초과');
+  
+  var cData = sheet.getDataRange().getValues();
+  var foundRow = -1;
+  for (var k = 1; k < cData.length; k++) {
+    if (formatGASDate(cData[k][0]).substring(0,7) === bMonth && String(cData[k][1]) === cardName) {
+      foundRow = k + 1; break;
+    }
+  }
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 3, 1, 6).setValues([[billedAmount, recorded, diff, status, '', new Date().toISOString()]]);
+  } else {
+    sheet.appendRow([bMonth, cardName, billedAmount, recorded, diff, status, '', new Date().toISOString()]);
+  }
+  return { success: true, result: { difference: diff, status: status } };
+}
+
+function saveAsset(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('자산_원금');
+  var id = data.id || new Date().getTime();
+  var name = data.name;
+  var type = data.asset_type || '현금/예적금';
+  var amt = Number(data.amount) || 0;
+  var initAmt = Number(data.initial_amount) || amt;
+  var memo = data.memo || '';
+  
+  if (data.id) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(data.id)) {
+        sheet.getRange(i + 1, 2, 1, 6).setValues([[name, type, amt, initAmt, memo, new Date().toISOString()]]);
+        return { success: true };
+      }
+    }
+  }
+  sheet.appendRow([id, name, type, amt, initAmt, memo, new Date().toISOString()]);
+  return { success: true, id: id };
+}
+
+function deleteAsset(id) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('자산_원금');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1); return { success: true };
+    }
+  }
+  return { success: false };
+}
+
+function saveInvestment(data) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('주식_투자');
+  var id = data.id || new Date().getTime();
+  var name = data.name;
+  var market = data.market || '국내주식';
+  var shares = Number(data.shares) || 0;
+  var avgP = Number(data.avg_price) || 0;
+  var curP = Number(data.current_price) || avgP;
+  var divR = Number(data.dividend_rate) || 0;
+  var targetP = Number(data.target_price) || 0;
+  var memo = data.memo || '';
+  
+  if (data.id) {
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(data.id)) {
+        sheet.getRange(i + 1, 2, 1, 9).setValues([[name, market, shares, avgP, curP, divR, targetP, memo, new Date().toISOString()]]);
+        return { success: true };
+      }
+    }
+  }
+  sheet.appendRow([id, name, market, shares, avgP, curP, divR, targetP, memo, new Date().toISOString()]);
+  return { success: true, id: id };
+}
+
+function deleteInvestment(id) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('주식_투자');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1); return { success: true };
+    }
+  }
+  return { success: false };
+}
 
 function parseSmsAndSave(text, rawData) {
   if (!text) return { success: false, error: 'Empty text' };
-  
   var amount = 0;
   var amtMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
   if (amtMatch) amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
@@ -387,214 +675,4 @@ function parseSmsAndSave(text, rawData) {
   
   var saveRes = addTransaction(txData);
   return { success: true, message: '웹훅 파싱 완료', parsed: txData, id: saveRes.id };
-}
-
-// ==========================================
-// 5. 구글 시트 테이블 초기화
-// ==========================================
-
-function getSpreadsheet() {
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
-
-function initSheets() {
-  var ss = getSpreadsheet();
-  
-  var txSheet = ss.getSheetByName('가계부_내역');
-  if (!txSheet) {
-    txSheet = ss.insertSheet('가계부_내역');
-    txSheet.appendRow(['ID', '날짜', '유형', '금액', '카테고리', '내용/사용처', '소비성격', '만족도', '결제수단', '카드명', '청구월', '대조완료', '할부', '등록일시']);
-    txSheet.getRange(1, 1, 1, 14).setBackground('#2563EB').setFontColor('#FFFFFF').setFontWeight('bold');
-    txSheet.setFrozenRows(1);
-  }
-  
-  var cardSheet = ss.getSheetByName('카드값_대조');
-  if (!cardSheet) {
-    cardSheet = ss.insertSheet('카드값_대조');
-    cardSheet.appendRow(['청구월', '카드명', '실제청구액', '기록합계', '차액', '상태', '메모', '갱신일시']);
-    cardSheet.getRange(1, 1, 1, 8).setBackground('#0284C7').setFontColor('#FFFFFF').setFontWeight('bold');
-    cardSheet.setFrozenRows(1);
-  }
-  
-  var assetSheet = ss.getSheetByName('자산_원금');
-  if (!assetSheet) {
-    assetSheet = ss.insertSheet('자산_원금');
-    assetSheet.appendRow(['ID', '자산명', '자산종류', '현재금액', '원금(시드)', '메모', '갱신일시']);
-    assetSheet.getRange(1, 1, 1, 7).setBackground('#10B981').setFontColor('#FFFFFF').setFontWeight('bold');
-    assetSheet.setFrozenRows(1);
-    assetSheet.appendRow([1, '비상금 통장', '현금/예적금', 3000000, 3000000, '생활비 비상금', new Date().toISOString()]);
-  }
-  
-  var invSheet = ss.getSheetByName('주식_투자');
-  if (!invSheet) {
-    invSheet = ss.insertSheet('주식_투자');
-    invSheet.appendRow(['ID', '종목명', '시장', '보유수량', '평균매수가', '현재가', '배당률(%)', '목표가', '메모', '갱신일시']);
-    invSheet.getRange(1, 1, 1, 10).setBackground('#8B5CF6').setFontColor('#FFFFFF').setFontWeight('bold');
-    invSheet.setFrozenRows(1);
-  }
-}
-
-// ==========================================
-// 6. 트랜잭션 CRUD 및 카드 대조
-// ==========================================
-
-function addTransaction(data) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('가계부_내역');
-  var id = new Date().getTime();
-  var dateStr = data.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
-  var billingMonth = data.billing_month || dateStr.substring(0, 7);
-  
-  sheet.appendRow([
-    id, dateStr, data.type || '지출', Number(data.amount) || 0,
-    data.category || '기타', data.description || '', data.consumption_type || '선택',
-    data.satisfaction || '보통', data.payment_method || '신용카드', data.card_name || '',
-    billingMonth, 0, Number(data.installment) || 1, new Date().toISOString()
-  ]);
-  return { success: true, id: id };
-}
-
-function deleteTransaction(id) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('가계부_내역');
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-function toggleReconcile(id) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('가계부_내역');
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
-      var current = Number(data[i][11]) || 0;
-      var nextVal = current === 1 ? 0 : 1;
-      sheet.getRange(i + 1, 12).setValue(nextVal);
-      return { success: true, is_reconciled: nextVal };
-    }
-  }
-  return { success: false };
-}
-
-function reconcileCard(data) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('카드값_대조');
-  var bMonth = data.billing_month;
-  var cardName = data.card_name;
-  var billedAmount = Number(data.billed_amount) || 0;
-  
-  var txSheet = ss.getSheetByName('가계부_내역');
-  var txData = txSheet.getDataRange().getValues();
-  var recorded = 0;
-  for (var i = 1; i < txData.length; i++) {
-    if (txData[i][2] === '지출' && formatGASDate(txData[i][10]).substring(0,7) === bMonth && String(txData[i][9]) === cardName) {
-      recorded += Number(txData[i][3]) || 0;
-    }
-  }
-  
-  var diff = billedAmount - recorded;
-  var status = diff === 0 ? '일치' : (diff > 0 ? '청구액 초과(누락주의)' : '기록 초과');
-  
-  var cData = sheet.getDataRange().getValues();
-  var foundRow = -1;
-  for (var k = 1; k < cData.length; k++) {
-    if (formatGASDate(cData[k][0]).substring(0,7) === bMonth && String(cData[k][1]) === cardName) {
-      foundRow = k + 1; break;
-    }
-  }
-  
-  if (foundRow > 0) {
-    sheet.getRange(foundRow, 3, 1, 6).setValues([[billedAmount, recorded, diff, status, '', new Date().toISOString()]]);
-  } else {
-    sheet.appendRow([bMonth, cardName, billedAmount, recorded, diff, status, '', new Date().toISOString()]);
-  }
-  
-  return { success: true, result: { difference: diff, status: status } };
-}
-
-function saveAsset(data) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('자산_원금');
-  var id = data.id || new Date().getTime();
-  var name = data.name;
-  var type = data.asset_type || '현금/예적금';
-  var amt = Number(data.amount) || 0;
-  var initAmt = Number(data.initial_amount) || amt;
-  var memo = data.memo || '';
-  
-  if (data.id) {
-    var rows = sheet.getDataRange().getValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]) === String(data.id)) {
-        sheet.getRange(i + 1, 2, 1, 6).setValues([[name, type, amt, initAmt, memo, new Date().toISOString()]]);
-        return { success: true };
-      }
-    }
-  }
-  sheet.appendRow([id, name, type, amt, initAmt, memo, new Date().toISOString()]);
-  return { success: true, id: id };
-}
-
-function deleteAsset(id) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('자산_원금');
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-function saveInvestment(data) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('주식_투자');
-  var id = data.id || new Date().getTime();
-  var name = data.name;
-  var market = data.market || '국내주식';
-  var shares = Number(data.shares) || 0;
-  var avgP = Number(data.avg_price) || 0;
-  var curP = Number(data.current_price) || avgP;
-  var divR = Number(data.dividend_rate) || 0;
-  var targetP = Number(data.target_price) || 0;
-  var memo = data.memo || '';
-  
-  if (data.id) {
-    var rows = sheet.getDataRange().getValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]) === String(data.id)) {
-        sheet.getRange(i + 1, 2, 1, 9).setValues([[name, market, shares, avgP, curP, divR, targetP, memo, new Date().toISOString()]]);
-        return { success: true };
-      }
-    }
-  }
-  sheet.appendRow([id, name, market, shares, avgP, curP, divR, targetP, memo, new Date().toISOString()]);
-  return { success: true, id: id };
-}
-
-function deleteInvestment(id) {
-  var ss = getSpreadsheet();
-  var sheet = ss.getSheetByName('주식_투자');
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
-  }
-  return { success: false };
-}
-
-function testWebhookManual() {
-  var sampleSms = "[현대카드] 09/02 12:35 스타벅스 15,000원 일시불";
-  var result = parseSmsAndSave(sampleSms, {});
-  Logger.log("웹훅 테스트 결과: " + JSON.stringify(result));
 }
