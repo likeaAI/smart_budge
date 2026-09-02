@@ -6,6 +6,7 @@
     <title>스마트 머니 허브</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-body: #f8fafc; --bg-card: #ffffff; --bg-subtle: #f1f5f9;
@@ -37,10 +38,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
-        /* 🌟 Universal Dark Mode Text Safety */
-        h1, h2, h3, h4, h5, h6, strong, b, label, span, p, div, tr, td, th {
-            color: inherit;
-        }
+        /* Universal Dark Mode Text Safety */
+        h1, h2, h3, h4, h5, h6, strong, b, label, span, p, div, tr, td, th { color: inherit; }
         .text-muted { color: var(--text-muted) !important; }
         .text-primary { color: var(--primary) !important; }
         .text-income { color: var(--income) !important; }
@@ -93,12 +92,14 @@
         /* 📱 Container & Responsive Grid System */
         .container { max-width: 1240px; margin: auto; padding: 16px; }
         .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .chart-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
 
         @media (min-width: 900px) {
             .desktop-nav { display: flex; }
             .tab-bar { display: none !important; }
             body { padding-bottom: 30px; }
             .desktop-dashboard-grid { grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start; }
+            .chart-grid { grid-template-columns: 1fr 1.3fr; gap: 20px; }
         }
 
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); color: var(--text-main); }
@@ -116,6 +117,9 @@
         .stat-box { background: var(--bg-subtle); padding: 14px; border-radius: 14px; text-align: center; color: var(--text-main); }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.2rem; font-weight: 900; }
+
+        /* 📊 Chart Wrappers */
+        .chart-wrapper { position: relative; height: 250px; width: 100%; }
 
         /* 💬 Smart Natural Language Box */
         .sms-paste-box {
@@ -282,6 +286,29 @@
 
         <!-- 1. 📊 메인 대시보드 탭 -->
         <section id="tab-dashboard" class="tab-content">
+            <!-- 차트 그리드 (카테고리 도넛 & 일별 추이 바) -->
+            <div class="chart-grid">
+                <div class="card">
+                    <div class="card-title">
+                        <span>🍩 이번 달 카테고리별 소비 비중</span>
+                        <span id="chartExpenseTotal" style="font-size: 0.85rem; font-weight: 700; color: var(--expense);">0원</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📊 일자별 지출 추이 그래프</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">이번 달 일별 흐름</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <div class="desktop-dashboard-grid">
                 <div class="grid-col">
                     <div class="level-banner">
@@ -410,8 +437,8 @@
 
                         <div class="calc-key" onclick="pressNum('4')">4</div>
                         <div class="calc-key" onclick="pressNum('5')">5</div>
-                        <div class="calc-key" onclick="pressNum('6')">6</div>
                         <div class="calc-key op" onclick="pressOp('*')">×</div>
+                        <div class="calc-key" onclick="pressNum('6')">6</div>
 
                         <div class="calc-key" onclick="pressNum('1')">1</div>
                         <div class="calc-key" onclick="pressNum('2')">2</div>
@@ -590,6 +617,11 @@
         let audioCtx = null;
         let soundEnabled = true;
         let globalNetWorth = 0;
+        let cachedTransactions = [];
+
+        // 📊 Chart.js Instances
+        let categoryChartInstance = null;
+        let dailyChartInstance = null;
 
         // 🔒 PIN Lock State
         let enteredPin = "";
@@ -608,13 +640,13 @@
         let recCalcExpr = "0";
 
         const EXPENSE_CATEGORIES = [
-            { name: '식비', icon: '🍚' },
-            { name: '카페', icon: '☕' },
-            { name: '교통', icon: '🚗' },
-            { name: '쇼핑', icon: '🛒' },
-            { name: '생활', icon: '🏠' },
-            { name: '문화/여가', icon: '🎬' },
-            { name: '기타', icon: '📝' }
+            { name: '식비', icon: '🍚', color: '#f87171' },
+            { name: '카페', icon: '☕', color: '#fbbf24' },
+            { name: '교통', icon: '🚗', color: '#38bdf8' },
+            { name: '쇼핑', icon: '🛒', color: '#fb923c' },
+            { name: '생활', icon: '🏠', color: '#34d399' },
+            { name: '문화/여가', icon: '🎬', color: '#a78bfa' },
+            { name: '기타', icon: '📝', color: '#94a3b8' }
         ];
 
         const INCOME_CATEGORIES = [
@@ -1141,6 +1173,7 @@
             localStorage.setItem('theme_mode', newTheme);
             playSound('click');
             updateCalcDisplay();
+            renderCharts(cachedTransactions);
         }
 
         function switchTab(tabId) {
@@ -1158,6 +1191,9 @@
                 if (mobItems[idx]) mobItems[idx].classList.add('active');
                 const deskItems = document.querySelectorAll('.nav-btn');
                 if (deskItems[idx]) deskItems[idx].classList.add('active');
+            }
+            if (tabId === 'tab-dashboard') {
+                setTimeout(() => renderCharts(cachedTransactions), 60);
             }
         }
 
@@ -1230,6 +1266,7 @@
         function renderData(res) {
             if (!res) return;
             globalNetWorth = res.net_worth?.net_worth || 0;
+            cachedTransactions = res.transactions || [];
 
             if (res.level) {
                 document.getElementById('disp-level-title').innerText = res.level.title;
@@ -1242,13 +1279,16 @@
             document.getElementById('disp-networth').innerText = globalNetWorth.toLocaleString() + '원';
             document.getElementById('disp-inv').innerText = (res.net_worth?.inv_total_eval || 0).toLocaleString() + '원';
             document.getElementById('disp-cash').innerText = ((res.net_worth?.total_assets || 0) - (res.net_worth?.inv_total_eval || 0)).toLocaleString() + '원';
-            document.getElementById('disp-expense').innerText = (res.summary?.total_expense || 0).toLocaleString() + '원';
+            
+            const expTotal = res.summary?.total_expense || 0;
+            document.getElementById('disp-expense').innerText = expTotal.toLocaleString() + '원';
+            document.getElementById('chartExpenseTotal').innerText = expTotal.toLocaleString() + '원';
             document.getElementById('disp-income').innerText = (res.summary?.total_income || 0).toLocaleString() + '원';
             document.getElementById('disp-score').innerText = (res.summary?.mindful_score ?? 100) + '점';
 
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
-            const txList = res.transactions || [];
+            const txList = cachedTransactions;
             if (txList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">최근 지출/수익 내역이 없습니다.</td></tr>';
             } else {
@@ -1266,12 +1306,136 @@
                 });
             }
 
+            renderCharts(txList);
             renderDashboardGoals(res.goals || []);
             renderDashboardCards(res.cards_summary || []);
             renderCardsSummary(res.cards_summary);
             renderAssetsAndInv(res.net_worth);
             renderGoals(res.goals || []);
             updateSimulation();
+        }
+
+        // 📊 차트 렌더링 함수 (카테고리 도넛 + 일별 추이 바)
+        function renderCharts(transactions) {
+            if (typeof Chart === 'undefined') return;
+            const isDark = document.documentElement.dataset.theme === 'dark';
+            const textColor = isDark ? '#f8fafc' : '#0f172a';
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+            const expenses = (transactions || []).filter(t => t.type !== '수입');
+
+            // 1. 카테고리별 지출 집계
+            const catMap = {};
+            expenses.forEach(t => {
+                const cat = t.category || '기타';
+                catMap[cat] = (catMap[cat] || 0) + Number(t.amount || 0);
+            });
+
+            const catLabels = Object.keys(catMap);
+            const catData = Object.values(catMap);
+
+            const catColors = {
+                '식비': '#f87171', '카페': '#fbbf24', '교통': '#38bdf8', '쇼핑': '#fb923c',
+                '생활': '#34d399', '문화/여가': '#a78bfa', '기타': '#94a3b8'
+            };
+            const bgColors = catLabels.map(l => catColors[l] || '#60a5fa');
+
+            const canvasCat = document.getElementById('categoryChart');
+            if (canvasCat) {
+                const ctxCat = canvasCat.getContext('2d');
+                if (categoryChartInstance) categoryChartInstance.destroy();
+                categoryChartInstance = new Chart(ctxCat, {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels.length > 0 ? catLabels : ['내역 없음'],
+                        datasets: [{
+                            data: catData.length > 0 ? catData : [1],
+                            backgroundColor: catData.length > 0 ? bgColors : [isDark ? '#334155' : '#e2e8f0'],
+                            borderWidth: 2,
+                            borderColor: isDark ? '#1e293b' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: textColor,
+                                    font: { family: 'Pretendard', size: 11, weight: '600' },
+                                    boxWidth: 12,
+                                    padding: 8
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ` ${ctx.label}: ${Number(ctx.raw).toLocaleString()}원`;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '68%'
+                    }
+                });
+            }
+
+            // 2. 일자별 지출 추이 집계
+            const dateMap = {};
+            expenses.forEach(t => {
+                const d = String(t.date).substring(5); // MM-DD
+                dateMap[d] = (dateMap[d] || 0) + Number(t.amount || 0);
+            });
+
+            const sortedDates = Object.keys(dateMap).sort();
+            const dateData = sortedDates.map(d => dateMap[d]);
+
+            const canvasDaily = document.getElementById('dailyChart');
+            if (canvasDaily) {
+                const ctxDaily = canvasDaily.getContext('2d');
+                if (dailyChartInstance) dailyChartInstance.destroy();
+                dailyChartInstance = new Chart(ctxDaily, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedDates.length > 0 ? sortedDates : ['내역 없음'],
+                        datasets: [{
+                            label: '지출액',
+                            data: dateData.length > 0 ? dateData : [0],
+                            backgroundColor: isDark ? '#3b82f6cc' : '#2563ebcc',
+                            borderColor: isDark ? '#60a5fa' : '#1d4ed8',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                ticks: { color: textColor, font: { family: 'Pretendard', size: 10 } },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: textColor,
+                                    font: { family: 'Pretendard', size: 10 },
+                                    callback: function(v) { return v >= 10000 ? (v/10000)+'만' : v; }
+                                },
+                                grid: { color: gridColor }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return ` ${Number(ctx.raw).toLocaleString()}원`; }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         function renderDashboardGoals(goals) {
