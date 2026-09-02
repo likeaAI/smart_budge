@@ -281,6 +281,7 @@
         <nav class="desktop-nav">
             <button class="nav-btn active" onclick="switchTab('tab-dashboard')">📊 대시보드</button>
             <button class="nav-btn" onclick="switchTab('tab-add')">🧮 지출/수익 입력</button>
+            <button class="nav-btn" onclick="switchTab('tab-recurring')">🗓️ 정기 입출금</button>
             <button class="nav-btn" onclick="switchTab('tab-goals')">🎯 장기 목표</button>
             <button class="nav-btn" onclick="switchTab('tab-cards')">💳 카드값 대조</button>
             <button class="nav-btn" onclick="switchTab('tab-assets')">🏦 자산/주식</button>
@@ -545,7 +546,104 @@
             </div>
         </section>
 
-        <!-- 3. 🎯 장기 로드맵 탭 -->
+        <!-- 3. 🗓️ 매월 정기 입출금 / 고정 지출·수익 관리 탭 -->
+        <section id="tab-recurring" class="tab-content" style="display: none;">
+            <div class="dash-section-stack">
+                <!-- 상단 고정비 요약 스탯 -->
+                <div class="stat-grid" style="margin-top: 0; margin-bottom: 0;">
+                    <div class="stat-box" style="border-left: 3px solid var(--income);">
+                        <div class="stat-label">매월 정기 수입 합계</div>
+                        <div id="recSumIncome" class="stat-val" style="color: var(--income);">0원</div>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid var(--expense);">
+                        <div class="stat-label">매월 고정 지출 합계</div>
+                        <div id="recSumExpense" class="stat-val" style="color: var(--expense);">0원</div>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid var(--primary);">
+                        <div class="stat-label">가처분 잔여 소득</div>
+                        <div id="recSumNet" class="stat-val" style="color: var(--primary);">0원</div>
+                    </div>
+                </div>
+
+                <div class="desktop-dashboard-grid">
+                    <!-- 좌측: 정기 입출금 등록 폼 -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-title">
+                            <span>🗓️ 매월 정기 입출금 등록</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">날짜 & 금액 지정</span>
+                        </div>
+
+                        <!-- 유형 선택 (고정 지출 vs 고정 수입) -->
+                        <div class="type-switch" style="margin-bottom: 12px;">
+                            <button type="button" id="recTypeExpBtn" class="type-btn active expense" onclick="switchRecType('지출')">💸 매월 고정 지출</button>
+                            <button type="button" id="recTypeIncBtn" class="type-btn" onclick="switchRecType('수입')">💵 매월 정기 수입</button>
+                        </div>
+
+                        <!-- 매월 결제/입금 일자 선택 -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                                📅 매월 지정 일자: <b id="lblRecDay" style="color: var(--primary); font-size: 1.05rem;">매월 10일</b>
+                            </label>
+                            <input type="range" id="rngRecDay" min="1" max="31" value="10" style="width: 100%; accent-color: var(--primary);" oninput="document.getElementById('lblRecDay').innerText = '매월 ' + this.value + '일'">
+                        </div>
+
+                        <!-- 항목명 -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">항목명 (메모)</label>
+                            <input type="text" id="recItemName" class="form-control" placeholder="예: 월세, 정기 월급, 아파트 관리비, 넷플릭스, 통신비 등">
+                        </div>
+
+                        <!-- 금액 입력 -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">매월 지정 금액 (원)</label>
+                            <input type="number" id="recItemAmount" class="form-control" placeholder="예: 3500000">
+                        </div>
+
+                        <!-- 카테고리 -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">카테고리</label>
+                            <select id="recCategory" class="form-control">
+                                <option value="생활">🏠 생활 (월세/관리비/공과금)</option>
+                                <option value="급여/월급">💰 급여/월급</option>
+                                <option value="구독">📺 구독/멤버십</option>
+                                <option value="통신/보험">📱 통신/보험</option>
+                                <option value="교통">🚗 교통/차량유지</option>
+                                <option value="금융/이자">📈 금융/적금/이자</option>
+                                <option value="기타">📝 기타 고정비</option>
+                            </select>
+                        </div>
+
+                        <!-- 결제/입금 수단 -->
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">결제/입금 수단</label>
+                            <select id="recPayMethod" class="form-control">
+                                <option value="현금/계좌">💵 계좌 자동이체 / 현금</option>
+                                <option value="현대카드">💳 현대카드 자동결제</option>
+                                <option value="신한카드">💳 신한카드 자동결제</option>
+                                <option value="삼성카드">💳 삼성카드 자동결제</option>
+                                <option value="KB국민카드">💳 국민카드 자동결제</option>
+                                <option value="체크카드">💳 체크카드 자동결제</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn-submit" onclick="handleAddRecurringPlan()">
+                            ➕ 매월 정기 일정으로 저장하기
+                        </button>
+                    </div>
+
+                    <!-- 우측: 등록된 정기 입출금 목록 & D-Day 알림 -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-title">
+                            <span>📋 등록된 매월 고정 일정 목록</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">실시간 D-Day 계산</span>
+                        </div>
+                        <div id="recurringListContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 🎯 장기 로드맵 탭 -->
         <section id="tab-goals" class="tab-content" style="display: none;">
             <div class="desktop-dashboard-grid">
                 <div class="card" style="border-color: var(--warning);">
@@ -667,9 +765,10 @@
     <!-- 📱 Mobile Bottom Tab Bar -->
     <nav class="tab-bar">
         <a class="tab-item active" onclick="switchTab('tab-dashboard')"><span class="tab-icon">📊</span><span>홈</span></a>
-        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>지출/수익</span></a>
+        <a class="tab-item" onclick="switchTab('tab-add')"><span class="tab-icon">🧮</span><span>입력</span></a>
+        <a class="tab-item" onclick="switchTab('tab-recurring')"><span class="tab-icon">🗓️</span><span>정기</span></a>
         <a class="tab-item" onclick="switchTab('tab-goals')"><span class="tab-icon">🎯</span><span>목표</span></a>
-        <a class="tab-item" onclick="switchTab('tab-cards')"><span class="tab-icon">💳</span><span>카드대조</span></a>
+        <a class="tab-item" onclick="switchTab('tab-cards')"><span class="tab-icon">💳</span><span>카드</span></a>
         <a class="tab-item" onclick="switchTab('tab-assets')"><span class="tab-icon">🏦</span><span>자산</span></a>
     </nav>
 
@@ -740,6 +839,7 @@
             document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
             updateCalcDisplay();
             updateRecCalcDisplay();
+            renderRecurringUI();
             loadGameData(true);
         });
 
@@ -1245,7 +1345,7 @@
             
             document.getElementById(tabId).style.display = 'block';
             
-            const tabs = ['tab-dashboard', 'tab-add', 'tab-goals', 'tab-cards', 'tab-assets'];
+            const tabs = ['tab-dashboard', 'tab-add', 'tab-recurring', 'tab-goals', 'tab-cards', 'tab-assets'];
             const idx = tabs.indexOf(tabId);
             if (idx >= 0) {
                 const mobItems = document.querySelectorAll('.tab-item');
@@ -1255,6 +1355,9 @@
             }
             if (tabId === 'tab-dashboard') {
                 setTimeout(() => renderCharts(cachedTransactions), 60);
+            }
+            if (tabId === 'tab-recurring') {
+                renderRecurringUI();
             }
         }
 
@@ -1665,6 +1768,200 @@
                 row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem; color:var(--text-main);';
                 row.innerHTML = `<span><strong style="color:var(--text-main);">${inv.name}</strong> (${inv.shares}주)</span><strong style="color:var(--text-main);">${inv.total_eval.toLocaleString()}원</strong>`;
                 iContainer.appendChild(row);
+            });
+        }
+
+        // 🗓️ 매월 정기 입출금 / 고정비 관리 로직
+        let currentRecType = "지출";
+
+        function switchRecType(type) {
+            playSound('click');
+            currentRecType = type;
+            const expBtn = document.getElementById('recTypeExpBtn');
+            const incBtn = document.getElementById('recTypeIncBtn');
+            if (type === '지출') {
+                expBtn.className = 'type-btn active expense';
+                incBtn.className = 'type-btn';
+            } else {
+                incBtn.className = 'type-btn active income';
+                expBtn.className = 'type-btn';
+            }
+        }
+
+        function getRecurringPlans() {
+            const raw = localStorage.getItem('user_recurring_plans');
+            if (raw) {
+                try { return JSON.parse(raw); } catch(e) {}
+            }
+            const defaults = [
+                { id: 'rec_salary', day: 10, type: '수입', category: '급여/월급', name: '정기 월급여', amount: 3500000, pay_method: '현금/계좌' },
+                { id: 'rec_rent', day: 25, type: '지출', category: '생활', name: '아파트 관리비/공과금', amount: 250000, pay_method: '현대카드' },
+                { id: 'rec_sub', day: 14, type: '지출', category: '구독', name: '넷플릭스/유튜브 프리미엄', amount: 17000, pay_method: '신한카드' }
+            ];
+            localStorage.setItem('user_recurring_plans', JSON.stringify(defaults));
+            return defaults;
+        }
+
+        function saveRecurringPlans(plans) {
+            localStorage.setItem('user_recurring_plans', JSON.stringify(plans));
+            renderRecurringUI();
+        }
+
+        function handleAddRecurringPlan() {
+            const day = parseInt(document.getElementById('rngRecDay').value, 10);
+            const name = document.getElementById('recItemName').value.trim();
+            const amount = parseInt(document.getElementById('recItemAmount').value, 10);
+            const category = document.getElementById('recCategory').value;
+            const payMethod = document.getElementById('recPayMethod').value;
+
+            if (!name) { alert('항목명을 입력해주세요. (예: 월세, 급여, 관리비 등)'); return; }
+            if (!amount || amount <= 0) { alert('0원 이상의 올바른 금액을 입력해주세요.'); return; }
+
+            playSound('coin');
+            const plans = getRecurringPlans();
+            const newPlan = {
+                id: 'rec_' + Date.now(),
+                day,
+                type: currentRecType,
+                category,
+                name,
+                amount,
+                pay_method: payMethod
+            };
+            plans.push(newPlan);
+            saveRecurringPlans(plans);
+
+            document.getElementById('recItemName').value = '';
+            document.getElementById('recItemAmount').value = '';
+            alert(`매월 ${day}일 [${name} ${amount.toLocaleString()}원] 정기 일정이 저장되었습니다!`);
+        }
+
+        function handleDeleteRecurringPlan(id) {
+            if (!confirm('이 정기 일정을 삭제하시겠습니까?')) return;
+            playSound('click');
+            let plans = getRecurringPlans();
+            plans = plans.filter(p => p.id !== id);
+            saveRecurringPlans(plans);
+        }
+
+        async function handleApplyRecurringToSheet(id) {
+            const plans = getRecurringPlans();
+            const item = plans.find(p => p.id === id);
+            if (!item) return;
+
+            playSound('coin');
+            const year = new Date().getFullYear();
+            const month = String(new Date().getMonth() + 1).padStart(2, '0');
+            const day = String(item.day).padStart(2, '0');
+            const txDate = `${year}-${month}-${day}`;
+
+            const cardName = item.pay_method.includes('카드') ? item.pay_method.replace(' 자동결제', '').replace('💳 ', '') : '';
+
+            const payload = {
+                date: txDate,
+                amount: item.amount,
+                payment_method: item.pay_method.includes('카드') ? '신용카드' : '현금/계좌',
+                card_name: cardName,
+                category: item.category,
+                consumption_type: item.type === '수입' ? '수입' : '필수',
+                description: `[정기] ${item.name}`,
+                type: item.type
+            };
+
+            await callGasApi('addTransaction', payload);
+            showStamp(item.amount, item.type);
+            
+            const recordedKey = `rec_done_${currentMonth}_${id}`;
+            localStorage.setItem(recordedKey, 'true');
+            renderRecurringUI();
+
+            setTimeout(() => {
+                loadGameData(true);
+            }, 1100);
+        }
+
+        function renderRecurringUI() {
+            const plans = getRecurringPlans();
+            plans.sort((a, b) => a.day - b.day);
+
+            let sumInc = 0;
+            let sumExp = 0;
+
+            plans.forEach(p => {
+                if (p.type === '수입') sumInc += Number(p.amount);
+                else sumExp += Number(p.amount);
+            });
+
+            const sumNet = sumInc - sumExp;
+
+            const elInc = document.getElementById('recSumIncome');
+            if (elInc) elInc.innerText = '+' + sumInc.toLocaleString() + '원';
+
+            const elExp = document.getElementById('recSumExpense');
+            if (elExp) elExp.innerText = '-' + sumExp.toLocaleString() + '원';
+
+            const elNet = document.getElementById('recSumNet');
+            if (elNet) {
+                elNet.innerText = (sumNet >= 0 ? '+' : '') + sumNet.toLocaleString() + '원';
+                elNet.style.color = sumNet >= 0 ? 'var(--primary)' : 'var(--expense)';
+            }
+
+            const container = document.getElementById('recurringListContainer');
+            if (!container) return;
+
+            container.innerHTML = '';
+            if (plans.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 30px 10px; font-size: 0.9rem;">
+                        등록된 매월 정기 입출금 일정이 없습니다.<br>
+                        왼쪽에서 매월 결제/입금 일자와 금액을 등록해보세요!
+                    </div>
+                `;
+                return;
+            }
+
+            const today = new Date().getDate();
+
+            plans.forEach(p => {
+                const diff = p.day - today;
+                let dDayBadge = '';
+                if (diff === 0) {
+                    dDayBadge = '<span style="background: #ef444422; color: var(--expense); font-weight: 800; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem;">🚨 오늘 입출금일!</span>';
+                } else if (diff > 0) {
+                    dDayBadge = `<span style="background: var(--badge-bg); color: var(--primary); font-weight: 700; padding: 2px 8px; border-radius: 8px; font-size: 0.75rem;">D-${diff}일</span>`;
+                } else {
+                    dDayBadge = `<span style="background: var(--bg-subtle); color: var(--text-muted); padding: 2px 8px; border-radius: 8px; font-size: 0.75rem;">이번달 지남 (D+${Math.abs(diff)})</span>`;
+                }
+
+                const isRecorded = localStorage.getItem(`rec_done_${currentMonth}_${p.id}`) === 'true';
+
+                const card = document.createElement('div');
+                card.style.cssText = `background: var(--bg-card); border: 1.5px solid var(--border-color); border-left: 4px solid ${p.type === '수입' ? 'var(--income)' : 'var(--expense)'}; border-radius: 14px; padding: 14px 16px;`;
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 900; font-size: 1rem; color: var(--primary);">매월 ${p.day}일</span>
+                            ${dDayBadge}
+                        </div>
+                        <strong style="font-size: 1.1rem; color: ${p.type === '수입' ? 'var(--income)' : 'var(--expense)'};">
+                            ${p.type === '수입' ? '+' : '-'}${Number(p.amount).toLocaleString()}원
+                        </strong>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                        <span><b style="color: var(--text-main); font-size: 0.95rem;">${p.name}</b> · ${p.category}</span>
+                        <span>${p.pay_method}</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <button type="button" class="btn-icon" style="font-size: 0.78rem; color: var(--expense);" onclick="handleDeleteRecurringPlan('${p.id}')">🗑️ 삭제</button>
+                        <button type="button" class="btn-icon" style="font-size: 0.82rem; font-weight: 700; background: ${isRecorded ? 'var(--bg-subtle)' : 'var(--primary)'}; color: ${isRecorded ? 'var(--text-muted)' : 'white'}; border: none;" onclick="handleApplyRecurringToSheet('${p.id}')">
+                            ${isRecorded ? '✓ 이번달 반영완료 (재등록)' : '⚡ 이번달 시트에 즉시 등록'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
             });
         }
     </script>
