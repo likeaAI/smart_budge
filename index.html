@@ -12,12 +12,21 @@
             --text-main: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0;
             --primary: #2563eb; --income: #10b981; --expense: #ef4444; --warning: #f59e0b; --purple: #8b5cf6;
             --key-bg: #ffffff; --key-shadow: #cbd5e1; --key-active: #e2e8f0;
+            --badge-bg: #eff6ff; --badge-text: #1e40af;
+            --sms-box-bg: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            --sms-box-border: #38bdf8;
+            --sms-box-title: #0284c7;
         }
         [data-theme='dark'] {
             --bg-body: #090d16; --bg-card: #1e293b; --bg-subtle: #0f172a;
             --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155;
-            --primary: #3b82f6; --purple: #a78bfa;
+            --primary: #3b82f6; --income: #34d399; --expense: #f87171; --warning: #fbbf24; --purple: #a78bfa;
             --key-bg: #334155; --key-shadow: #0f172a; --key-active: #1e293b;
+            --badge-bg: #1e3a8a33; --badge-text: #93c5fd;
+            --sms-box-bg: linear-gradient(135deg, #064e3b33 0%, #0369a133 100%);
+            --sms-box-border: #0284c7;
+            --sms-box-title: #38bdf8;
+            color-scheme: dark;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
@@ -29,14 +38,14 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             padding: 24px; transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .pin-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; text-align: center; }
+        .pin-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; text-align: center; color: var(--text-main); }
         .pin-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
         .pin-dots { display: flex; gap: 16px; margin-bottom: 36px; }
         .pin-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--border-color); transition: all 0.15s ease; }
         .pin-dot.filled { background: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px rgba(37,99,235,0.4); }
         .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 280px; }
         .pin-btn {
-            background: var(--bg-card); border: 1.5px solid var(--border-color);
+            background: var(--key-bg); border: 1.5px solid var(--border-color);
             border-radius: 50%; width: 72px; height: 72px; margin: auto;
             font-size: 1.6rem; font-weight: 700; color: var(--text-main);
             display: flex; align-items: center; justify-content: center;
@@ -63,7 +72,7 @@
         .nav-btn.active { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
         [data-theme='dark'] .nav-btn.active { background: #1e3a8a; color: #93c5fd; border-color: #2563eb; }
 
-        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); padding: 7px 11px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; font-weight: 600; }
+        .btn-icon { background: var(--bg-subtle); border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 11px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; font-weight: 600; }
         .sync-indicator { font-size: 0.75rem; color: var(--income); font-weight: 700; }
 
         /* 📱 Container & Responsive Grid System */
@@ -78,7 +87,7 @@
         }
 
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
 
         /* 👑 Level Banner */
         .level-banner { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 18px 22px; border-radius: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(37,99,235,0.22); }
@@ -91,15 +100,13 @@
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.2rem; font-weight: 900; }
 
-        /* 💬 Smart Natural Language / SMS / Bank Auto-Parser Box */
+        /* 💬 Smart Natural Language Box */
         .sms-paste-box {
-            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
-            border: 2px dashed #38bdf8; border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
+            background: var(--sms-box-bg);
+            border: 2px dashed var(--sms-box-border);
+            border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
         }
-        [data-theme='dark'] .sms-paste-box {
-            background: linear-gradient(135deg, #064e3b33 0%, #0369a133 100%);
-            border-color: #0284c7;
-        }
+        .sms-box-header-title { font-weight: 800; font-size: 0.9rem; color: var(--sms-box-title); }
         .sms-textarea {
             width: 100%; height: 68px; background: var(--bg-card);
             border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px;
@@ -108,8 +115,9 @@
         }
         .parse-preview-badge {
             display: inline-flex; align-items: center; gap: 6px;
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; margin-top: 6px;
+            background: var(--badge-bg); border: 1px solid var(--border-color);
+            color: var(--badge-text);
+            padding: 5px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; margin-top: 8px;
         }
 
         /* 🧮 Calculator Keypad */
@@ -128,7 +136,7 @@
         .type-btn.active.income { background: var(--bg-card); color: var(--income); box-shadow: 0 2px 6px rgba(16,185,129,0.15); }
 
         .calc-quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .quick-chip { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px 0; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-align: center; cursor: pointer; }
+        .quick-chip { background: var(--key-bg); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 10px 0; font-size: 0.85rem; font-weight: 700; color: var(--text-main); text-align: center; cursor: pointer; }
         .quick-chip:active { background: var(--key-active); transform: scale(0.97); }
 
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
@@ -141,7 +149,9 @@
         }
         .calc-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
         .calc-key.op { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; box-shadow: 0 4px 0 #93c5fd; }
+        [data-theme='dark'] .calc-key.op { background: #1e3a8a; color: #93c5fd; border-color: #2563eb; box-shadow: 0 4px 0 #0f172a; }
         .calc-key.clear { background: #fef2f2; color: var(--expense); border-color: #fecaca; box-shadow: 0 4px 0 #fca5a5; }
+        [data-theme='dark'] .calc-key.clear { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; box-shadow: 0 4px 0 #0f172a; }
         .calc-key.equal { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 4px 0 #1e40af; }
 
         /* 🏷️ Chips */
@@ -149,11 +159,14 @@
         .chip {
             background: var(--bg-subtle); border: 1.5px solid var(--border-color);
             border-radius: 20px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600;
-            color: var(--text-muted); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;
+            color: var(--text-main); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;
         }
         .chip.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
 
         .form-control { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; margin-bottom: 10px; }
+        select, input[type="date"], input[type="text"], input[type="url"], input[type="number"] {
+            background: var(--bg-card); color: var(--text-main); border: 1.5px solid var(--border-color);
+        }
 
         /* Mobile Tab Bar */
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 58px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
@@ -168,11 +181,13 @@
         .btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e40af; }
 
         .value-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; text-align: center; }
+        [data-theme='dark'] .value-box { background: #1e3a8a33; border-color: #2563eb; color: #93c5fd; }
+        
         .stamp-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .stamp-box { background: var(--bg-card); border: 4px solid var(--income); border-radius: 24px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .stamp-box { background: var(--bg-card); color: var(--text-main); border: 4px solid var(--income); border-radius: 24px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes stampSlam { 0% { opacity: 0; transform: scale(2) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
 
-        .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: var(--text-main); }
         .table th, .table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); text-align: left; }
         .table th { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; }
         .text-right { text-align: right; }
@@ -326,11 +341,10 @@
         <!-- 2. 🧮 지출/수익 입력 탭 (스마트 자연어/문자 자동 파서 탑재) -->
         <section id="tab-add" class="tab-content" style="display: none;">
             <div style="max-width: 620px; margin: auto;">
-                <!-- 💬 AI 스마트 텍스트 / 알림톡 / 결제·입금 문자 자동 인식 박스 -->
                 <div class="sms-paste-box">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 800; font-size: 0.9rem; color: #0284c7;">💬 텍스트 / 입출금 알림 붙여넣기 (AI 자동인식)</span>
-                        <button type="button" class="btn-icon" onclick="pasteFromClipboard()" style="background: #e0f2fe; color: #0284c7; font-size: 0.8rem; border-color: #7dd3fc;">📋 클립보드 읽기</button>
+                        <span class="sms-box-header-title">💬 텍스트 / 입출금 알림 붙여넣기 (AI 자동인식)</span>
+                        <button type="button" class="btn-icon" onclick="pasteFromClipboard()" style="background: var(--bg-card); color: var(--sms-box-title); font-size: 0.8rem; border-color: var(--sms-box-border);">📋 클립보드 읽기</button>
                     </div>
                     <textarea id="smsInput" class="sms-textarea" placeholder="카드 결제 문자, 은행 입금 문자, 또는 '오늘 점심 12000원 현대카드', '월급 350만원 입금' 처럼 자유롭게 적거나 붙여넣으세요!" oninput="parseNaturalText(this.value)"></textarea>
                     
@@ -341,7 +355,6 @@
                 </div>
 
                 <div class="card">
-                    <!-- 수입 vs 지출 선택 스위치 -->
                     <div class="type-switch">
                         <button type="button" id="typeExpenseBtn" class="type-btn active expense" onclick="switchTxType('지출')">💸 지출 (Expense)</button>
                         <button type="button" id="typeIncomeBtn" class="type-btn" onclick="switchTxType('수입')">💵 수익/수입 (Income)</button>
@@ -352,7 +365,6 @@
                         <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
                     </div>
 
-                    <!-- 계산기 디스플레이 -->
                     <div class="calc-display">
                         <div id="calcFormula" class="calc-formula"></div>
                         <div id="calcDisplay" class="calc-main-amt">0원</div>
@@ -361,7 +373,6 @@
 
                     <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
 
-                    <!-- 빠른 금액 증감 칩 -->
                     <div class="calc-quick-row">
                         <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
                         <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
@@ -369,7 +380,6 @@
                         <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
                     </div>
 
-                    <!-- 3D 키패드 -->
                     <div class="calc-grid">
                         <div class="calc-key" onclick="pressNum('7')">7</div>
                         <div class="calc-key" onclick="pressNum('8')">8</div>
@@ -396,9 +406,7 @@
                     </div>
 
                     <div id="catSectionTitle" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">카테고리</div>
-                    <div class="chip-group" id="categoryChips">
-                        <!-- 동적으로 지출/수입 카테고리 렌더링 -->
-                    </div>
+                    <div class="chip-group" id="categoryChips"></div>
 
                     <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">결제/수령 수단</div>
                     <div class="chip-group" id="payMethodChips">
@@ -466,7 +474,7 @@
                 <div class="card">
                     <div class="card-title">
                         <span>💳 카드 청구서 대조 (계산기)</span>
-                        <select id="recCardName" style="border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); padding:4px 8px; border-radius:8px; font-weight:700;">
+                        <select id="recCardName" style="border:1.5px solid var(--border-color); background:var(--bg-card); color:var(--text-main); padding:4px 8px; border-radius:8px; font-weight:700;">
                             <option value="현대카드">💳 현대카드</option>
                             <option value="신한카드">💳 신한카드</option>
                             <option value="삼성카드">💳 삼성카드</option>
@@ -567,7 +575,7 @@
         let tempNewPin = "";
 
         // 🧮 Transaction State
-        let currentTxType = "지출"; // "지출" or "수입"
+        let currentTxType = "지출";
         let calcExpr = "0";
         let selectedCategory = "식비";
         let selectedPayMethod = "신용카드";
@@ -597,6 +605,9 @@
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme_mode') || 'light';
+            document.documentElement.dataset.theme = savedTheme;
+
             initPinLock();
             renderCategoryChips();
 
@@ -739,7 +750,7 @@
             const container = document.getElementById('categoryChips');
             container.innerHTML = '';
             const list = currentTxType === '지출' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
-            list.forEach((c, idx) => {
+            list.forEach((c) => {
                 const div = document.createElement('div');
                 div.className = 'chip' + (c.name === selectedCategory ? ' active' : '');
                 div.innerHTML = `${c.icon} ${c.name}`;
@@ -748,7 +759,7 @@
             });
         }
 
-        // 💬 Smart NLP & SMS/Bank Automatic Text Parser
+        // 💬 Smart NLP & SMS Text Parser
         async function pasteFromClipboard() {
             playSound('click');
             try {
@@ -779,7 +790,6 @@
             let cardName = '현대카드';
             let desc = '';
 
-            // 1. 수입 vs 지출 판별 키워드
             const incomeKeywords = ['입금', '수입', '급여', '월급', '보냈습니다', '이자', '배당', '환급', '수익', '캐시백', '용돈', '판매', '정산', '당근'];
             const expenseKeywords = ['출금', '승인', '결제', '사용', '일시불', '체크', '지출', '구입', '산'];
 
@@ -789,7 +799,6 @@
             if (hasIncome && !hasExpense) recognizedType = '수입';
             else recognizedType = '지출';
 
-            // 2. 한국어 복합 금액 단위 파싱 (예: 350만원, 3만 5천원, 15,000원, 50000)
             const koreanAmtMatch = text.match(/([0-9.]+)\s*억\s*([0-9.]+)?\s*만?원?/);
             const manAmtMatch = text.match(/([0-9.]+)\s*만\s*([0-9.]+)?\s*천?원?/);
             const wonMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
@@ -809,7 +818,6 @@
                 amount = parseInt(plainNumMatch[1], 10);
             }
 
-            // 3. 결제 수단 및 은행 추출
             if (text.includes('신한')) { cardName = '신한카드'; pMethod = '신용카드'; }
             else if (text.includes('삼성')) { cardName = '삼성카드'; pMethod = '신용카드'; }
             else if (text.includes('국민') || text.includes('KB')) { cardName = 'KB국민카드'; pMethod = '신용카드'; }
@@ -819,7 +827,6 @@
                 pMethod = '현금/계좌'; cardName = '';
             }
 
-            // 4. 카테고리 및 사용처 추론
             if (recognizedType === '지출') {
                 if (text.includes('스타벅스') || text.includes('커피') || text.includes('카페') || text.includes('투썸') || text.includes('이디야') || text.includes('메가')) {
                     cat = '카페'; desc = '카페 음료';
@@ -835,7 +842,6 @@
                     cat = '식비';
                 }
             } else {
-                // 수입 카테고리
                 if (text.includes('급여') || text.includes('월급') || text.includes('보너스') || text.includes('상여')) {
                     cat = '급여/월급'; desc = '월급여';
                 } else if (text.includes('부업') || text.includes('외주') || text.includes('알바') || text.includes('수당')) {
@@ -849,7 +855,6 @@
                 }
             }
 
-            // 가맹점 이름 추출 시도
             const storeMatch = text.match(/([가-힣A-Za-z0-9]+(?:\([주]\)|점|스토어|마트|샵|식당|치킨|피자))/);
             if (storeMatch) desc = storeMatch[1];
             else if (!desc) {
@@ -857,7 +862,6 @@
                 if (words.length > 0) desc = words[0];
             }
 
-            // 5. 폼에 반영
             if (amount > 0) {
                 playSound('coin');
                 switchTxType(recognizedType);
@@ -866,11 +870,9 @@
 
                 if (desc) document.getElementById('txDesc').value = desc;
 
-                // 카테고리 칩 활성화
                 selectedCategory = cat;
                 renderCategoryChips();
 
-                // 결제수단 칩 활성화
                 selectedPayMethod = pMethod;
                 selectedCardName = cardName;
                 document.querySelectorAll('#payMethodChips .chip').forEach(el => {
@@ -880,7 +882,6 @@
                     }
                 });
 
-                // 배지 표시
                 const badge = document.getElementById('parseBadge');
                 badge.style.display = 'inline-flex';
                 document.getElementById('badgeIcon').innerText = recognizedType === '수입' ? '💵' : '💸';
@@ -902,11 +903,7 @@
             else calcExpr += op;
             updateCalcDisplay();
         }
-        function pressClear() {
-            playSound('click');
-            calcExpr = "0";
-            updateCalcDisplay();
-        }
+        function pressClear() { playSound('click'); calcExpr = "0"; updateCalcDisplay(); }
         function pressBackspace() {
             playSound('click');
             if (calcExpr.length <= 1) calcExpr = "0";
@@ -947,14 +944,14 @@
             } else {
                 vBox.style.display = 'block';
                 if (currentTxType === '수입') {
-                    vBox.style.background = '#f0fdf4';
-                    vBox.style.borderColor = '#bbf7d0';
-                    vBox.style.color = '#15803d';
+                    vBox.style.background = document.documentElement.dataset.theme === 'dark' ? '#064e3b33' : '#f0fdf4';
+                    vBox.style.borderColor = document.documentElement.dataset.theme === 'dark' ? '#059669' : '#bbf7d0';
+                    vBox.style.color = document.documentElement.dataset.theme === 'dark' ? '#34d399' : '#15803d';
                     vBox.innerText = `🌱 순자산을 불려주는 소중한 수입입니다! (+${formatWealth(amt)})`;
                 } else {
-                    vBox.style.background = '#eff6ff';
-                    vBox.style.borderColor = '#bfdbfe';
-                    vBox.style.color = '#1e40af';
+                    vBox.style.background = document.documentElement.dataset.theme === 'dark' ? '#1e3a8a33' : '#eff6ff';
+                    vBox.style.borderColor = document.documentElement.dataset.theme === 'dark' ? '#2563eb' : '#bfdbfe';
+                    vBox.style.color = document.documentElement.dataset.theme === 'dark' ? '#93c5fd' : '#1e40af';
                     if (amt < 8000) vBox.innerText = `☕ 아메리카노 약 ${(amt/4500).toFixed(1)}잔 분량`;
                     else if (amt < 25000) vBox.innerText = `🍚 든든한 찌개 백반 약 ${(amt/10000).toFixed(1)}끼 분량`;
                     else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
@@ -1121,8 +1118,11 @@
         }
         function toggleTheme() {
             const html = document.documentElement;
-            html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            html.dataset.theme = newTheme;
+            localStorage.setItem('theme_mode', newTheme);
             playSound('click');
+            updateCalcDisplay();
         }
 
         function switchTab(tabId) {
@@ -1305,7 +1305,7 @@
                 card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:12px;';
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <strong style="font-size:1.05rem;">${g.icon} ${g.name}</strong>
+                        <strong style="font-size:1.05rem; color:var(--text-main);">${g.icon} ${g.name}</strong>
                         <span style="font-size:0.85rem; font-weight:800; color:var(--primary);">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '완료'}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">
@@ -1357,7 +1357,7 @@
                 div.className = 'card';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <strong style="font-size:1.05rem;">💳 ${c.card_name}</strong>
+                        <strong style="font-size:1.05rem; color:var(--text-main);">💳 ${c.card_name}</strong>
                         <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">${c.status}</span>
                     </div>
                     <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:4px;">
