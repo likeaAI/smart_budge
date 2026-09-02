@@ -329,6 +329,18 @@ def advice_page():
     )
 
 
+@app.route("/webhook")
+def webhook_page():
+    """웹훅 수동 입력 & 테스트 페이지"""
+    return render_template(
+        "webhook.html",
+        page="webhook",
+        today=date.today().isoformat(),
+        default_cards=DEFAULT_CARDS,
+    )
+
+
+
 # ============================================================
 # REST API
 # ============================================================

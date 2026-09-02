@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹훅 수동 입력 & 파싱 유틸리티 — Smart Webhook Sender</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --bg-subtle: #f1f5f9;
+            --text-main: #0f172a; --text-muted: #64748b; --border-color: #cbd5e1;
+            --primary: #2563eb; --income: #10b981; --expense: #ef4444; --warning: #f59e0b;
+        }
+        [data-theme='dark'] {
+            --bg-body: #090d16; --bg-card: #1e293b; --bg-subtle: #0f172a;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155;
+            --primary: #3b82f6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background: var(--bg-body); color: var(--text-main); padding: 20px; line-height: 1.5; }
+        .container { max-width: 800px; margin: auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .title { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        
+        .card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 18px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; }
+        .form-row { display: flex; gap: 10px; }
+        
+        .keycap-btn, .btn {
+            position: relative; border-radius: 10px; border: 1.5px solid var(--border-color);
+            background: var(--bg-card); box-shadow: 0 4px 0 var(--border-color);
+            transition: all 0.08s ease; cursor: pointer; user-select: none; font-weight: 700; padding: 10px 16px;
+        }
+        .keycap-btn:active, .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--border-color); }
+        .btn-primary { background: var(--primary); color: white; border-color: #1d4ed8; box-shadow: 0 4px 0 #1e40af; }
+        .btn-success { background: var(--income); color: white; border-color: #059669; box-shadow: 0 4px 0 #047857; }
+        
+        .tabs { display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        .tab-btn { background: none; border: none; padding: 6px 14px; font-weight: 700; cursor: pointer; color: var(--text-muted); font-size: 0.95rem; border-radius: 6px; }
+        .tab-btn.active { color: var(--primary); background: var(--bg-subtle); }
+        
+        .sample-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .chip { background: var(--bg-subtle); border: 1px solid var(--border-color); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+        .chip:hover { border-color: var(--primary); color: var(--primary); }
+        
+        .log-box { background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 0.85rem; padding: 14px; border-radius: 10px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+        .badge-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .status-success { background: #dcfce7; color: #166534; }
+        .status-fail { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">⚡ 웹훅 수동 입력 & 테스트 유틸리티</div>
+            <div>
+                <button class="keycap-btn" onclick="toggleTheme()" style="padding: 6px 12px; font-size: 0.85rem;">🌓 테마</button>
+            </div>
+        </div>
+
+        <!-- 1. 웹훅 URL 설정 카드 -->
+        <div class="card" style="border-color: var(--primary);">
+            <div class="card-title">🔗 웹훅 대상 URL 설정 (GAS 또는 서버 엔드포인트)</div>
+            <div class="form-row">
+                <input type="url" id="webhookUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec 또는 http://localhost:5000/api/..." style="flex: 1;">
+                <button class="keycap-btn" onclick="saveWebhookUrl()" style="white-space: nowrap;">💾 URL 저장</button>
+            </div>
+            <small class="text-muted" style="display: block; margin-top: 4px;">
+                💡 구글 앱스크립트 배포 URL이나 로컬 Flask 서버 주소를 입력하면 브라우저에 자동 저장됩니다.
+            </small>
+        </div>
+
+        <!-- 2. 입력 방식 탭 -->
+        <div class="card">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchInputMode('text')">📱 카드 결제 문자 자동 파싱</button>
+                <button class="tab-btn" onclick="switchInputMode('form')">✍️ 수동 폼 입력</button>
+                <button class="tab-btn" onclick="switchInputMode('json')">🧩 Raw JSON 발송</button>
+                <button class="tab-btn" onclick="switchInputMode('reconcile')">💳 카드값 대조 발송</button>
+            </div>
+
+            <!-- 모드 1: 카드 결제 문자 파싱 -->
+            <div id="mode-text">
+                <div class="form-group">
+                    <label class="form-label">카드 결제 문자나 카톡 알림을 붙여넣으세요</label>
+                    <textarea id="rawSmsText" class="form-control" rows="3" placeholder="예: [현대카드] 09/02 12:35 스타벅스강남 15,000원 일시불 누적 540,000원"></textarea>
+                </div>
+                <div class="sample-chips">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center;">예시 클릭:</span>
+                    <span class="chip" onclick="applySample(1)">[현대카드] 15,000원 스타벅스</span>
+                    <span class="chip" onclick="applySample(2)">[신한체크] 09/02 19:30 배달의민족 28,000원</span>
+                    <span class="chip" onclick="applySample(3)">[KB국민] 55,000원 주유소 3개월할부</span>
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                    <button class="btn btn-primary" onclick="parseAndPreview()" style="flex: 1;">🔍 파싱 및 데이터 확인</button>
+                </div>
+
+                <!-- 파싱 결과 미리보기 -->
+                <div id="parsePreviewBox" style="display: none; margin-top: 14px; padding: 14px; background: var(--bg-subtle); border-radius: 10px; border: 1.5px dashed var(--primary);">
+                    <div style="font-weight: 700; margin-bottom: 8px; color: var(--primary);">✨ 자동 분석된 웹훅 전송 데이터</div>
+                    <div class="form-row" style="margin-bottom: 8px;">
+                        <div style="flex: 1;"><small>날짜:</small> <strong id="pvDate">-</strong></div>
+                        <div style="flex: 1;"><small>금액:</small> <strong id="pvAmount" style="color: var(--expense);">-</strong></div>
+                        <div style="flex: 1;"><small>카드사:</small> <strong id="pvCard">-</strong></div>
+                    </div>
+                    <div class="form-row" style="margin-bottom: 12px;">
+                        <div style="flex: 1;"><small>카테고리:</small> <strong id="pvCat">-</strong></div>
+                        <div style="flex: 1;"><small>사용처:</small> <strong id="pvDesc">-</strong></div>
+                        <div style="flex: 1;"><small>소비성격:</small> <strong id="pvType">선택</strong></div>
+                    </div>
+                    <button class="btn btn-success" onclick="sendParsedWebhook()" style="width: 100%; height: 44px;">
+                        🚀 이 데이터로 웹훅 즉시 발송하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 모드 2: 수동 폼 입력 -->
+            <div id="mode-form" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">날짜</label>
+                        <input type="date" id="mDate" class="form-control">
+                    </div>
+                    <div class="form-group" style="flex: 1.5;">
+                        <label class="form-label">금액 (원)</label>
+                        <input type="number" id="mAmount" class="form-control" placeholder="0" min="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">결제수단</label>
+                        <select id="mPayMethod" class="form-control">
+                            <option value="신용카드">💳 신용카드</option>
+                            <option value="체크카드">💳 체크카드</option>
+                            <option value="현금/계좌">💵 현금/계좌</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">카드사</label>
+                        <select id="mCardName" class="form-control">
+                            <option value="현대카드">현대카드</option>
+                            <option value="신한카드">신한카드</option>
+                            <option value="삼성카드">삼성카드</option>
+                            <option value="KB국민카드">KB국민카드</option>
+                            <option value="롯데카드">롯데카드</option>
+                            <option value="기타카드">기타카드</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">카테고리</label>
+                        <select id="mCategory" class="form-control">
+                            <option value="식비">🍚 식비</option>
+                            <option value="카페">☕ 카페</option>
+                            <option value="교통">🚗 교통</option>
+                            <option value="쇼핑">🛒 쇼핑</option>
+                            <option value="생활">🏠 생활</option>
+                            <option value="문화">🎬 문화</option>
+                            <option value="기타">📝 기타</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">사용처 / 메모</label>
+                    <input type="text" id="mDesc" class="form-control" placeholder="사용처를 입력하세요">
+                </div>
+                <button class="btn btn-primary" onclick="sendFormWebhook()" style="width: 100%; height: 44px;">
+                    🚀 수동 폼 데이터 웹훅 발송
+                </button>
+            </div>
+
+            <!-- 모드 3: Raw JSON 발송 -->
+            <div id="mode-json" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">발송할 JSON Payload</label>
+                    <textarea id="rawJsonText" class="form-control" rows="6" style="font-family: monospace;"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="sendRawJsonWebhook()" style="width: 100%;">
+                    🚀 JSON Payload 웹훅 발송
+                </button>
+            </div>
+
+            <!-- 모드 4: 카드값 대조 발송 -->
+            <div id="mode-reconcile" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">청구월</label>
+                        <input type="month" id="recMonth" class="form-control">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">카드사</label>
+                        <select id="recCard" class="form-control">
+                            <option value="현대카드">현대카드</option>
+                            <option value="신한카드">신한카드</option>
+                            <option value="삼성카드">삼성카드</option>
+                            <option value="KB국민카드">KB국민카드</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1.5;">
+                        <label class="form-label">실제 청구 금액 (명세서 금액)</label>
+                        <input type="number" id="recAmt" class="form-control" placeholder="0">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="sendReconcileWebhook()" style="width: 100%;">
+                    🔍 카드값 대조 데이터 웹훅 발송
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. 실시간 응답 로그 -->
+        <div class="card">
+            <div class="card-title" style="justify-content: space-between;">
+                <span>📡 웹훅 전송 결과 & 응답 로그</span>
+                <button class="keycap-btn" onclick="clearLogs()" style="padding: 2px 8px; font-size: 0.75rem;">지우기</button>
+            </div>
+            <div id="responseLog" class="log-box">대기 중... 웹훅을 발송하면 여기에 실시간 HTTP 응답이 표시됩니다.</div>
+        </div>
+    </div>
+
+    <script>
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('webhook_url') || '';
+            if (savedUrl) document.getElementById('webhookUrl').value = savedUrl;
+            
+            const today = new Date().toISOString().substring(0, 10);
+            document.getElementById('mDate').value = today;
+            document.getElementById('recMonth').value = today.substring(0, 7);
+            
+            // JSON 샘플 초기화
+            document.getElementById('rawJsonText').value = JSON.stringify({
+                action: "addTransaction",
+                date: today,
+                amount: 15000,
+                type: "지출",
+                category: "식비",
+                description: "웹훅 수동 테스트",
+                payment_method: "신용카드",
+                card_name: "현대카드",
+                consumption_type: "선택",
+                satisfaction: "보통"
+            }, null, 2);
+        });
+
+        function saveWebhookUrl() {
+            const url = document.getElementById('webhookUrl').value.trim();
+            if (!url) { alert('URL을 입력해주세요.'); return; }
+            localStorage.setItem('webhook_url', url);
+            alert('웹훅 URL이 저장되었습니다!');
+        }
+
+        function switchInputMode(mode) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            ['text', 'form', 'json', 'reconcile'].forEach(m => {
+                document.getElementById(`mode-${m}`).style.display = m === mode ? 'block' : 'none';
+            });
+            event.target.classList.add('active');
+        }
+
+        // 📱 결제 문자 자연어 파서
+        let parsedData = null;
+        function parseAndPreview() {
+            const text = document.getElementById('rawSmsText').value.trim();
+            if (!text) { alert('문자 내용을 입력해주세요.'); return; }
+
+            // 1. 금액 추출 (예: 15,000원, 15000원, 15,000 등)
+            const amtMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+            let amount = 0;
+            if (amtMatch) {
+                amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
+            }
+
+            // 2. 카드사 추출
+            let cardName = '현대카드';
+            if (text.includes('신한')) cardName = '신한카드';
+            else if (text.includes('삼성')) cardName = '삼성카드';
+            else if (text.includes('국민') || text.includes('KB')) cardName = 'KB국민카드';
+            else if (text.includes('롯데')) cardName = '롯데카드';
+            else if (text.includes('우리')) cardName = '우리카드';
+            else if (text.includes('하나')) cardName = '하나카드';
+            else if (text.includes('농협') || text.includes('NH')) cardName = 'NH농협카드';
+
+            // 3. 사용처 및 카테고리 유추
+            let category = '기타';
+            let desc = '카드 결제';
+
+            const cleanText = text.replace(/\[.*?\]/g, '').replace(/[0-9,]+원/g, '').replace(/일시불/g, '').replace(/누적.*/g, '').trim();
+            const words = cleanText.split(/\s+/);
+            if (words.length > 0) desc = words[words.length - 1];
+
+            if (text.includes('스타벅스') || text.includes('커피') || text.includes('카페') || text.includes('메가커피')) {
+                category = '카페'; desc = '카페/음료';
+            } else if (text.includes('식당') || text.includes('배민') || text.includes('배달의민족') || text.includes('쿠팡이츠') || text.includes('식비') || text.includes('식사') || text.includes('백반')) {
+                category = '식비'; desc = '식사/외식';
+            } else if (text.includes('주유') || text.includes('택시') || text.includes('코레일') || text.includes('교통') || text.includes('티머니')) {
+                category = '교통'; desc = '교통비';
+            } else if (text.includes('쿠팡') || text.includes('네이버페이') || text.includes('마트') || text.includes('백화점')) {
+                category = '쇼핑'; desc = '온/오프라인 쇼핑';
+            }
+
+            const today = new Date().toISOString().substring(0, 10);
+            parsedData = {
+                action: 'addTransaction',
+                date: today,
+                amount: amount || 10000,
+                type: '지출',
+                category: category,
+                description: desc,
+                payment_method: '신용카드',
+                card_name: cardName,
+                consumption_type: category === '식비' || category === '교통' ? '필수' : '선택',
+                satisfaction: '보통'
+            };
+
+            document.getElementById('pvDate').innerText = parsedData.date;
+            document.getElementById('pvAmount').innerText = parsedData.amount.toLocaleString() + '원';
+            document.getElementById('pvCard').innerText = parsedData.card_name;
+            document.getElementById('pvCat').innerText = parsedData.category;
+            document.getElementById('pvDesc').innerText = parsedData.description;
+            document.getElementById('pvType').innerText = parsedData.consumption_type;
+            document.getElementById('parsePreviewBox').style.display = 'block';
+        }
+
+        async function sendParsedWebhook() {
+            if (!parsedData) return;
+            await executeWebhook(parsedData);
+        }
+
+        async function sendFormWebhook() {
+            const data = {
+                action: 'addTransaction',
+                date: document.getElementById('mDate').value,
+                amount: Number(document.getElementById('mAmount').value),
+                type: '지출',
+                category: document.getElementById('mCategory').value,
+                description: document.getElementById('mDesc').value,
+                payment_method: document.getElementById('mPayMethod').value,
+                card_name: document.getElementById('mCardName').value,
+                consumption_type: '선택',
+                satisfaction: '보통'
+            };
+            if (!data.amount) { alert('금액을 입력해주세요.'); return; }
+            await executeWebhook(data);
+        }
+
+        async function sendRawJsonWebhook() {
+            try {
+                const data = JSON.parse(document.getElementById('rawJsonText').value);
+                await executeWebhook(data);
+            } catch(e) {
+                alert('올바른 JSON 형식이 아닙니다: ' + e.message);
+            }
+        }
+
+        async function sendReconcileWebhook() {
+            const data = {
+                action: 'reconcileCard',
+                billing_month: document.getElementById('recMonth').value,
+                card_name: document.getElementById('recCard').value,
+                billed_amount: Number(document.getElementById('recAmt').value)
+            };
+            if (!data.billed_amount) { alert('청구 금액을 입력해주세요.'); return; }
+            await executeWebhook(data);
+        }
+
+        // 🚀 웹훅 발송 코어 함수
+        async function executeWebhook(payload) {
+            const url = document.getElementById('webhookUrl').value.trim();
+            if (!url) {
+                alert('상단의 웹훅 URL을 먼저 입력해주세요!');
+                document.getElementById('webhookUrl').focus();
+                return;
+            }
+
+            log(`[${new Date().toLocaleTimeString()}] 🚀 웹훅 전송 시작...\nURL: ${url}\nPayload:\n${JSON.stringify(payload, null, 2)}`);
+
+            try {
+                const startTime = performance.now();
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const duration = Math.round(performance.now() - startTime);
+
+                const responseText = await response.text();
+                let jsonRes = null;
+                try { jsonRes = JSON.parse(responseText); } catch(e) {}
+
+                if (response.ok) {
+                    confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+                    log(`\n✅ 전송 성공 (HTTP ${response.status}) [${duration}ms]\n응답 내용:\n${JSON.stringify(jsonRes || responseText, null, 2)}\n----------------------------------------`);
+                } else {
+                    log(`\n❌ 전송 실패 (HTTP ${response.status}) [${duration}ms]\n에러 응답:\n${responseText}\n----------------------------------------`);
+                }
+            } catch(err) {
+                log(`\n🚨 네트워크 또는 CORS 오류 발생:\n${err.toString()}\n(팁: 구글 앱스크립트 웹앱 배포 시 '액세스 권한: 모든 사용자'로 설정되어 있는지 확인하세요)\n----------------------------------------`);
+            }
+        }
+
+        function log(msg) {
+            const box = document.getElementById('responseLog');
+            box.innerText = msg + '\n\n' + box.innerText;
+        }
+
+        function clearLogs() {
+            document.getElementById('responseLog').innerText = '대기 중...';
+        }
+
+        function applySample(num) {
+            const sms = document.getElementById('rawSmsText');
+            if (num === 1) sms.value = '[현대카드] 09/02 12:35 스타벅스 15,000원 일시불';
+            else if (num === 2) sms.value = '[신한체크] 09/02 19:30 배달의민족 28,000원 잔액 1,420,000원';
+            else if (num === 3) sms.value = '[KB국민카드] 09/02 08:20 SK주유소 55,000원 3개월할부';
+            parseAndPreview();
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+        }
+    </script>
+</body>
+</html>
