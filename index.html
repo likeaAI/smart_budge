@@ -22,6 +22,40 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-body); color: var(--text-main); padding-bottom: 75px; -webkit-font-smoothing: antialiased; }
         
+        /* 🔒 PIN Lock Screen Overlay */
+        .pin-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-body); z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 24px; transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .pin-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; text-align: center; }
+        .pin-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
+        .pin-dots { display: flex; gap: 16px; margin-bottom: 36px; }
+        .pin-dot {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--border-color); transition: all 0.15s ease;
+        }
+        .pin-dot.filled { background: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px rgba(37,99,235,0.4); }
+        .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 280px; }
+        .pin-btn {
+            background: var(--bg-card); border: 1.5px solid var(--border-color);
+            border-radius: 50%; width: 72px; height: 72px; margin: auto;
+            font-size: 1.6rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none; box-shadow: 0 4px 0 var(--key-shadow);
+            transition: all 0.08s ease;
+        }
+        .pin-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
+        .pin-btn.action { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); }
+        
+        @keyframes pinShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .shake { animation: pinShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
         /* 🖥️ Header & Navigation */
         .header { background: var(--bg-card); padding: 14px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 1.2rem; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
@@ -132,6 +166,36 @@
     </style>
 </head>
 <body>
+
+    <!-- 🔒 4자리 PIN 잠금화면 오버레이 -->
+    <div id="pinOverlay" class="pin-overlay">
+        <div style="font-size: 2.8rem; margin-bottom: 12px;">🔒</div>
+        <h2 id="pinTitle" class="pin-title">비밀번호 4자리를 입력하세요</h2>
+        <p id="pinDesc" class="pin-desc">소중한 나의 가계부와 자산을 보호합니다.</p>
+        
+        <div id="pinDots" class="pin-dots">
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+        </div>
+
+        <div class="pin-grid">
+            <div class="pin-btn" onclick="pressPin('1')">1</div>
+            <div class="pin-btn" onclick="pressPin('2')">2</div>
+            <div class="pin-btn" onclick="pressPin('3')">3</div>
+            <div class="pin-btn" onclick="pressPin('4')">4</div>
+            <div class="pin-btn" onclick="pressPin('5')">5</div>
+            <div class="pin-btn" onclick="pressPin('6')">6</div>
+            <div class="pin-btn" onclick="pressPin('7')">7</div>
+            <div class="pin-btn" onclick="pressPin('8')">8</div>
+            <div class="pin-btn" onclick="pressPin('9')">9</div>
+            <div class="pin-btn action" onclick="resetPinCode()">초기화</div>
+            <div class="pin-btn" onclick="pressPin('0')">0</div>
+            <div class="pin-btn action" onclick="pressPinBackspace()">⌫</div>
+        </div>
+    </div>
+
     <header class="header">
         <div class="logo">👑 <span>스마트 머니 허브</span></div>
         
@@ -146,6 +210,7 @@
 
         <div class="header-actions">
             <span id="syncIndicator" class="sync-indicator">● 동기화됨</span>
+            <button class="btn-icon" onclick="lockAppNow()" title="지금 잠그기">🔒</button>
             <button class="btn-icon" onclick="toggleUrlSetting()" title="구글 연동 설정">⚙️ 설정</button>
             <button class="btn-icon" id="soundBtn" onclick="toggleSound()">⌨️</button>
             <button class="btn-icon" onclick="toggleTheme()">🌓</button>
@@ -156,13 +221,17 @@
         <!-- 구글 시트 URL 설정 배너 -->
         <div id="urlSettingBox" class="card" style="border-color: var(--primary); display:none;">
             <div class="card-title">
-                <span>🔗 구글 Apps Script 연동 URL</span>
+                <span>⚙️ 가계부 연동 및 보안 설정</span>
                 <button class="btn-icon" onclick="saveGasUrl()" style="font-weight: 700;">💾 저장</button>
             </div>
-            <input type="url" id="inputGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-            <small class="text-muted" style="display:block; font-size: 0.8rem;">
-                💡 구글 스프레드시트 ➔ [Apps Script] ➔ [배포 URL]을 입력하시면 실시간 동기화됩니다.
-            </small>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">구글 Apps Script 배포 URL</label>
+                <input type="url" id="inputGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+                <span style="font-size: 0.85rem; font-weight: 600;">🔒 4자리 비밀번호 재설정</span>
+                <button type="button" class="btn-icon" onclick="startPinChange()" style="color: var(--primary);">비밀번호 변경</button>
+            </div>
         </div>
 
         <!-- 1. 📊 메인 대시보드 탭 -->
@@ -249,10 +318,9 @@
             </div>
         </section>
 
-        <!-- 2. 🧮 지출 입력 탭 (스마트 결제 문자 인식 & 3D 계산기) -->
+        <!-- 2. 🧮 지출 입력 탭 -->
         <section id="tab-add" class="tab-content" style="display: none;">
             <div style="max-width: 620px; margin: auto;">
-                <!-- 📱 모바일 결제 문자 / 카톡 알림톡 스마트 파싱 박스 -->
                 <div class="sms-paste-box">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 800; font-size: 0.88rem; color: #166534;">💬 결제 문자 붙여넣기 (자동 파싱)</span>
@@ -267,7 +335,6 @@
                         <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
                     </div>
 
-                    <!-- 🧮 계산기 디스플레이 -->
                     <div class="calc-display">
                         <div id="calcFormula" class="calc-formula"></div>
                         <div id="calcDisplay" class="calc-main-amt">0원</div>
@@ -276,7 +343,6 @@
 
                     <div id="valueBox" class="value-box" style="display: none;">☕ 아메리카노 1잔 분량</div>
 
-                    <!-- ⚡ 빠른 금액 증감 칩 -->
                     <div class="calc-quick-row">
                         <div class="quick-chip" onclick="addQuickAmt(5000)">+5천</div>
                         <div class="quick-chip" onclick="addQuickAmt(10000)">+1만</div>
@@ -284,7 +350,6 @@
                         <div class="quick-chip" onclick="addQuickAmt(100000)">+10만</div>
                     </div>
 
-                    <!-- ⌨️ 3D 계산기 키패드 -->
                     <div class="calc-grid">
                         <div class="calc-key" onclick="pressNum('7')">7</div>
                         <div class="calc-key" onclick="pressNum('8')">8</div>
@@ -383,7 +448,7 @@
             </div>
         </section>
 
-        <!-- 4. 💳 카드값 대조 탭 (계산기 키패드 적용!) -->
+        <!-- 4. 💳 카드값 대조 탭 -->
         <section id="tab-cards" class="tab-content" style="display: none;">
             <div style="max-width: 680px; margin: auto;">
                 <div class="card">
@@ -397,14 +462,12 @@
                         </select>
                     </div>
 
-                    <!-- 카드 대조 계산기 디스플레이 -->
                     <div class="calc-display">
                         <div id="recCalcFormula" class="calc-formula"></div>
                         <div id="recCalcDisplay" class="calc-main-amt">0원</div>
                         <div id="recCalcKoreanWord" class="calc-korean-word">0원</div>
                     </div>
 
-                    <!-- 카드 대조 빠른 금액 칩 -->
                     <div class="calc-quick-row">
                         <div class="quick-chip" onclick="addRecQuickAmt(100000)">+10만</div>
                         <div class="quick-chip" onclick="addRecQuickAmt(500000)">+50만</div>
@@ -412,7 +475,6 @@
                         <div class="quick-chip" onclick="addRecQuickAmt(3000000)">+300만</div>
                     </div>
 
-                    <!-- 카드 대조 전용 3D 키패드 -->
                     <div class="calc-grid">
                         <div class="calc-key" onclick="pressRecNum('7')">7</div>
                         <div class="calc-key" onclick="pressRecNum('8')">8</div>
@@ -487,6 +549,11 @@
         let soundEnabled = true;
         let globalNetWorth = 0;
 
+        // 🔒 PIN Lock State
+        let enteredPin = "";
+        let isSettingNewPin = false;
+        let tempNewPin = "";
+
         // 🧮 Transaction Calculator State
         let calcExpr = "0";
         let selectedCategory = "식비";
@@ -498,6 +565,8 @@
         let recCalcExpr = "0";
 
         document.addEventListener('DOMContentLoaded', () => {
+            initPinLock();
+
             const savedUrl = localStorage.getItem('gas_app_url') || '';
             if (savedUrl) {
                 document.getElementById('inputGasUrl').value = savedUrl;
@@ -515,10 +584,127 @@
             loadGameData(true);
         });
 
-        window.addEventListener('focus', () => { loadGameData(true); });
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') loadGameData(true);
-        });
+        // 🔒 4-Digit PIN Security Logic
+        function initPinLock() {
+            const savedPin = localStorage.getItem('app_user_pin');
+            const overlay = document.getElementById('pinOverlay');
+            enteredPin = "";
+            updatePinDots();
+
+            if (!savedPin) {
+                // 최초 실행: 비밀번호 설정 모드
+                isSettingNewPin = true;
+                tempNewPin = "";
+                document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
+                document.getElementById('pinDesc').innerText = '가계부 접속 시 사용할 4자리 숫자를 입력하세요.';
+                overlay.style.display = 'flex';
+            } else {
+                // 일반 잠금 모드
+                isSettingNewPin = false;
+                document.getElementById('pinTitle').innerText = '🔒 비밀번호 4자리를 입력하세요';
+                document.getElementById('pinDesc').innerText = '소중한 나의 가계부와 자산을 보호합니다.';
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function lockAppNow() {
+            playSound('click');
+            initPinLock();
+        }
+
+        function startPinChange() {
+            if (confirm('4자리 비밀번호를 새로 변경하시겠습니까?')) {
+                localStorage.removeItem('app_user_pin');
+                document.getElementById('urlSettingBox').style.display = 'none';
+                initPinLock();
+            }
+        }
+
+        function resetPinCode() {
+            playSound('click');
+            enteredPin = "";
+            updatePinDots();
+        }
+
+        function pressPin(num) {
+            playSound('click');
+            if (enteredPin.length >= 4) return;
+            enteredPin += num;
+            updatePinDots();
+
+            if (enteredPin.length === 4) {
+                setTimeout(evaluatePin, 120);
+            }
+        }
+
+        function pressPinBackspace() {
+            playSound('click');
+            if (enteredPin.length > 0) {
+                enteredPin = enteredPin.slice(0, -1);
+                updatePinDots();
+            }
+        }
+
+        function updatePinDots() {
+            const dots = document.querySelectorAll('#pinDots .pin-dot');
+            dots.forEach((dot, idx) => {
+                if (idx < enteredPin.length) dot.classList.add('filled');
+                else dot.classList.remove('filled');
+            });
+        }
+
+        function evaluatePin() {
+            const savedPin = localStorage.getItem('app_user_pin');
+            const overlay = document.getElementById('pinOverlay');
+            const dotsBox = document.getElementById('pinDots');
+
+            if (isSettingNewPin) {
+                if (!tempNewPin) {
+                    // 1차 입력 완료 ➔ 확인 재입력 요청
+                    playSound('coin');
+                    tempNewPin = enteredPin;
+                    enteredPin = "";
+                    updatePinDots();
+                    document.getElementById('pinTitle').innerText = '🔒 비밀번호를 한 번 더 입력하세요';
+                    document.getElementById('pinDesc').innerText = '확인을 위해 동일한 4자리를 입력해주세요.';
+                } else {
+                    if (enteredPin === tempNewPin) {
+                        // 일치 ➔ 저장 완료
+                        playSound('coin');
+                        localStorage.setItem('app_user_pin', enteredPin);
+                        alert('4자리 비밀번호가 안전하게 설정되었습니다!');
+                        overlay.style.opacity = '0';
+                        setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
+                    } else {
+                        // 불일치
+                        triggerPinShake();
+                        alert('비밀번호가 일치하지 않습니다. 처음부터 다시 설정해주세요.');
+                        tempNewPin = "";
+                        enteredPin = "";
+                        updatePinDots();
+                        document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
+                    }
+                }
+            } else {
+                // 잠금 해제 검증
+                if (enteredPin === savedPin) {
+                    playSound('coin');
+                    overlay.style.opacity = '0';
+                    setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300);
+                } else {
+                    triggerPinShake();
+                    enteredPin = "";
+                    updatePinDots();
+                }
+            }
+        }
+
+        function triggerPinShake() {
+            const dotsBox = document.getElementById('pinDots');
+            dotsBox.classList.add('shake');
+            if (navigator.vibrate) navigator.vibrate([80, 80, 80]);
+            setTimeout(() => dotsBox.classList.remove('shake'), 400);
+        }
 
         // 💬 Smart SMS & Kakao Parser
         async function pasteFromClipboard() {
@@ -561,7 +747,6 @@
             else if (text.includes('카카오뱅크') || text.includes('체크')) { pMethod = '체크카드'; cName = '체크카드'; }
             else if (text.includes('계좌') || text.includes('입금') || text.includes('출금')) { pMethod = '현금/계좌'; cName = ''; }
 
-            // 결제수단 칩 활성화
             selectedPayMethod = pMethod;
             selectedCardName = cName;
             document.querySelectorAll('#payMethodChips .chip').forEach(el => {
@@ -586,13 +771,10 @@
                 cat = '생활'; desc = '생활비';
             }
 
-            // 가맹점 이름 추출 시도
             const storeMatch = text.match(/([가-힣A-Za-z0-9]+(?:\([주]\)|점|스토어|마트|샵|점))/) || text.match(/\b([가-힣A-Za-z]{2,8}(?:점|마트|샵|푸드|치킨|피자))\b/);
             if (storeMatch) desc = storeMatch[1];
-
             if (desc) document.getElementById('txDesc').value = desc;
 
-            // 카테고리 칩 활성화
             selectedCategory = cat;
             document.querySelectorAll('#categoryChips .chip').forEach(el => {
                 if (el.innerText.includes(cat)) {
@@ -609,7 +791,6 @@
             else calcExpr += num;
             updateCalcDisplay();
         }
-
         function pressOp(op) {
             playSound('click');
             const last = calcExpr.slice(-1);
@@ -617,20 +798,17 @@
             else calcExpr += op;
             updateCalcDisplay();
         }
-
         function pressClear() {
             playSound('click');
             calcExpr = "0";
             updateCalcDisplay();
         }
-
         function pressBackspace() {
             playSound('click');
             if (calcExpr.length <= 1) calcExpr = "0";
             else calcExpr = calcExpr.slice(0, -1);
             updateCalcDisplay();
         }
-
         function pressEqual() {
             playSound('coin');
             try {
@@ -640,14 +818,12 @@
             } catch(e) { calcExpr = "0"; }
             updateCalcDisplay();
         }
-
         function addQuickAmt(amt) {
             playSound('click');
             let currentVal = getEvaluatedAmount(calcExpr);
             calcExpr = String(currentVal + amt);
             updateCalcDisplay();
         }
-
         function getEvaluatedAmount(expr) {
             try {
                 const sanitized = expr.replace(/[^0-9+\-*/.]/g, '');
@@ -655,7 +831,6 @@
                 return Math.max(0, Math.round(res) || 0);
             } catch(e) { return 0; }
         }
-
         function updateCalcDisplay() {
             const amt = getEvaluatedAmount(calcExpr);
             document.getElementById('calcFormula').innerText = calcExpr.match(/[+\-*/]/) ? calcExpr : '';
@@ -727,7 +902,6 @@
             document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
         }
-
         function selectPayMethod(method, cardName, el) {
             playSound('click');
             selectedPayMethod = method;
@@ -735,7 +909,6 @@
             document.querySelectorAll('#payMethodChips .chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
         }
-
         function selectCType(ctype, el) {
             playSound('click');
             selectedCType = ctype;
@@ -801,7 +974,6 @@
             setTimeout(() => overlay.style.display = 'none', 1000);
         }
 
-        // Web Audio Sound Engine
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -845,7 +1017,6 @@
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            
             document.getElementById(tabId).style.display = 'block';
             
             const tabs = ['tab-dashboard', 'tab-add', 'tab-goals', 'tab-cards', 'tab-assets'];
@@ -943,7 +1114,6 @@
             document.getElementById('disp-income').innerText = (res.summary?.total_income || 0).toLocaleString() + '원';
             document.getElementById('disp-score').innerText = (res.summary?.mindful_score ?? 100) + '점';
 
-            // 최근 거래 목록
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
             const txList = res.transactions || [];
