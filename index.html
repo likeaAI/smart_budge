@@ -745,16 +745,131 @@
             </div>
         </section>
 
-        <!-- 5. 🏦 자산/주식 탭 -->
+        <!-- 5. 🏦 자산/주식 탭 (추가, 수정, 삭제, 전체 초기화 기능 탑재) -->
         <section id="tab-assets" class="tab-content" style="display: none;">
-            <div class="desktop-dashboard-grid">
-                <div class="card">
-                    <div class="card-title">🏦 보유 자산 / 원금</div>
-                    <div id="assetsListContainer"></div>
+            <div class="dash-section-stack">
+                
+                <!-- 상단 자산 종합 요약 스탯 -->
+                <div class="stat-grid" style="margin-top: 0; margin-bottom: 0;">
+                    <div class="stat-box" style="border-left: 3px solid var(--primary);">
+                        <div class="stat-label">💎 나의 총 순자산</div>
+                        <div id="assetsTabTotalNetWorth" class="stat-val" style="color: var(--primary);">0원</div>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid var(--income);">
+                        <div class="stat-label">🏦 현금 / 예적금 원금</div>
+                        <div id="assetsTabTotalCash" class="stat-val" style="color: var(--income);">0원</div>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid var(--purple);">
+                        <div class="stat-label">📈 주식 / 투자 평가액</div>
+                        <div id="assetsTabTotalInv" class="stat-val" style="color: var(--purple);">0원</div>
+                    </div>
                 </div>
-                <div class="card">
-                    <div class="card-title">📈 주식 / 투자 포트폴리오</div>
-                    <div id="invListContainer"></div>
+
+                <div class="desktop-dashboard-grid">
+                    
+                    <!-- 🏦 1. 보유 자산 / 원금 관리 카드 -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-title">
+                            <span>🏦 보유 자산 / 원금</span>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem;" onclick="restoreDefaultAssets()">✨ 샘플 복원</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem; color: var(--expense);" onclick="clearAllAssets()">🗑️ 전체 비우기</button>
+                                <button type="button" id="btnToggleAssetForm" class="btn-icon" style="font-size: 0.78rem; font-weight: 700; color: var(--primary);" onclick="toggleAssetForm()">➕ 자산 추가</button>
+                            </div>
+                        </div>
+
+                        <!-- 자산 등록/수정 폼 -->
+                        <div id="assetFormBox" style="display: none; background: var(--bg-subtle); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                            <div style="font-size: 0.9rem; font-weight: 800; color: var(--text-main); margin-bottom: 10px;" id="assetFormTitle">➕ 새 보유 자산 등록</div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">자산명</label>
+                                <input type="text" id="inputAssetName" class="form-control" placeholder="예: 비상금 통장, 청약 통장, 전세보증금 등">
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">자산 종류</label>
+                                    <select id="inputAssetCategory" class="form-control">
+                                        <option value="현금/예적금">💵 현금 / 예적금</option>
+                                        <option value="부동산/보증금">🏠 부동산 / 전세보증금</option>
+                                        <option value="연금/IRP">🛡️ 연금 / IRP</option>
+                                        <option value="기타">📝 기타 자산</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">현재 평가 금액 (원)</label>
+                                    <input type="number" id="inputAssetAmount" class="form-control" placeholder="예: 3000000">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 6px 12px;" onclick="cancelAssetForm()">취소</button>
+                                <button type="button" class="btn-submit" style="font-size: 0.85rem; padding: 6px 16px; width: auto;" onclick="handleSaveAsset()">💾 저장하기</button>
+                            </div>
+                        </div>
+
+                        <!-- 자산 목록 -->
+                        <div id="assetsListContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+
+                    <!-- 📈 2. 주식 / 투자 포트폴리오 카드 -->
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-title">
+                            <span>📈 주식 / 투자 포트폴리오</span>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem;" onclick="restoreDefaultInvestments()">✨ 샘플 복원</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.75rem; color: var(--expense);" onclick="clearAllInvestments()">🗑️ 전체 비우기</button>
+                                <button type="button" id="btnToggleInvForm" class="btn-icon" style="font-size: 0.78rem; font-weight: 700; color: var(--purple);" onclick="toggleInvForm()">➕ 종목 추가</button>
+                            </div>
+                        </div>
+
+                        <!-- 주식 등록/수정 폼 -->
+                        <div id="invFormBox" style="display: none; background: var(--bg-subtle); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                            <div style="font-size: 0.9rem; font-weight: 800; color: var(--text-main); margin-bottom: 10px;" id="invFormTitle">➕ 새 주식/투자 종목 등록</div>
+                            
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">종목명</label>
+                                    <input type="text" id="inputInvName" class="form-control" placeholder="예: 삼성전자, 애플, S&P500 등">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">시장</label>
+                                    <select id="inputInvMarket" class="form-control">
+                                        <option value="국내주식">🇰🇷 국내주식</option>
+                                        <option value="미국주식">🇺🇸 미국주식</option>
+                                        <option value="ETF">📊 ETF</option>
+                                        <option value="암호화폐">🪙 암호화폐</option>
+                                        <option value="기타">🌐 기타</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">보유 수량 (주)</label>
+                                    <input type="number" id="inputInvShares" class="form-control" placeholder="예: 50">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">평균 매수가 (원)</label>
+                                    <input type="number" id="inputInvAvgPrice" class="form-control" placeholder="예: 70000">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">현재가 (원)</label>
+                                    <input type="number" id="inputInvCurrentPrice" class="form-control" placeholder="예: 75000">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 6px 12px;" onclick="cancelInvForm()">취소</button>
+                                <button type="button" class="btn-submit" style="font-size: 0.85rem; padding: 6px 16px; width: auto;" onclick="handleSaveInvestment()">💾 저장하기</button>
+                            </div>
+                        </div>
+
+                        <!-- 주식 목록 -->
+                        <div id="invListContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -848,6 +963,7 @@
             updateCalcDisplay();
             updateRecCalcDisplay();
             renderRecurringUI();
+            renderAssetsAndInvUI();
             loadGameData(true);
         });
 
@@ -1367,6 +1483,9 @@
             if (tabId === 'tab-recurring') {
                 renderRecurringUI();
             }
+            if (tabId === 'tab-assets') {
+                renderAssetsAndInvUI();
+            }
         }
 
         function setSyncStatus(status) {
@@ -1758,25 +1877,364 @@
             });
         }
 
-        function renderAssetsAndInv(nw) {
-            if (!nw) return;
-            const aContainer = document.getElementById('assetsListContainer');
-            aContainer.innerHTML = '';
-            (nw.assets_list || []).forEach(a => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem; color:var(--text-main);';
-                row.innerHTML = `<span>${a.name}</span><strong style="color:var(--text-main);">${a.amount.toLocaleString()}원</strong>`;
-                aContainer.appendChild(row);
-            });
+        // 🏦 보유 자산 & 📈 주식/투자 관리 로직 (추가, 수정, 삭제, 전체 초기화, 실시간 순자산 연동)
+        let editingAssetId = null;
+        let editingInvId = null;
 
+        function getUserAssets() {
+            const raw = localStorage.getItem('user_custom_assets');
+            if (raw !== null) {
+                try { return JSON.parse(raw); } catch(e) { return []; }
+            }
+            // 최초 기본 샘플
+            const defaults = [
+                { id: 'asset_1', name: '비상금 통장', category: '현금/예적금', amount: 30000000 },
+                { id: 'asset_2', name: '청약 / 정기예금', category: '현금/예적금', amount: 40000000 }
+            ];
+            localStorage.setItem('user_custom_assets', JSON.stringify(defaults));
+            return defaults;
+        }
+
+        function saveUserAssets(assets) {
+            localStorage.setItem('user_custom_assets', JSON.stringify(assets));
+            renderAssetsAndInvUI();
+            recalculateGlobalNetWorth();
+        }
+
+        function clearAllAssets() {
+            if (!confirm('등록된 모든 보유 자산(현금/예적금 등)을 삭제하고 깨끗하게 비우시겠습니까?')) return;
+            playSound('click');
+            saveUserAssets([]);
+            cancelAssetForm();
+            alert('보유 자산 목록이 초기화되었습니다. [➕ 자산 추가]로 실제 보유 자산을 등록해보세요!');
+        }
+
+        function restoreDefaultAssets() {
+            if (!confirm('기본 예시 자산 샘플을 다시 불러오시겠습니까?')) return;
+            playSound('click');
+            const defaults = [
+                { id: 'asset_1', name: '비상금 통장', category: '현금/예적금', amount: 30000000 },
+                { id: 'asset_2', name: '청약 / 정기예금', category: '현금/예적금', amount: 40000000 }
+            ];
+            saveUserAssets(defaults);
+            cancelAssetForm();
+        }
+
+        function toggleAssetForm() {
+            playSound('click');
+            const box = document.getElementById('assetFormBox');
+            if (box.style.display === 'none') {
+                editingAssetId = null;
+                document.getElementById('inputAssetName').value = '';
+                document.getElementById('inputAssetAmount').value = '';
+                document.getElementById('assetFormTitle').innerText = '➕ 새 보유 자산 등록';
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        function cancelAssetForm() {
+            editingAssetId = null;
+            document.getElementById('inputAssetName').value = '';
+            document.getElementById('inputAssetAmount').value = '';
+            document.getElementById('assetFormBox').style.display = 'none';
+        }
+
+        function editAsset(id) {
+            playSound('click');
+            const assets = getUserAssets();
+            const item = assets.find(a => a.id === id);
+            if (!item) return;
+
+            editingAssetId = id;
+            document.getElementById('inputAssetName').value = item.name;
+            document.getElementById('inputAssetCategory').value = item.category || '현금/예적금';
+            document.getElementById('inputAssetAmount').value = item.amount;
+            document.getElementById('assetFormTitle').innerText = '✏️ 보유 자산 수정 중';
+            document.getElementById('assetFormBox').style.display = 'block';
+        }
+
+        function handleSaveAsset() {
+            const name = document.getElementById('inputAssetName').value.trim();
+            const category = document.getElementById('inputAssetCategory').value;
+            const amount = parseInt(document.getElementById('inputAssetAmount').value, 10);
+
+            if (!name) { alert('자산명을 입력해주세요.'); return; }
+            if (isNaN(amount) || amount < 0) { alert('올바른 금액을 입력해주세요.'); return; }
+
+            playSound('coin');
+            const assets = getUserAssets();
+            if (editingAssetId) {
+                const idx = assets.findIndex(a => a.id === editingAssetId);
+                if (idx >= 0) {
+                    assets[idx] = { id: editingAssetId, name, category, amount };
+                }
+                alert(`[${name}] 자산 정보가 수정되었습니다!`);
+            } else {
+                assets.push({ id: 'asset_' + Date.now(), name, category, amount });
+                alert(`[${name}] 자산이 성공적으로 등록되었습니다!`);
+            }
+            saveUserAssets(assets);
+            cancelAssetForm();
+        }
+
+        function handleDeleteAsset(id) {
+            if (!confirm('이 자산 항목을 삭제하시겠습니까?')) return;
+            playSound('click');
+            let assets = getUserAssets();
+            assets = assets.filter(a => a.id !== id);
+            saveUserAssets(assets);
+        }
+
+        // 📈 주식 / 투자 관리
+        function getUserInvestments() {
+            const raw = localStorage.getItem('user_custom_investments');
+            if (raw !== null) {
+                try { return JSON.parse(raw); } catch(e) { return []; }
+            }
+            const defaults = [
+                { id: 'inv_1', name: '삼성전자', market: '국내주식', shares: 500, avg_buy_price: 68000, current_price: 76000 },
+                { id: 'inv_2', name: 'S&P500 ETF (VOO)', market: '미국주식', shares: 50, avg_buy_price: 520000, current_price: 610000 }
+            ];
+            localStorage.setItem('user_custom_investments', JSON.stringify(defaults));
+            return defaults;
+        }
+
+        function saveUserInvestments(invs) {
+            localStorage.setItem('user_custom_investments', JSON.stringify(invs));
+            renderAssetsAndInvUI();
+            recalculateGlobalNetWorth();
+        }
+
+        function clearAllInvestments() {
+            if (!confirm('등록된 모든 주식/투자 종목을 삭제하고 깨끗하게 비우시겠습니까?')) return;
+            playSound('click');
+            saveUserInvestments([]);
+            cancelInvForm();
+            alert('주식/투자 종목 목록이 초기화되었습니다. [➕ 종목 추가]로 실제 보유 주식을 등록해보세요!');
+        }
+
+        function restoreDefaultInvestments() {
+            if (!confirm('기본 예시 주식/투자 샘플을 다시 불러오시겠습니까?')) return;
+            playSound('click');
+            const defaults = [
+                { id: 'inv_1', name: '삼성전자', market: '국내주식', shares: 500, avg_buy_price: 68000, current_price: 76000 },
+                { id: 'inv_2', name: 'S&P500 ETF (VOO)', market: '미국주식', shares: 50, avg_buy_price: 520000, current_price: 610000 }
+            ];
+            saveUserInvestments(defaults);
+            cancelInvForm();
+        }
+
+        function toggleInvForm() {
+            playSound('click');
+            const box = document.getElementById('invFormBox');
+            if (box.style.display === 'none') {
+                editingInvId = null;
+                document.getElementById('inputInvName').value = '';
+                document.getElementById('inputInvShares').value = '';
+                document.getElementById('inputInvAvgPrice').value = '';
+                document.getElementById('inputInvCurrentPrice').value = '';
+                document.getElementById('invFormTitle').innerText = '➕ 새 주식/투자 종목 등록';
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        function cancelInvForm() {
+            editingInvId = null;
+            document.getElementById('inputInvName').value = '';
+            document.getElementById('inputInvShares').value = '';
+            document.getElementById('inputInvAvgPrice').value = '';
+            document.getElementById('inputInvCurrentPrice').value = '';
+            document.getElementById('invFormBox').style.display = 'none';
+        }
+
+        function editInvestment(id) {
+            playSound('click');
+            const invs = getUserInvestments();
+            const item = invs.find(i => i.id === id);
+            if (!item) return;
+
+            editingInvId = id;
+            document.getElementById('inputInvName').value = item.name;
+            document.getElementById('inputInvMarket').value = item.market || '국내주식';
+            document.getElementById('inputInvShares').value = item.shares;
+            document.getElementById('inputInvAvgPrice').value = item.avg_buy_price;
+            document.getElementById('inputInvCurrentPrice').value = item.current_price;
+            document.getElementById('invFormTitle').innerText = '✏️ 종목 수정 중';
+            document.getElementById('invFormBox').style.display = 'block';
+        }
+
+        function handleSaveInvestment() {
+            const name = document.getElementById('inputInvName').value.trim();
+            const market = document.getElementById('inputInvMarket').value;
+            const shares = parseFloat(document.getElementById('inputInvShares').value);
+            const avgPrice = parseFloat(document.getElementById('inputInvAvgPrice').value);
+            const curPrice = parseFloat(document.getElementById('inputInvCurrentPrice').value);
+
+            if (!name) { alert('종목명을 입력해주세요.'); return; }
+            if (isNaN(shares) || shares <= 0) { alert('보유 수량을 올바르게 입력해주세요.'); return; }
+            if (isNaN(avgPrice) || avgPrice < 0) { alert('평균 매수가를 입력해주세요.'); return; }
+            if (isNaN(curPrice) || curPrice < 0) { alert('현재가를 입력해주세요.'); return; }
+
+            playSound('coin');
+            const invs = getUserInvestments();
+            if (editingInvId) {
+                const idx = invs.findIndex(i => i.id === editingInvId);
+                if (idx >= 0) {
+                    invs[idx] = { id: editingInvId, name, market, shares, avg_buy_price: avgPrice, current_price: curPrice };
+                }
+                alert(`[${name}] 종목 정보가 수정되었습니다!`);
+            } else {
+                invs.push({ id: 'inv_' + Date.now(), name, market, shares, avg_buy_price: avgPrice, current_price: curPrice });
+                alert(`[${name}] 종목이 성공적으로 등록되었습니다!`);
+            }
+            saveUserInvestments(invs);
+            cancelInvForm();
+        }
+
+        function handleDeleteInvestment(id) {
+            if (!confirm('이 종목을 삭제하시겠습니까?')) return;
+            playSound('click');
+            let invs = getUserInvestments();
+            invs = invs.filter(i => i.id !== id);
+            saveUserInvestments(invs);
+        }
+
+        function recalculateGlobalNetWorth() {
+            const assets = getUserAssets();
+            const invs = getUserInvestments();
+
+            let totalCash = assets.reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+            let totalInv = invs.reduce((sum, i) => sum + ((Number(i.shares) || 0) * (Number(i.current_price) || 0)), 0);
+            let netWorth = totalCash + totalInv;
+
+            globalNetWorth = netWorth;
+
+            // Update Tab Assets Header Stats
+            const elNW = document.getElementById('assetsTabTotalNetWorth');
+            if (elNW) elNW.innerText = netWorth.toLocaleString() + '원';
+
+            const elCash = document.getElementById('assetsTabTotalCash');
+            if (elCash) elCash.innerText = totalCash.toLocaleString() + '원';
+
+            const elInv = document.getElementById('assetsTabTotalInv');
+            if (elInv) elInv.innerText = totalInv.toLocaleString() + '원';
+
+            // Update Dashboard Net Worth
+            const dispNW = document.getElementById('disp-networth');
+            if (dispNW) dispNW.innerText = netWorth.toLocaleString() + '원';
+
+            const dispNWMini = document.getElementById('disp-networth-mini');
+            if (dispNWMini) dispNWMini.innerText = netWorth.toLocaleString() + '원';
+
+            const dispInv = document.getElementById('disp-inv');
+            if (dispInv) dispInv.innerText = totalInv.toLocaleString() + '원';
+
+            const dispCash = document.getElementById('disp-cash');
+            if (dispCash) dispCash.innerText = totalCash.toLocaleString() + '원';
+
+            // Recalculate Wealth Level
+            let levelTitle = "종잣돈 빌더 (LV.3)";
+            let nextTarget = 50000000;
+            if (netWorth >= 1000000000) { levelTitle = "경제적 자유 마스터 (LV.10)"; nextTarget = 2000000000; }
+            else if (netWorth >= 500000000) { levelTitle = "하프 밀리어네어 (LV.7)"; nextTarget = 1000000000; }
+            else if (netWorth >= 100000000) { levelTitle = "1억 시드머니 달성가 (LV.5)"; nextTarget = 300000000; }
+            else if (netWorth >= 30000000) { levelTitle = "종잣돈 빌더 (LV.3)"; nextTarget = 50000000; }
+            else if (netWorth >= 10000000) { levelTitle = "1천만원 시드 개척자 (LV.2)"; nextTarget = 30000000; }
+            else { levelTitle = "새싹 저축가 (LV.1)"; nextTarget = 10000000; }
+
+            const pct = Math.min(100, Math.round((netWorth / nextTarget) * 100));
+            const titleEl = document.getElementById('disp-level-title');
+            if (titleEl) titleEl.innerText = levelTitle;
+
+            const barEl = document.getElementById('disp-level-bar');
+            if (barEl) barEl.style.width = pct + '%';
+
+            const pctEl = document.getElementById('disp-level-pct');
+            if (pctEl) pctEl.innerText = `진행률 ${pct}%`;
+
+            const targetEl = document.getElementById('disp-level-target');
+            if (targetEl) targetEl.innerText = (nextTarget >= 100000000 ? (nextTarget / 100000000).toFixed(1) + '억' : (nextTarget / 10000).toLocaleString() + '만');
+
+            if (typeof updateSimulation === 'function') updateSimulation();
+        }
+
+        function renderAssetsAndInvUI() {
+            const assets = getUserAssets();
+            const invs = getUserInvestments();
+
+            // 1. Render Assets
+            const aContainer = document.getElementById('assetsListContainer');
+            if (aContainer) {
+                aContainer.innerHTML = '';
+                if (assets.length === 0) {
+                    aContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:0.85rem;">등록된 보유 자산이 없습니다.<br>[➕ 자산 추가] 버튼을 눌러 등록해보세요.</div>';
+                } else {
+                    assets.forEach(a => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'background:var(--bg-card); border:1.5px solid var(--border-color); border-left:4px solid var(--income); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;';
+                        item.innerHTML = `
+                            <div>
+                                <strong style="color:var(--text-main); font-size:0.95rem; display:block;">${a.name}</strong>
+                                <small style="color:var(--text-muted);">${a.category || '현금/예적금'}</small>
+                            </div>
+                            <div style="text-align:right;">
+                                <strong style="color:var(--income); font-size:1.05rem; display:block;">${Number(a.amount).toLocaleString()}원</strong>
+                                <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
+                                    <button type="button" class="btn-icon" style="font-size:0.75rem; padding:2px 6px; color:var(--primary);" onclick="editAsset('${a.id}')">✏️ 수정</button>
+                                    <button type="button" class="btn-icon" style="font-size:0.75rem; padding:2px 6px; color:var(--expense);" onclick="handleDeleteAsset('${a.id}')">🗑️ 삭제</button>
+                                </div>
+                            </div>
+                        `;
+                        aContainer.appendChild(item);
+                    });
+                }
+            }
+
+            // 2. Render Investments
             const iContainer = document.getElementById('invListContainer');
-            iContainer.innerHTML = '';
-            (nw.investments_list || []).forEach(inv => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); font-size:0.9rem; color:var(--text-main);';
-                row.innerHTML = `<span><strong style="color:var(--text-main);">${inv.name}</strong> (${inv.shares}주)</span><strong style="color:var(--text-main);">${inv.total_eval.toLocaleString()}원</strong>`;
-                iContainer.appendChild(row);
-            });
+            if (iContainer) {
+                iContainer.innerHTML = '';
+                if (invs.length === 0) {
+                    iContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:0.85rem;">등록된 주식/투자 종목이 없습니다.<br>[➕ 종목 추가] 버튼을 눌러 등록해보세요.</div>';
+                } else {
+                    invs.forEach(inv => {
+                        const totalEval = (Number(inv.shares) || 0) * (Number(inv.current_price) || 0);
+                        const totalCost = (Number(inv.shares) || 0) * (Number(inv.avg_buy_price) || 0);
+                        const profit = totalEval - totalCost;
+                        const profitRate = totalCost > 0 ? ((profit / totalCost) * 100).toFixed(1) : 0;
+                        const isPlus = profit >= 0;
+
+                        const item = document.createElement('div');
+                        item.style.cssText = 'background:var(--bg-card); border:1.5px solid var(--border-color); border-left:4px solid var(--purple); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;';
+                        item.innerHTML = `
+                            <div>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <strong style="color:var(--text-main); font-size:0.95rem;">${inv.name}</strong>
+                                    <small style="background:var(--bg-subtle); color:var(--text-muted); padding:1px 6px; border-radius:4px; font-size:0.72rem;">${inv.market || '주식'}</small>
+                                </div>
+                                <small style="color:var(--text-muted);">${inv.shares}주 · 평단 ${Number(inv.avg_buy_price).toLocaleString()}원</small>
+                            </div>
+                            <div style="text-align:right;">
+                                <strong style="color:var(--text-main); font-size:1.05rem; display:block;">${totalEval.toLocaleString()}원</strong>
+                                <div style="font-size:0.78rem; font-weight:700; color:${isPlus ? 'var(--expense)' : 'var(--primary)'};">
+                                    ${isPlus ? '+' : ''}${profit.toLocaleString()}원 (${isPlus ? '+' : ''}${profitRate}%)
+                                </div>
+                                <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
+                                    <button type="button" class="btn-icon" style="font-size:0.75rem; padding:2px 6px; color:var(--purple);" onclick="editInvestment('${inv.id}')">✏️ 수정</button>
+                                    <button type="button" class="btn-icon" style="font-size:0.75rem; padding:2px 6px; color:var(--expense);" onclick="handleDeleteInvestment('${inv.id}')">🗑️ 삭제</button>
+                                </div>
+                            </div>
+                        `;
+                        iContainer.appendChild(item);
+                    });
+                }
+            }
+
+            recalculateGlobalNetWorth();
         }
 
         // 🗓️ 매월 정기 입출금 / 고정비 관리 로직 (수정, 전체초기화, 샘플복원)
