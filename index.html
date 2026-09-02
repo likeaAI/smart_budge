@@ -8,13 +8,25 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 📱 PWA & Mobile Standalone Web App Meta -->
-    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#2563eb">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="머니허브">
-    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var r of registrations) { r.unregister(); }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (var name of names) caches.delete(name);
+            });
+        }
+    </script>
 
     <style>
         :root {
@@ -80,7 +92,7 @@
         .pin-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: var(--bg-body); z-index: 10000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
             padding: 24px; overflow-y: auto; max-height: 100vh;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
@@ -1070,14 +1082,19 @@
             }, 2600);
         }
 
-        // 🔒 PIN Logic (물리 키보드 지원 + 건너뛰기 + 영구 초기화 탑재)
-        function initPinLock() {
+        // 🔒 PIN Logic (미설정 시 바로 대시보드 직행 + 물리 키보드 지원 + 건너뛰기)
+        function initPinLock(forceShow = false) {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
             enteredPin = "";
             updatePinDots();
 
             if (!savedPin) {
+                if (!forceShow) {
+                    // 🌟 비밀번호가 없으면 잠금화면 없이 바로 대시보드로 즉시 입장!
+                    overlay.style.display = 'none';
+                    return;
+                }
                 isSettingNewPin = true;
                 tempNewPin = "";
                 document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
@@ -1090,6 +1107,8 @@
                 overlay.style.display = 'flex';
             }
         }
+
+        function lockAppNow() { playSound('click'); initPinLock(true); }
 
         function skipPinLock() {
             playSound('coin');
