@@ -107,20 +107,18 @@
         
         /* Bottom Detailed Records Grid */
         .dash-records-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
         @media (min-width: 900px) {
             .desktop-nav { display: flex; }
             .tab-bar { display: none !important; }
             body { padding-bottom: 30px; }
             
-            /* Desktop Top Row: 1.2fr (Level Quest) + 1fr (Net Worth) */
-            .dash-kpi-grid { grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: stretch; }
-            
-            /* Desktop Middle Row: 1fr (Donut) + 1.2fr (Daily Bar) with equal height */
-            .dash-chart-grid { grid-template-columns: 1fr 1.35fr; gap: 16px; align-items: stretch; }
-            
-            /* Desktop Bottom Row: 1.15fr (Recent Tx) + 0.85fr (Cards & Goals Stack) */
-            .dash-records-grid { grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; }
+            /* Desktop All Rows: Uniform 50% : 50% (1fr 1fr) for perfect horizontal alignment */
+            .dash-kpi-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+            .dash-chart-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+            .dash-records-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+            .desktop-dashboard-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
         }
 
         /* 👑 Level Banner */
@@ -142,8 +140,9 @@
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.15rem; font-weight: 900; }
 
-        /* 📊 Chart Wrappers */
-        .chart-wrapper { position: relative; height: 230px; width: 100%; }
+        /* 📊 Chart Cards & Wrappers */
+        .dash-chart-grid > .card { display: flex; flex-direction: column; height: 320px; margin-bottom: 0; }
+        .chart-wrapper { position: relative; height: 240px; width: 100%; flex: 1; min-height: 220px; }
 
         /* 📋 Scrollable Table Wrapper */
         .table-scroll-container { max-height: 430px; overflow-y: auto; overflow-x: auto; }
@@ -1404,11 +1403,11 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'right',
+                                position: 'bottom',
                                 labels: {
                                     color: textColor,
                                     font: { family: 'Pretendard', size: 11, weight: '600' },
-                                    boxWidth: 12,
+                                    boxWidth: 10,
                                     padding: 8
                                 }
                             },
