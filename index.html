@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260903_v4';
+        const APP_LIVE_VER = '20260903_v5';
         if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
             if ('serviceWorker' in navigator) {
@@ -327,12 +327,9 @@
             <div class="pin-btn action" onclick="pressPinBackspace()">⌫</div>
         </div>
 
-        <!-- 🔓 비밀번호 건너뛰기 및 초기화 버튼 -->
-        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; max-width: 280px;">
-            <button type="button" class="btn-icon" style="width: 100%; padding: 12px; font-size: 0.9rem; background: var(--bg-card); color: var(--primary); border: 1.5px solid var(--border-color); border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" onclick="skipPinLock()">
-                🔓 비밀번호 없이 바로 입장하기
-            </button>
-            <button type="button" style="background: transparent; border: none; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; padding: 6px;" onclick="resetPinPermanently()">
+        <!-- 🔑 비밀번호 초기화 링크 -->
+        <div style="margin-top: 20px; display: flex; justify-content: center; width: 100%; max-width: 280px;">
+            <button type="button" style="background: transparent; border: none; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; padding: 6px;" onclick="resetPinPermanently()">
                 🔑 비밀번호 초기화 (새로 설정)
             </button>
         </div>
@@ -1082,19 +1079,14 @@
             }, 2600);
         }
 
-        // 🔒 PIN Logic (미설정 시 바로 대시보드 직행 + 물리 키보드 지원 + 건너뛰기)
-        function initPinLock(forceShow = false) {
+        // 🔒 PIN Logic (4자리 보안 비밀번호 잠금화면)
+        function initPinLock() {
             const savedPin = localStorage.getItem('app_user_pin');
             const overlay = document.getElementById('pinOverlay');
             enteredPin = "";
             updatePinDots();
 
             if (!savedPin) {
-                if (!forceShow) {
-                    // 🌟 비밀번호가 없으면 잠금화면 없이 바로 대시보드로 즉시 입장!
-                    overlay.style.display = 'none';
-                    return;
-                }
                 isSettingNewPin = true;
                 tempNewPin = "";
                 document.getElementById('pinTitle').innerText = '🔒 새 비밀번호 4자리를 설정하세요';
@@ -1108,15 +1100,7 @@
             }
         }
 
-        function lockAppNow() { playSound('click'); initPinLock(true); }
-
-        function skipPinLock() {
-            playSound('coin');
-            const overlay = document.getElementById('pinOverlay');
-            overlay.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 250);
-            showToast('가계부 메인 화면으로 이동했습니다.', 'success');
-        }
+        function lockAppNow() { playSound('click'); initPinLock(); }
 
         function resetPinPermanently() {
             if (confirm('기존 비밀번호를 삭제하고 새로 설정하시겠습니까?')) {
