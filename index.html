@@ -42,11 +42,7 @@
         /* 📱 Container & Responsive Grid System */
         .container { max-width: 1240px; margin: auto; padding: 16px; }
         
-        .desktop-dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
+        .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 
         @media (min-width: 900px) {
             .desktop-nav { display: flex; }
@@ -57,7 +53,6 @@
                 gap: 20px;
                 align-items: start;
             }
-            .grid-span-2 { grid-column: span 2; }
         }
 
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
@@ -74,6 +69,11 @@
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
         .stat-val { font-size: 1.2rem; font-weight: 900; }
 
+        /* 📋 Smart SMS Paste Box */
+        .sms-paste-box { background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+        [data-theme='dark'] .sms-paste-box { background: #064e3b33; border-color: #059669; }
+        .sms-textarea { width: 100%; height: 58px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; font-size: 0.85rem; color: var(--text-main); resize: none; margin-top: 6px; }
+
         /* 🧮 Calculator Keypad */
         .calc-display { background: var(--bg-subtle); border-radius: 14px; padding: 16px; text-align: right; border: 1.5px solid var(--border-color); margin-bottom: 12px; }
         .calc-formula { font-size: 0.85rem; color: var(--text-muted); min-height: 20px; margin-bottom: 2px; font-family: monospace; }
@@ -89,7 +89,7 @@
             background: var(--key-bg); border: 1.5px solid var(--border-color);
             border-radius: 14px; box-shadow: 0 4px 0 var(--key-shadow);
             font-size: 1.35rem; font-weight: 700; color: var(--text-main);
-            height: 56px; display: flex; align-items: center; justify-content: center;
+            height: 54px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none; transition: transform 0.05s ease, box-shadow 0.05s ease;
         }
         .calc-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
@@ -165,12 +165,11 @@
             </small>
         </div>
 
-        <!-- 1. 📊 메인 대시보드 탭 (데스크탑 와이드 2열 그리드) -->
+        <!-- 1. 📊 메인 대시보드 탭 -->
         <section id="tab-dashboard" class="tab-content">
             <div class="desktop-dashboard-grid">
-                <!-- Left Column: 자산 & 목표 & 통계 -->
+                <!-- Left Column -->
                 <div class="grid-col">
-                    <!-- 👑 자산 퀘스트 레벨 배너 -->
                     <div class="level-banner">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
@@ -191,7 +190,6 @@
                         </div>
                     </div>
 
-                    <!-- 순자산 카드 -->
                     <div class="card" style="border-left: 5px solid var(--primary);">
                         <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
                         <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 6px 0 8px 0;">0원</div>
@@ -201,7 +199,6 @@
                         </div>
                     </div>
 
-                    <!-- 월간 수입/지출 통계 -->
                     <div class="stat-grid">
                         <div class="stat-box" style="border-left: 3px solid var(--expense);">
                             <div class="stat-label">이번 달 지출</div>
@@ -217,7 +214,6 @@
                         </div>
                     </div>
 
-                    <!-- 장기 목표 요약 위젯 -->
                     <div class="card" style="border-color: var(--warning);">
                         <div class="card-title">
                             <span>🎯 장기 인생 목표 진행 현황</span>
@@ -227,7 +223,7 @@
                     </div>
                 </div>
 
-                <!-- Right Column: 최근 소비 내역 & 카드값 대조 -->
+                <!-- Right Column -->
                 <div class="grid-col">
                     <div class="card">
                         <div class="card-title">
@@ -253,9 +249,18 @@
             </div>
         </section>
 
-        <!-- 2. 🧮 지출 입력 탭 (데스크탑에서는 중앙 정렬 카드) -->
+        <!-- 2. 🧮 지출 입력 탭 (스마트 결제 문자 인식 & 3D 계산기) -->
         <section id="tab-add" class="tab-content" style="display: none;">
-            <div style="max-width: 600px; margin: auto;">
+            <div style="max-width: 620px; margin: auto;">
+                <!-- 📱 모바일 결제 문자 / 카톡 알림톡 스마트 파싱 박스 -->
+                <div class="sms-paste-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 800; font-size: 0.88rem; color: #166534;">💬 결제 문자 붙여넣기 (자동 파싱)</span>
+                        <button type="button" class="btn-icon" onclick="pasteFromClipboard()" style="background: #dcfce7; color: #166534; font-size: 0.78rem; border-color: #86efac;">📋 클립보드 읽기</button>
+                    </div>
+                    <textarea id="smsInput" class="sms-textarea" placeholder="카드 승인 문자나 카카오페이 알림을 여기에 붙여넣으면 금액, 카드사, 카테고리가 1초 만에 자동 채워집니다!" oninput="parseSmsText(this.value)"></textarea>
+                </div>
+
                 <div class="card">
                     <div class="card-title">
                         <span>🧮 지출 금액 입력</span>
@@ -378,22 +383,66 @@
             </div>
         </section>
 
-        <!-- 4. 💳 카드값 대조 탭 -->
+        <!-- 4. 💳 카드값 대조 탭 (계산기 키패드 적용!) -->
         <section id="tab-cards" class="tab-content" style="display: none;">
-            <div style="max-width: 800px; margin: auto;">
+            <div style="max-width: 680px; margin: auto;">
                 <div class="card">
-                    <div class="card-title">💳 신용카드 청구서 대조 검증</div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <select id="recCardName" class="form-control" style="flex: 1; margin: 0;">
-                            <option value="현대카드">현대카드</option>
-                            <option value="신한카드">신한카드</option>
-                            <option value="삼성카드">삼성카드</option>
-                            <option value="KB국민카드">KB국민카드</option>
+                    <div class="card-title">
+                        <span>💳 카드 청구서 대조 (계산기)</span>
+                        <select id="recCardName" style="border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); padding:4px 8px; border-radius:8px; font-weight:700;">
+                            <option value="현대카드">💳 현대카드</option>
+                            <option value="신한카드">💳 신한카드</option>
+                            <option value="삼성카드">💳 삼성카드</option>
+                            <option value="KB국민카드">💳 국민카드</option>
                         </select>
-                        <input type="number" id="recBilledAmt" class="form-control" placeholder="실제 청구금액(원)" style="flex: 1.5; margin: 0;">
                     </div>
-                    <button type="button" class="btn-submit" style="height: 46px; font-size: 1rem;" onclick="handleReconcileCard()">🔍 청구서 대조 검증</button>
+
+                    <!-- 카드 대조 계산기 디스플레이 -->
+                    <div class="calc-display">
+                        <div id="recCalcFormula" class="calc-formula"></div>
+                        <div id="recCalcDisplay" class="calc-main-amt">0원</div>
+                        <div id="recCalcKoreanWord" class="calc-korean-word">0원</div>
+                    </div>
+
+                    <!-- 카드 대조 빠른 금액 칩 -->
+                    <div class="calc-quick-row">
+                        <div class="quick-chip" onclick="addRecQuickAmt(100000)">+10만</div>
+                        <div class="quick-chip" onclick="addRecQuickAmt(500000)">+50만</div>
+                        <div class="quick-chip" onclick="addRecQuickAmt(1000000)">+100만</div>
+                        <div class="quick-chip" onclick="addRecQuickAmt(3000000)">+300만</div>
+                    </div>
+
+                    <!-- 카드 대조 전용 3D 키패드 -->
+                    <div class="calc-grid">
+                        <div class="calc-key" onclick="pressRecNum('7')">7</div>
+                        <div class="calc-key" onclick="pressRecNum('8')">8</div>
+                        <div class="calc-key" onclick="pressRecNum('9')">9</div>
+                        <div class="calc-key op" onclick="pressRecOp('/')">÷</div>
+
+                        <div class="calc-key" onclick="pressRecNum('4')">4</div>
+                        <div class="calc-key" onclick="pressRecNum('5')">5</div>
+                        <div class="calc-key" onclick="pressRecNum('6')">6</div>
+                        <div class="calc-key op" onclick="pressRecOp('*')">×</div>
+
+                        <div class="calc-key" onclick="pressRecNum('1')">1</div>
+                        <div class="calc-key" onclick="pressRecNum('2')">2</div>
+                        <div class="calc-key" onclick="pressRecNum('3')">3</div>
+                        <div class="calc-key op" onclick="pressRecOp('-')">-</div>
+
+                        <div class="calc-key clear" onclick="pressRecClear()">C</div>
+                        <div class="calc-key" onclick="pressRecNum('0')">0</div>
+                        <div class="calc-key" onclick="pressRecNum('00')">00</div>
+                        <div class="calc-key op" onclick="pressRecOp('+')">+</div>
+
+                        <div class="calc-key" onclick="pressRecBackspace()" style="grid-column: span 2;">⌫ 지우기</div>
+                        <div class="calc-key equal" onclick="pressRecEqual()" style="grid-column: span 2;">= 계산</div>
+                    </div>
+
+                    <button type="button" class="btn-submit" onclick="handleReconcileCard()">
+                        🔍 청구서 금액 대조 및 검증하기
+                    </button>
                 </div>
+
                 <div id="cardsSummaryList"></div>
             </div>
         </section>
@@ -438,12 +487,15 @@
         let soundEnabled = true;
         let globalNetWorth = 0;
 
-        // 🧮 Calculator State
+        // 🧮 Transaction Calculator State
         let calcExpr = "0";
         let selectedCategory = "식비";
         let selectedPayMethod = "신용카드";
         let selectedCardName = "현대카드";
         let selectedCType = "필수";
+
+        // 💳 Card Reconciliation Calculator State
+        let recCalcExpr = "0";
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedUrl = localStorage.getItem('gas_app_url') || '';
@@ -459,6 +511,7 @@
 
             document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
             updateCalcDisplay();
+            updateRecCalcDisplay();
             loadGameData(true);
         });
 
@@ -467,7 +520,89 @@
             if (document.visibilityState === 'visible') loadGameData(true);
         });
 
-        // 🧮 Calculator Functions
+        // 💬 Smart SMS & Kakao Parser
+        async function pasteFromClipboard() {
+            playSound('click');
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        document.getElementById('smsInput').value = text;
+                        parseSmsText(text);
+                    }
+                } else {
+                    alert('문자 내용을 입력창에 직접 길게 눌러 [붙여넣기] 해주세요!');
+                }
+            } catch(e) {
+                alert('문자 내용을 입력창에 직접 길게 눌러 [붙여넣기] 해주세요!');
+            }
+        }
+
+        function parseSmsText(text) {
+            if (!text || text.trim() === '') return;
+            playSound('coin');
+
+            // 1. 금액 추출
+            let amount = 0;
+            const amtMatch = text.match(/([0-9,]+)\s*원/i) || text.match(/(?:KRW|₩)\s*([0-9,]+)/i) || text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+            if (amtMatch) {
+                amount = parseInt(amtMatch[1].replace(/,/g, ''), 10);
+                calcExpr = String(amount);
+                updateCalcDisplay();
+            }
+
+            // 2. 카드사 추출
+            let cName = '현대카드';
+            let pMethod = '신용카드';
+            if (text.includes('신한')) cName = '신한카드';
+            else if (text.includes('삼성')) cName = '삼성카드';
+            else if (text.includes('국민') || text.includes('KB')) cName = 'KB국민카드';
+            else if (text.includes('롯데')) cName = '롯데카드';
+            else if (text.includes('카카오뱅크') || text.includes('체크')) { pMethod = '체크카드'; cName = '체크카드'; }
+            else if (text.includes('계좌') || text.includes('입금') || text.includes('출금')) { pMethod = '현금/계좌'; cName = ''; }
+
+            // 결제수단 칩 활성화
+            selectedPayMethod = pMethod;
+            selectedCardName = cName;
+            document.querySelectorAll('#payMethodChips .chip').forEach(el => {
+                if (el.innerText.includes(cName) || (pMethod === '현금/계좌' && el.innerText.includes('현금'))) {
+                    document.querySelectorAll('#payMethodChips .chip').forEach(c => c.classList.remove('active'));
+                    el.classList.add('active');
+                }
+            });
+
+            // 3. 카테고리 & 사용처 자동 추출
+            let cat = '식비';
+            let desc = '';
+            if (text.includes('스타벅스') || text.includes('커피') || text.includes('카페') || text.includes('투썸') || text.includes('이디야') || text.includes('메가')) {
+                cat = '카페'; desc = '카페 음료';
+            } else if (text.includes('배민') || text.includes('배달의민족') || text.includes('식당') || text.includes('요기요') || text.includes('쿠팡이츠') || text.includes('버거')) {
+                cat = '식비'; desc = '외식/식비';
+            } else if (text.includes('택시') || text.includes('주유') || text.includes('교통') || text.includes('코레일') || text.includes('티머니')) {
+                cat = '교통'; desc = '교통비';
+            } else if (text.includes('쿠팡') || text.includes('마트') || text.includes('쇼핑') || text.includes('컬리') || text.includes('올리브영') || text.includes('네이버페이')) {
+                cat = '쇼핑'; desc = '쇼핑/생필품';
+            } else if (text.includes('관리비') || text.includes('한전') || text.includes('가스') || text.includes('월세')) {
+                cat = '생활'; desc = '생활비';
+            }
+
+            // 가맹점 이름 추출 시도
+            const storeMatch = text.match(/([가-힣A-Za-z0-9]+(?:\([주]\)|점|스토어|마트|샵|점))/) || text.match(/\b([가-힣A-Za-z]{2,8}(?:점|마트|샵|푸드|치킨|피자))\b/);
+            if (storeMatch) desc = storeMatch[1];
+
+            if (desc) document.getElementById('txDesc').value = desc;
+
+            // 카테고리 칩 활성화
+            selectedCategory = cat;
+            document.querySelectorAll('#categoryChips .chip').forEach(el => {
+                if (el.innerText.includes(cat)) {
+                    document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('active'));
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // 🧮 Transaction Calculator
         function pressNum(num) {
             playSound('click');
             if (calcExpr === "0") calcExpr = num;
@@ -478,11 +613,8 @@
         function pressOp(op) {
             playSound('click');
             const last = calcExpr.slice(-1);
-            if (['+', '-', '*', '/'].includes(last)) {
-                calcExpr = calcExpr.slice(0, -1) + op;
-            } else {
-                calcExpr += op;
-            }
+            if (['+', '-', '*', '/'].includes(last)) calcExpr = calcExpr.slice(0, -1) + op;
+            else calcExpr += op;
             updateCalcDisplay();
         }
 
@@ -505,31 +637,27 @@
                 const sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
                 const res = Function(`'use strict'; return (${sanitized})`)();
                 calcExpr = String(Math.round(res) || 0);
-            } catch(e) {
-                calcExpr = "0";
-            }
+            } catch(e) { calcExpr = "0"; }
             updateCalcDisplay();
         }
 
         function addQuickAmt(amt) {
             playSound('click');
-            let currentVal = getEvaluatedAmount();
+            let currentVal = getEvaluatedAmount(calcExpr);
             calcExpr = String(currentVal + amt);
             updateCalcDisplay();
         }
 
-        function getEvaluatedAmount() {
+        function getEvaluatedAmount(expr) {
             try {
-                const sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
+                const sanitized = expr.replace(/[^0-9+\-*/.]/g, '');
                 const res = Function(`'use strict'; return (${sanitized})`)();
                 return Math.max(0, Math.round(res) || 0);
-            } catch(e) {
-                return 0;
-            }
+            } catch(e) { return 0; }
         }
 
         function updateCalcDisplay() {
-            const amt = getEvaluatedAmount();
+            const amt = getEvaluatedAmount(calcExpr);
             document.getElementById('calcFormula').innerText = calcExpr.match(/[+\-*/]/) ? calcExpr : '';
             document.getElementById('calcDisplay').innerText = amt.toLocaleString() + '원';
             document.getElementById('calcKoreanWord').innerText = formatWealth(amt);
@@ -544,6 +672,53 @@
                 else if (amt < 60000) vBox.innerText = `🍗 바삭한 치킨 약 ${(amt/23000).toFixed(1)}마리 분량`;
                 else vBox.innerText = `🛒 일주일치 식료품 장보기 또는 생활비 분량`;
             }
+        }
+
+        // 💳 Card Reconciliation Calculator
+        function pressRecNum(num) {
+            playSound('click');
+            if (recCalcExpr === "0") recCalcExpr = num;
+            else recCalcExpr += num;
+            updateRecCalcDisplay();
+        }
+        function pressRecOp(op) {
+            playSound('click');
+            const last = recCalcExpr.slice(-1);
+            if (['+', '-', '*', '/'].includes(last)) recCalcExpr = recCalcExpr.slice(0, -1) + op;
+            else recCalcExpr += op;
+            updateRecCalcDisplay();
+        }
+        function pressRecClear() {
+            playSound('click');
+            recCalcExpr = "0";
+            updateRecCalcDisplay();
+        }
+        function pressRecBackspace() {
+            playSound('click');
+            if (recCalcExpr.length <= 1) recCalcExpr = "0";
+            else recCalcExpr = recCalcExpr.slice(0, -1);
+            updateRecCalcDisplay();
+        }
+        function pressRecEqual() {
+            playSound('coin');
+            try {
+                const sanitized = recCalcExpr.replace(/[^0-9+\-*/.]/g, '');
+                const res = Function(`'use strict'; return (${sanitized})`)();
+                recCalcExpr = String(Math.round(res) || 0);
+            } catch(e) { recCalcExpr = "0"; }
+            updateRecCalcDisplay();
+        }
+        function addRecQuickAmt(amt) {
+            playSound('click');
+            let currentVal = getEvaluatedAmount(recCalcExpr);
+            recCalcExpr = String(currentVal + amt);
+            updateRecCalcDisplay();
+        }
+        function updateRecCalcDisplay() {
+            const amt = getEvaluatedAmount(recCalcExpr);
+            document.getElementById('recCalcFormula').innerText = recCalcExpr.match(/[+\-*/]/) ? recCalcExpr : '';
+            document.getElementById('recCalcDisplay').innerText = amt.toLocaleString() + '원';
+            document.getElementById('recCalcKoreanWord').innerText = formatWealth(amt);
         }
 
         function selectCategory(cat, el) {
@@ -569,7 +744,7 @@
         }
 
         async function handleSaveTx() {
-            const amount = getEvaluatedAmount();
+            const amount = getEvaluatedAmount(calcExpr);
             if (amount <= 0) {
                 alert('0원 이상의 금액을 입력해주세요!');
                 return;
@@ -598,11 +773,22 @@
             calcExpr = "0";
             updateCalcDisplay();
             document.getElementById('txDesc').value = '';
+            document.getElementById('smsInput').value = '';
 
             setTimeout(() => {
                 switchTab('tab-dashboard');
                 loadGameData(true);
             }, 1100);
+        }
+
+        async function handleReconcileCard() {
+            const card_name = document.getElementById('recCardName').value;
+            const billed_amount = getEvaluatedAmount(recCalcExpr);
+            if (!billed_amount || billed_amount <= 0) { alert('0원 이상의 청구금액을 입력해주세요.'); return; }
+            playSound('coin');
+            await callGasApi('reconcileCard', { billing_month: currentMonth, card_name, billed_amount });
+            alert(`[${card_name}] 청구서 금액(${billed_amount.toLocaleString()}원) 대조 완료!`);
+            loadGameData(true);
         }
 
         function showStamp(amt) {
@@ -615,6 +801,7 @@
             setTimeout(() => overlay.style.display = 'none', 1000);
         }
 
+        // Web Audio Sound Engine
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -917,15 +1104,6 @@
                 row.innerHTML = `<span><strong>${inv.name}</strong> (${inv.shares}주)</span><strong>${inv.total_eval.toLocaleString()}원</strong>`;
                 iContainer.appendChild(row);
             });
-        }
-
-        async function handleReconcileCard() {
-            const card_name = document.getElementById('recCardName').value;
-            const billed_amount = Number(document.getElementById('recBilledAmt').value);
-            if (!billed_amount) { alert('청구금액을 입력해주세요.'); return; }
-            await callGasApi('reconcileCard', { billing_month: currentMonth, card_name, billed_amount });
-            alert(`[${card_name}] 청구서 대조 완료!`);
-            loadGameData(true);
         }
     </script>
 </body>
