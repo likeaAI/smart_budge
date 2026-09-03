@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260903_v6';
+        const APP_LIVE_VER = '20260903_v7';
         if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
             if ('serviceWorker' in navigator) {
@@ -579,7 +579,10 @@
 
                     <div class="card-title">
                         <span id="txTypeTitle">💸 지출 금액 입력</span>
-                        <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <input type="date" id="txDate" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 10px; border-radius: 10px; font-size: 0.88rem;">
+                            <input type="time" id="txTime" title="소비 시각 (선택사항)" style="border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); padding: 5px 8px; border-radius: 10px; font-size: 0.88rem; width: 105px;">
+                        </div>
                     </div>
 
                     <div class="calc-display">
@@ -1369,11 +1372,34 @@
                 if (words.length > 0) desc = words[0];
             }
 
+            // 명백한 시간 추출 (예: 14:35, 오후 2시 등 - 없을 땐 사용자에게 되묻지 않음)
+            let parsedTime = '';
+            const tMatch = text.match(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/);
+            if (tMatch) {
+                const hh = tMatch[1].length === 1 ? '0' + tMatch[1] : tMatch[1];
+                parsedTime = `${hh}:${tMatch[2]}`;
+            } else {
+                const korTimeMatch = text.match(/(오전|오후|밤|새벽|저녁)?\s*(\d{1,2})시\s*(\d{1,2})?분?/);
+                if (korTimeMatch) {
+                    const ampm = korTimeMatch[1] || '';
+                    let hour = parseInt(korTimeMatch[2], 10);
+                    const min = korTimeMatch[3] ? parseInt(korTimeMatch[3], 10) : 0;
+                    if ((ampm === '오후' || ampm === '밤' || ampm === '저녁') && hour < 12) hour += 12;
+                    if ((ampm === '오전' || ampm === '새벽') && hour === 12) hour = 0;
+                    parsedTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                }
+            }
+
             if (amount > 0) {
                 playSound('coin');
                 switchTxType(recognizedType);
                 calcExpr = String(amount);
                 updateCalcDisplay();
+
+                if (parsedTime) {
+                    const elTime = document.getElementById('txTime');
+                    if (elTime) elTime.value = parsedTime;
+                }
 
                 if (desc) document.getElementById('txDesc').value = desc;
 
@@ -1535,6 +1561,7 @@
             playSound('click');
             const payload = {
                 date: document.getElementById('txDate').value,
+                time: document.getElementById('txTime')?.value || '',
                 amount: amount,
                 payment_method: selectedPayMethod,
                 card_name: selectedCardName,

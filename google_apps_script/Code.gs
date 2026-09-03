@@ -336,7 +336,9 @@ function addTransaction(data) {
   var sheet = ss.getSheetByName('가계부_내역');
   var id = new Date().getTime();
   var dateStr = data.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
-  sheet.appendRow([id, dateStr, data.type || '지출', Number(data.amount) || 0, data.category || '기타', data.description || '', data.consumption_type || '선택', data.satisfaction || '보통', data.payment_method || '신용카드', data.card_name || '', data.billing_month || dateStr.substring(0, 7), 0, 1, new Date().toISOString()]);
+  var timeStr = (data.time || '').trim();
+  var fullDateStr = (timeStr && dateStr.indexOf(' ') < 0) ? (dateStr + ' ' + timeStr) : dateStr;
+  sheet.appendRow([id, fullDateStr, data.type || '지출', Number(data.amount) || 0, data.category || '기타', data.description || '', data.consumption_type || '선택', data.satisfaction || '보통', data.payment_method || '신용카드', data.card_name || '', data.billing_month || dateStr.substring(0, 7), 0, 1, new Date().toISOString()]);
   return { success: true, id: id };
 }
 
@@ -786,13 +788,16 @@ function sendInteractiveConfirm(chatId, candidate) {
   cache.put(cacheKey, JSON.stringify(candidate), 600); // 10분간 유효
 
   var typeEmoji = candidate.type === '수입' ? '💰' : '💸';
+  var dateStr = candidate.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
+  var dateDisplay = candidate.time ? (dateStr + " (" + candidate.time + ")") : dateStr;
+
   var msgText = "🤖 <b>입력 내용을 확인해주세요:</b>\n\n"
     + "• <b>구분:</b> " + typeEmoji + " " + candidate.type + "\n"
     + "• <b>금액:</b> <b>" + Number(candidate.amount).toLocaleString() + "원</b>\n"
     + "• <b>내용:</b> " + candidate.description + "\n"
     + "• <b>분류:</b> " + candidate.category + "\n"
     + "• <b>수단:</b> " + candidate.payment_method + (candidate.card_name ? " (" + candidate.card_name + ")" : "") + "\n"
-    + "• <b>일자:</b> " + (candidate.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')) + "\n\n"
+    + "• <b>일자:</b> " + dateDisplay + "\n\n"
     + "위 내용으로 가계부에 저장할까요?";
 
   var inlineKeyboard = {
@@ -1147,18 +1152,14 @@ function askGeminiFinance(userText) {
   var prompt = "당신은 한국어 금융/가계부 AI 비서입니다. 사용자의 일상 대화, 결제 SMS, 질문을 분석하여 오직 순수 JSON으로만 응답하세요.\n\n"
     + "사용자 메시지: \"" + userText + "\"\n\n"
     + "분석 지침:\n"
-    + "1. action_type 판별:\n"
-    + "   - 'briefing': 사용자가 지출/수입/잔액 현황이나 브리핑을 물어볼 때 (예: '오늘 얼마 썼지?', '이번달 현황 알려줘', '브리핑해줘', '잔액 얼마야?')\n"
-    + "   - 'asset': 예적금/청약/주식 등 자산 통장에 돈을 넣거나 자산 증감을 말할 때 (예: '청약통장 10만원 넣음', '적금 50만원 추가', '예금 5000만원 생김')\n"
-    + "   - 'transaction': 일반적인 지출이나 수입일 때\n"
-    + "2. type 판별 (지출 vs 수입):\n"
-    + "   - '수입': 월급, 급여, 보너스, 성과급, 용돈, 알바비, 입금, 들어옴, 환급, 정산, 배당금, 이자수익, 벌었음, 송금받음 등\n"
-    + "   - '지출': 결제, 샀어, 먹었어, 마심, 썼어, 비용, 출금, 카드, 택시비, 쇼핑, 치킨, 송금함, 이체함 등 (대부분의 구매 행위는 지출)\n"
+    + "1. action_type 판별: 'transaction' | 'asset' | 'briefing'\n"
+    + "2. type 판별: '지출' 또는 '수입'\n"
     + "3. amount (금액): 350만 -> 3500000, 5만 -> 50000, 1억 -> 100000000 등 정확한 정수 숫자 변환\n"
     + "4. description (내용): 지출/수입 대상 명칭 (예: '점심 식사', '스타벅스 아메리카노', '9월 월급', '쿠팡 생수')\n"
     + "5. category: ['식비', '카페', '교통', '쇼핑', '생활', '문화', '구독', '저축', '급여/월급', '기타'] 중 1개 선택\n"
     + "6. payment_method: '신용카드' 또는 '현금'\n"
-    + "7. card_name: 카드사명이 언급된 경우 (예: '신한카드', '국민카드' 등), 없으면 빈문자열\n\n"
+    + "7. card_name: 카드사명이 언급된 경우 (예: '신한카드', '국민카드' 등), 없으면 빈문자열\n"
+    + "8. time: 텍스트에 명시적인 결제/입금 시간(예: '14:35', '오후 2시', '밤 11시', '09/03 18:20')이 있을 때만 'HH:mm' 형태로 추출하고, 시간 언급이 없으면 빈문자열(\"\")로 두세요. 절대로 사용자에게 시간을 되묻지 마세요.\n\n"
     + "응답 JSON 형식:\n"
     + "{\n"
     + "  \"action_type\": \"transaction\" 또는 \"asset\" 또는 \"briefing\",\n"
@@ -1167,7 +1168,8 @@ function askGeminiFinance(userText) {
     + "  \"description\": \"점심 식사\",\n"
     + "  \"category\": \"식비\",\n"
     + "  \"payment_method\": \"신용카드\",\n"
-    + "  \"card_name\": \"신한카드\"\n"
+    + "  \"card_name\": \"신한카드\",\n"
+    + "  \"time\": \"14:35\" (없으면 \"\")\n"
     + "}";
 
   try {
@@ -1234,6 +1236,26 @@ function fallbackRegexParser(text) {
   var isIncome = t.match(/급여|월급|입금|수입|들어옴|환급|정산|용돈|알바|보너스|수당|벌었|송금받/);
   var type = isIncome ? '수입' : '지출';
 
+  // 5. 시간 추출 (텍스트에 명백한 시간이 있을 때만 추출)
+  var time = '';
+  var tMatch1 = t.match(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/);
+  if (tMatch1) {
+    var hh = tMatch1[1].length === 1 ? '0' + tMatch1[1] : tMatch1[1];
+    time = hh + ':' + tMatch1[2];
+  } else {
+    var tMatch2 = t.match(/(오전|오후|밤|새벽|저녁|아침)?\s*(\d{1,2})시\s*(\d{1,2})?분?/);
+    if (tMatch2) {
+      var ampm = tMatch2[1] || '';
+      var hour = parseInt(tMatch2[2], 10);
+      var min = tMatch2[3] ? parseInt(tMatch2[3], 10) : 0;
+      if ((ampm === '오후' || ampm === '밤' || ampm === '저녁') && hour < 12) hour += 12;
+      if ((ampm === '오전' || ampm === '새벽') && hour === 12) hour = 0;
+      var hStr = hour < 10 ? '0' + hour : String(hour);
+      var mStr = min < 10 ? '0' + min : String(min);
+      time = hStr + ':' + mStr;
+    }
+  }
+
   var cat = isIncome ? '급여/월급' : guessCategoryFromText(t);
   var method = (t.indexOf('카드') >= 0 || t.indexOf('체크') >= 0 || t.indexOf('신용') >= 0 || t.indexOf('승인') >= 0) ? '신용카드' : '현금';
   var cardName = '';
@@ -1253,6 +1275,7 @@ function fallbackRegexParser(text) {
     category: cat,
     payment_method: method,
     card_name: cardName,
+    time: time,
     date: Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')
   };
 }
