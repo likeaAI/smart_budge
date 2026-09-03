@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260904_v14';
+        const APP_LIVE_VER = '20260904_v15';
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('v') !== APP_LIVE_VER || localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
@@ -227,8 +227,9 @@
         /* 📱 Container & Balanced Responsive Grid System */
         .container { max-width: 1280px; margin: auto; padding: 26px 20px; }
         
-        /* 🍎 Apple Squircle Card Styling */
+        /* 🍎 Apple Squircle Card Styling with Glass Top Highlight */
         .card {
+            position: relative;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 24px;
@@ -236,6 +237,17 @@
             box-shadow: var(--card-shadow);
             color: var(--text-main);
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+            border-radius: 24px 24px 0 0;
+            pointer-events: none;
+        }
+        [data-theme='dark'] .card::before {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%);
         }
         .card-title {
             font-size: 1.12rem; font-weight: 800; margin-bottom: 18px;
@@ -287,9 +299,19 @@
         }
         .level-banner * { color: white !important; }
         .level-banner #disp-level-target { color: #fde047 !important; }
-        .level-tag { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-size: 0.78rem; font-weight: 700; }
+        @keyframes appleShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
         .progress-bar-bg { height: 8px; background: rgba(255,255,255,0.25); border-radius: 9999px; overflow: hidden; margin: 14px 0 8px 0; }
-        .progress-bar-fill { height: 100%; background: #34c759; border-radius: 9999px; transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34c759 0%, #30d158 40%, #a7f3d0 65%, #34c759 100%) !important;
+            background-size: 200% 100% !important;
+            animation: appleShimmer 3.2s infinite linear;
+            border-radius: 9999px;
+            transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
         /* Stat Grid (3 Items) */
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
@@ -1313,6 +1335,37 @@
         // 💳 Card Rec State
         let recCalcExpr = "0";
 
+        // 🍎 Apple Number Ticker Animation (부드러운 실시간 카운팅 효과)
+        function animateNumberCount(elId, targetNum, suffix = '원', duration = 650) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const target = Number(targetNum) || 0;
+            const rawPrev = el.getAttribute('data-raw-val');
+            const prevVal = rawPrev !== null ? Number(rawPrev) : 0;
+            el.setAttribute('data-raw-val', target);
+
+            if (prevVal === target || document.hidden) {
+                el.innerText = (target > 0 && elId.includes('balance') ? '+' : '') + target.toLocaleString('ko-KR') + suffix;
+                return;
+            }
+
+            const startTime = performance.now();
+            function tick(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Apple easeOutQuart
+                const ease = 1 - Math.pow(1 - progress, 4);
+                const current = Math.round(prevVal + (target - prevVal) * ease);
+                el.innerText = (current > 0 && elId.includes('balance') ? '+' : '') + current.toLocaleString('ko-KR') + suffix;
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    el.innerText = (target > 0 && elId.includes('balance') ? '+' : '') + target.toLocaleString('ko-KR') + suffix;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
         const EXPENSE_CATEGORIES = [
             { name: '식비', icon: '🍚', color: '#f87171' },
             { name: '카페', icon: '☕', color: '#fbbf24' },
@@ -2104,11 +2157,10 @@
                 document.getElementById('disp-level-bar').style.width = res.level.progress_to_next + '%';
                 document.getElementById('disp-level-pct').innerText = `진행률 ${res.level.progress_to_next}%`;
             }
-            document.getElementById('disp-networth-mini').innerText = globalNetWorth.toLocaleString() + '원';
-
-            document.getElementById('disp-networth').innerText = globalNetWorth.toLocaleString() + '원';
-            document.getElementById('disp-inv').innerText = (res.net_worth?.inv_total_eval || 0).toLocaleString() + '원';
-            document.getElementById('disp-cash').innerText = ((res.net_worth?.total_assets || 0) - (res.net_worth?.inv_total_eval || 0)).toLocaleString() + '원';
+            animateNumberCount('disp-networth-mini', globalNetWorth);
+            animateNumberCount('disp-networth', globalNetWorth);
+            animateNumberCount('disp-inv', (res.net_worth?.inv_total_eval || 0));
+            animateNumberCount('disp-cash', ((res.net_worth?.total_assets || 0) - (res.net_worth?.inv_total_eval || 0)));
             
             // 🔄 매달(월간) & 매년(연간) 2중 실시간 집계
             const now = new Date();
@@ -2130,34 +2182,25 @@
             const yearCardTotal = txList.filter(t => String(t.date).startsWith(curYear) && t.type === '지출' && (t.payment_method === '신용카드' || t.card_name)).reduce((a, b) => a + (Number(b.amount) || 0), 0);
 
             // 월간 DOM 바인딩
-            const elExp = document.getElementById('disp-expense');
-            if (elExp) elExp.innerText = monthExp.toLocaleString() + '원';
-            const elExpChart = document.getElementById('chartExpenseTotal');
-            if (elExpChart) elExpChart.innerText = monthExp.toLocaleString() + '원';
-            const elInc = document.getElementById('disp-income');
-            if (elInc) elInc.innerText = monthInc.toLocaleString() + '원';
+            animateNumberCount('disp-expense', monthExp);
+            animateNumberCount('chartExpenseTotal', monthExp);
+            animateNumberCount('disp-income', monthInc);
+            animateNumberCount('disp-balance', monthBal);
             const elBal = document.getElementById('disp-balance');
-            if (elBal) {
-                elBal.innerText = (monthBal >= 0 ? '+' : '') + monthBal.toLocaleString() + '원';
-                elBal.style.color = monthBal >= 0 ? 'var(--income)' : 'var(--expense)';
-            }
+            if (elBal) elBal.style.color = monthBal >= 0 ? 'var(--income)' : 'var(--expense)';
             const elScore = document.getElementById('disp-score-badge');
             if (elScore) elScore.innerText = `자각 ${res.summary?.mindful_score ?? 100}점`;
 
             // 연간 DOM 바인딩
             const elYrBadge = document.getElementById('disp-year-badge');
             if (elYrBadge) elYrBadge.innerText = `${curYear}년 누적`;
-            const elYrExp = document.getElementById('disp-year-expense');
-            if (elYrExp) elYrExp.innerText = yearExp.toLocaleString() + '원';
-            const elYrInc = document.getElementById('disp-year-income');
-            if (elYrInc) elYrInc.innerText = yearInc.toLocaleString() + '원';
+            animateNumberCount('disp-year-expense', yearExp);
+            animateNumberCount('disp-year-income', yearInc);
+            animateNumberCount('disp-year-balance', yearBal);
             const elYrBal = document.getElementById('disp-year-balance');
-            if (elYrBal) {
-                elYrBal.innerText = (yearBal >= 0 ? '+' : '') + yearBal.toLocaleString() + '원';
-                elYrBal.style.color = yearBal >= 0 ? 'var(--income)' : 'var(--expense)';
-            }
-            const elYrCard = document.getElementById('disp-cards-year-total');
-            if (elYrCard) elYrCard.innerText = (yearCardTotal > 0 ? yearCardTotal : (res.cards_summary || []).reduce((a, c) => a + (c.spent_amount || 0), 0)).toLocaleString() + '원';
+            if (elYrBal) elYrBal.style.color = yearBal >= 0 ? 'var(--income)' : 'var(--expense)';
+            const yrCardVal = (yearCardTotal > 0 ? yearCardTotal : (res.cards_summary || []).reduce((a, c) => a + (c.spent_amount || 0), 0));
+            animateNumberCount('disp-cards-year-total', yrCardVal);
 
             const tbody = document.getElementById('recent-tx-tbody');
             tbody.innerHTML = '';
@@ -2672,8 +2715,7 @@
             const totalSpent = list.reduce((acc, c) => acc + (Number(c.spent_amount) || 0), 0);
             const count = list.length;
             
-            const totalEl = document.getElementById('disp-cards-total');
-            if (totalEl) totalEl.innerText = totalSpent.toLocaleString() + '원';
+            animateNumberCount('disp-cards-total', totalSpent);
             
             const countEl = document.getElementById('disp-cards-count');
             if (countEl) countEl.innerText = `${count}개 카드`;
@@ -3143,27 +3185,15 @@
             globalNetWorth = netWorth;
 
             // Update Tab Assets Header Stats
-            const elNW = document.getElementById('assetsTabTotalNetWorth');
-            if (elNW) elNW.innerText = netWorth.toLocaleString() + '원';
-
-            const elCash = document.getElementById('assetsTabTotalCash');
-            if (elCash) elCash.innerText = totalCash.toLocaleString() + '원';
-
-            const elInv = document.getElementById('assetsTabTotalInv');
-            if (elInv) elInv.innerText = totalInv.toLocaleString() + '원';
+            animateNumberCount('assetsTabTotalNetWorth', netWorth);
+            animateNumberCount('assetsTabTotalCash', totalCash);
+            animateNumberCount('assetsTabTotalInv', totalInv);
 
             // Update Dashboard Net Worth
-            const dispNW = document.getElementById('disp-networth');
-            if (dispNW) dispNW.innerText = netWorth.toLocaleString() + '원';
-
-            const dispNWMini = document.getElementById('disp-networth-mini');
-            if (dispNWMini) dispNWMini.innerText = netWorth.toLocaleString() + '원';
-
-            const dispInv = document.getElementById('disp-inv');
-            if (dispInv) dispInv.innerText = totalInv.toLocaleString() + '원';
-
-            const dispCash = document.getElementById('disp-cash');
-            if (dispCash) dispCash.innerText = totalCash.toLocaleString() + '원';
+            animateNumberCount('disp-networth', netWorth);
+            animateNumberCount('disp-networth-mini', netWorth);
+            animateNumberCount('disp-inv', totalInv);
+            animateNumberCount('disp-cash', totalCash);
 
             // Recalculate Wealth Level
             let levelTitle = "종잣돈 빌더 (LV.3)";
