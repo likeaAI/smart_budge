@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260903_v5';
+        const APP_LIVE_VER = '20260903_v6';
         if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
             if ('serviceWorker' in navigator) {
@@ -367,9 +367,22 @@
                 <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">구글 Apps Script 배포 URL</label>
                 <input type="url" id="inputGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
             </div>
-            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 12px; margin-bottom: 12px;">
                 <span style="font-size: 0.85rem; font-weight: 600;">🔒 4자리 비밀번호 재설정</span>
                 <button type="button" class="btn-icon" onclick="startPinChange()" style="color: var(--primary);">비밀번호 변경</button>
+            </div>
+
+            <!-- 🤖 텔레그램 봇 & AI 브리핑 연동 UI -->
+            <div style="border-top: 1px dashed var(--border-color); padding-top: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.88rem; font-weight: 700; color: #2563eb;">🤖 텔레그램 봇 & AI 브리핑 연동</span>
+                    <button type="button" class="btn-icon" onclick="handleRegisterTelegramWebhook()" style="background: var(--primary); color: white; border: none; font-size: 0.78rem; font-weight: 700; padding: 6px 12px; border-radius: 8px;">⚡ 웹훅 1초 자동등록</button>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
+                    텔레그램 <b>@BotFather</b>에서 발급받은 봇 토큰을 입력하면 텔레그램에서 <code>/지출</code> 입력, 자연어 파싱 및 실시간 <b>AI 금융 브리핑</b>을 받을 수 있습니다.
+                </div>
+                <input type="text" id="inputTelegramToken" class="form-control" placeholder="봇 토큰 입력 (예: 123456789:ABCdefGHIjkl...)" style="font-size: 0.82rem; margin-bottom: 6px;">
+                <div id="tgStatusMsg" style="font-size: 0.78rem; color: var(--text-muted);"></div>
             </div>
         </div>
 
@@ -1659,7 +1672,13 @@
 
         function toggleUrlSetting() {
             const box = document.getElementById('urlSettingBox');
-            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            const isHidden = box.style.display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                const savedToken = localStorage.getItem('telegram_bot_token') || '';
+                const inputToken = document.getElementById('inputTelegramToken');
+                if (inputToken) inputToken.value = savedToken;
+            }
         }
 
         function saveGasUrl() {
@@ -1669,6 +1688,39 @@
             showToast('구글 연동 URL이 저장되었습니다!', 'success');
             document.getElementById('urlSettingBox').style.display = 'none';
             loadGameData();
+        }
+
+        async function handleRegisterTelegramWebhook() {
+            const token = document.getElementById('inputTelegramToken').value.trim();
+            if (!token) {
+                showToast('텔레그램 봇 토큰을 입력해주세요.', 'warning');
+                return;
+            }
+            const gasUrl = localStorage.getItem('gas_app_url') || document.getElementById('inputGasUrl').value.trim();
+            if (!gasUrl) {
+                showToast('구글 Apps Script 배포 URL을 먼저 입력해주세요.', 'warning');
+                return;
+            }
+            localStorage.setItem('telegram_bot_token', token);
+            showToast('텔레그램 웹훅 등록 요청 중...', 'info');
+
+            const statusEl = document.getElementById('tgStatusMsg');
+            if (statusEl) statusEl.innerText = '⏳ 웹훅 등록 중...';
+
+            try {
+                const url = `${gasUrl}?action=setTelegramWebhook&token=${encodeURIComponent(token)}&url=${encodeURIComponent(gasUrl)}`;
+                const res = await fetch(url, { redirect: "follow" }).then(r => r.json());
+                if (res && res.success) {
+                    showToast('🎉 텔레그램 봇 웹훅이 등록되었습니다!', 'success');
+                    if (statusEl) statusEl.innerHTML = '✅ <b>연동 성공!</b> 텔레그램에서 봇에게 <code>/start</code> 또는 <code>/브리핑</code>을 보내보세요.';
+                } else {
+                    showToast('웹훅 등록 실패: ' + (res?.error || '알 수 없는 오류'), 'error');
+                    if (statusEl) statusEl.innerText = '❌ 웹훅 등록 실패: ' + (res?.error || '');
+                }
+            } catch(e) {
+                showToast('연동 중 네트워크 오류가 발생했습니다.', 'error');
+                if (statusEl) statusEl.innerText = '❌ 오류: ' + e.message;
+            }
         }
 
         async function callGasApi(action, data = {}) {

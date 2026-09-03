@@ -1,11 +1,42 @@
 /**
- * 💰 스마트 머니 허브 - Google Apps Script Backend (수동 입력 행 & 날짜 완벽 지원)
+ * 💰 스마트 머니 허브 - Google Apps Script Backend (단일 doPost Web/Telegram 통합 라우팅)
  */
+
+// ⚙️ 텔레그램 봇 및 Gemini AI 설정 (스크립트 속성 또는 기본값)
+function getTelegramToken() {
+  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || '';
+}
+
+function getGeminiApiKey() {
+  return PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+}
 
 function doGet(e) {
   initSheets();
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
   
+  // 🔗 텔레그램 웹훅 1클릭 등록 편의 기능: ?action=setTelegramWebhook&token=YOUR_BOT_TOKEN
+  if (action === 'setTelegramWebhook') {
+    var token = (e && e.parameter && e.parameter.token) ? e.parameter.token : getTelegramToken();
+    var webAppUrl = (e && e.parameter && e.parameter.url) ? e.parameter.url : ScriptApp.getService().getUrl();
+    if (!token) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: '봇 토큰(token) 파라미터가 필요합니다.' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    PropertiesService.getScriptProperties().setProperty('TELEGRAM_BOT_TOKEN', token);
+    var res = setTelegramWebhook(token, webAppUrl);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, result: res, webhookUrl: webAppUrl }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 🤖 텔레그램 웹훅 해제 기능: ?action=deleteTelegramWebhook
+  if (action === 'deleteTelegramWebhook') {
+    var token = (e && e.parameter && e.parameter.token) ? e.parameter.token : getTelegramToken();
+    var res = deleteTelegramWebhook(token);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, result: res }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (action) {
     return ContentService.createTextOutput(JSON.stringify(getAllData(e.parameter.month)))
       .setMimeType(ContentService.MimeType.JSON);
@@ -25,8 +56,14 @@ function doPost(e) {
       try { data = JSON.parse(e.postData.contents); } catch(err) { data = { text: e.postData.contents }; }
     } else if (e.parameter) { data = e.parameter; }
     
+    // 1️⃣ 텔레그램 웹훅 요청 판별 (message 또는 callback_query 수신 시)
+    if (data.message || data.callback_query) {
+      return handleTelegramUpdate(data);
+    }
+
+    // 2️⃣ 웹 UI(기존 프론트엔드) API 요청 판별 (action 수신 시)
     var action = data.action || (e.parameter ? e.parameter.action : '');
-    if (!action && (data.text || data.sms || data.message || data.body)) action = 'parseSmsWebhook';
+    if (!action && (data.text || data.sms || data.body)) action = 'parseSmsWebhook';
     var result = handleApiPost(action, data);
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
@@ -503,3 +540,741 @@ function clearRecurring() {
   if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
   return { success: true };
 }
+
+// ============================================================================
+// 🤖 텔레그램 봇 & AI 금융 비서 브리핑 통합 엔진
+// ============================================================================
+
+/**
+ * 텔레그램 웹훅 업데이트 메인 라우터
+ */
+function handleTelegramUpdate(data) {
+  try {
+    if (data.message) {
+      var msg = data.message;
+      var chatId = msg.chat.id;
+      var text = (msg.text || '').trim();
+
+      if (!text) {
+        return ContentService.createTextOutput("OK");
+      }
+
+      // 1. 슬래시 명령어 또는 바로가기 키보드 텍스트 처리
+      if (text.indexOf('/') === 0 || text === '📊 금융 브리핑' || text === '🗓️ 정기일정' || text === '🏦 자산 현황' || text === '💸 지출 입력') {
+        handleTelegramCommand(chatId, text, msg);
+      } else {
+        // 2. 비정형 자연어 및 결제 SMS (Gemini AI 파싱 + 되묻기 인터랙션)
+        handleTelegramNaturalText(chatId, text, msg);
+      }
+    } else if (data.callback_query) {
+      // 3. 인라인 버튼 클릭 (되묻기 확인 / 카테고리 변경 / 삭제 등)
+      handleTelegramCallback(data.callback_query);
+    }
+  } catch (err) {
+    Logger.log("Telegram update error: " + err.toString());
+  }
+  return ContentService.createTextOutput("OK");
+}
+
+/**
+ * 텔레그램 CMD 명령어 처리기
+ */
+function handleTelegramCommand(chatId, text, msg) {
+  var parts = text.split(/\s+/);
+  var cmd = parts[0].toLowerCase();
+
+  // 바로가기 키보드 매핑
+  if (text === '📊 금융 브리핑') cmd = '/브리핑';
+  if (text === '💸 지출 입력') {
+    sendTelegramMessage(chatId, "💸 <b>지출 입력 안내</b>\n\n명령어 예시:\n<code>/지출 15000 점심식사 식비 카드</code>\n\n또는 자연어로 편하게 말씀해주세요!\n예: <i>오늘 점심 순대국 9000원 카드로 결제</i>");
+    return;
+  }
+  if (text === '🗓️ 정기일정') {
+    sendTelegramRecurringPlans(chatId);
+    return;
+  }
+  if (text === '🏦 자산 현황') {
+    sendTelegramAssets(chatId);
+    return;
+  }
+
+  // /start, /help, /도움말
+  if (cmd === '/start' || cmd === '/help' || cmd === '/도움말') {
+    var helpText = "👑 <b>스마트 머니 허브 - 텔레그램 비서</b>\n\n"
+      + "가계부 웹 대시보드와 실시간 양방향으로 연동되는 개인 금융 비서입니다.\n\n"
+      + "⚡ <b>빠른 CMD 명령어:</b>\n"
+      + "• <code>/지출 [금액] [내용] [카테고리] [결제수단]</code>\n"
+      + "  예: <code>/지출 15000 점심식사 식비 신한카드</code>\n"
+      + "• <code>/수입 [금액] [내용]</code>\n"
+      + "  예: <code>/수입 3500000 9월급여</code>\n"
+      + "• <code>/자산 [금액] [자산명] [카테고리]</code>\n"
+      + "  예: <code>/자산 50000000 청약예금</code>\n"
+      + "• <code>/브리핑</code> : 오늘의 자산/지출 AI 종합 요약\n"
+      + "• <code>/최근</code> : 최근 기록 5건 확인 및 삭제\n\n"
+      + "🤖 <b>자연어 및 SMS 인식:</b>\n"
+      + "명령어 없이 <i>\"스타벅스 아메리카노 4500원 결제\"</i> 라고 적거나, 카드 결제 문자를 복사해 보내시면 AI가 자동으로 정리하여 되물어봅니다!";
+
+    var replyKeyboard = {
+      keyboard: [
+        [{ text: "📊 금융 브리핑" }, { text: "💸 지출 입력" }],
+        [{ text: "🗓️ 정기일정" }, { text: "🏦 자산 현황" }]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false
+    };
+
+    sendTelegramMessage(chatId, helpText, replyKeyboard);
+    return;
+  }
+
+  // /지출, /ㅈ
+  if (cmd === '/지출' || cmd === '/ㅈ') {
+    if (parts.length < 3) {
+      sendTelegramMessage(chatId, "⚠️ <b>입력 형식 안내:</b>\n<code>/지출 [금액] [내용] [카테고리(선택)] [결제수단(선택)]</code>\n예: <code>/지출 15000 점심식사 식비 신한카드</code>");
+      return;
+    }
+    var amount = parseInt(parts[1].replace(/[^0-9]/g, ''), 10);
+    var desc = parts[2];
+    var cat = parts[3] || guessCategoryFromText(desc);
+    var method = parts[4] || '신용카드';
+
+    var candidate = {
+      type: '지출',
+      amount: amount,
+      description: desc,
+      category: cat,
+      payment_method: method.indexOf('카드') >= 0 ? '신용카드' : '현금',
+      card_name: method.indexOf('카드') >= 0 ? method : '',
+      date: Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')
+    };
+
+    sendInteractiveConfirm(chatId, candidate);
+    return;
+  }
+
+  // /수입, /ㅅ
+  if (cmd === '/수입' || cmd === '/ㅅ') {
+    if (parts.length < 3) {
+      sendTelegramMessage(chatId, "⚠️ <b>입력 형식 안내:</b>\n<code>/수입 [금액] [내용]</code>\n예: <code>/수입 3500000 9월급여</code>");
+      return;
+    }
+    var amount = parseInt(parts[1].replace(/[^0-9]/g, ''), 10);
+    var desc = parts[2];
+
+    var candidate = {
+      type: '수입',
+      amount: amount,
+      description: desc,
+      category: '급여/월급',
+      payment_method: '현금',
+      card_name: '',
+      date: Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')
+    };
+
+    sendInteractiveConfirm(chatId, candidate);
+    return;
+  }
+
+  // /자산
+  if (cmd === '/자산') {
+    if (parts.length < 3) {
+      sendTelegramMessage(chatId, "⚠️ <b>입력 형식 안내:</b>\n<code>/자산 [금액] [자산명] [카테고리(선택)]</code>\n예: <code>/자산 50000000 청약예금 현금/예적금</code>");
+      return;
+    }
+    var amount = parseInt(parts[1].replace(/[^0-9]/g, ''), 10);
+    var name = parts[2];
+    var cat = parts[3] || '현금/예적금';
+    var res = saveAsset({ name: name, category: cat, amount: amount });
+    if (res.success) {
+      sendTelegramMessage(chatId, "✅ <b>자산 등록 완료!</b>\n\n• 자산명: " + name + "\n• 금액: " + amount.toLocaleString() + "원 (" + cat + ")\n\n웹 대시보드 순자산에 실시간 반영되었습니다.");
+    } else {
+      sendTelegramMessage(chatId, "❌ 자산 등록에 실패했습니다.");
+    }
+    return;
+  }
+
+  // /브리핑, /요약, /현황
+  if (cmd === '/브리핑' || cmd === '/요약' || cmd === '/현황') {
+    sendTelegramBriefing(chatId);
+    return;
+  }
+
+  // /최근
+  if (cmd === '/최근') {
+    sendTelegramRecentTransactions(chatId);
+    return;
+  }
+
+  // 알 수 없는 명령어
+  sendTelegramMessage(chatId, "❓ 알 수 없는 명령어입니다. <code>/도움말</code> 을 입력하여 명령어 목록을 확인하세요.");
+}
+
+/**
+ * 비정형 자연어 및 결제 SMS 처리 (Gemini AI 파싱 + 되묻기 인터랙션)
+ */
+function handleTelegramNaturalText(chatId, text, msg) {
+  sendTelegramMessage(chatId, "🤖 <i>내용 분석 중입니다...</i>");
+
+  // Gemini AI 또는 룰 기반 파싱 실행
+  var candidate = askGeminiFinance(text);
+
+  if (!candidate || !candidate.amount || candidate.amount <= 0) {
+    sendTelegramMessage(chatId, "⚠️ 금액이나 지출 내역을 명확하게 파악하지 못했습니다.\n\n예: <i>\"점심 12000원 카드로 결제\"</i> 또는 <code>/지출 12000 점심</code> 형식으로 입력해 주세요.");
+    return;
+  }
+
+  sendInteractiveConfirm(chatId, candidate);
+}
+
+/**
+ * 대화형 되묻기 (Inline Keyboard Confirm) 전송
+ */
+function sendInteractiveConfirm(chatId, candidate) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = "tg_tx_" + chatId + "_" + new Date().getTime();
+  cache.put(cacheKey, JSON.stringify(candidate), 600); // 10분간 유효
+
+  var typeEmoji = candidate.type === '수입' ? '💰' : '💸';
+  var msgText = "🤖 <b>입력 내용을 확인해주세요:</b>\n\n"
+    + "• <b>구분:</b> " + typeEmoji + " " + candidate.type + "\n"
+    + "• <b>금액:</b> <b>" + Number(candidate.amount).toLocaleString() + "원</b>\n"
+    + "• <b>내용:</b> " + candidate.description + "\n"
+    + "• <b>분류:</b> " + candidate.category + "\n"
+    + "• <b>수단:</b> " + candidate.payment_method + (candidate.card_name ? " (" + candidate.card_name + ")" : "") + "\n"
+    + "• <b>일자:</b> " + (candidate.date || Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')) + "\n\n"
+    + "위 내용으로 가계부에 저장할까요?";
+
+  var inlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + cacheKey },
+        { text: "❌ 취소", callback_data: "CANCEL:" + cacheKey }
+      ],
+      [
+        { text: "🍚 식비", callback_data: "CAT:식비:" + cacheKey },
+        { text: "☕ 카페", callback_data: "CAT:카페:" + cacheKey },
+        { text: "🚗 교통", callback_data: "CAT:교통:" + cacheKey },
+        { text: "🛒 쇼핑", callback_data: "CAT:쇼핑:" + cacheKey }
+      ],
+      [
+        { text: "🏠 생활", callback_data: "CAT:생활:" + cacheKey },
+        { text: "🎬 문화", callback_data: "CAT:문화:" + cacheKey },
+        { text: "📺 구독", callback_data: "CAT:구독:" + cacheKey },
+        { text: "📝 기타", callback_data: "CAT:기타:" + cacheKey }
+      ]
+    ]
+  };
+
+  sendTelegramMessage(chatId, msgText, inlineKeyboard);
+}
+
+/**
+ * 인라인 키보드 콜백 쿼리 처리
+ */
+function handleTelegramCallback(query) {
+  var queryId = query.id;
+  var chatId = query.message.chat.id;
+  var messageId = query.message.message_id;
+  var cbData = query.data;
+
+  answerCallbackQuery(queryId);
+
+  var cache = CacheService.getScriptCache();
+
+  // 1. 기록 확정 (CONFIRM)
+  if (cbData.indexOf('CONFIRM:') === 0) {
+    var key = cbData.substring('CONFIRM:'.length);
+    var raw = cache.get(key);
+    if (!raw) {
+      editTelegramMessage(chatId, messageId, "⚠️ 확인 시간이 만료되었습니다. 다시 입력해주세요.");
+      return;
+    }
+    var txData = JSON.parse(raw);
+    cache.remove(key);
+
+    // 공통 DB 쓰기 함수 호출
+    var res = addTransaction(txData);
+
+    if (res.success) {
+      var summary = getAllData().summary || {};
+      var doneText = "✅ <b>가계부 기록 완료!</b> 쾅! 🌟\n\n"
+        + "• <b>" + txData.description + "</b>: " + Number(txData.amount).toLocaleString() + "원\n"
+        + "• <b>분류:</b> " + txData.category + " (" + txData.payment_method + ")\n\n"
+        + "📊 <b>이번 달 총 지출:</b> " + Number(summary.total_expense || 0).toLocaleString() + "원\n"
+        + "💰 <b>이번 달 잔액:</b> " + Number(summary.balance || 0).toLocaleString() + "원";
+
+      editTelegramMessage(chatId, messageId, doneText);
+    } else {
+      editTelegramMessage(chatId, messageId, "❌ 시트 저장 중 오류가 발생했습니다: " + (res.error || ''));
+    }
+    return;
+  }
+
+  // 2. 취소 (CANCEL)
+  if (cbData.indexOf('CANCEL:') === 0) {
+    var key = cbData.substring('CANCEL:'.length);
+    cache.remove(key);
+    editTelegramMessage(chatId, messageId, "❌ 입력이 취소되었습니다.");
+    return;
+  }
+
+  // 3. 카테고리 변경 (CAT:카테고리:키)
+  if (cbData.indexOf('CAT:') === 0) {
+    var parts = cbData.split(':');
+    var newCat = parts[1];
+    var key = parts[2];
+    var raw = cache.get(key);
+    if (!raw) {
+      editTelegramMessage(chatId, messageId, "⚠️ 시간이 만료되었습니다. 다시 입력해주세요.");
+      return;
+    }
+    var candidate = JSON.parse(raw);
+    candidate.category = newCat;
+    cache.put(key, JSON.stringify(candidate), 600);
+
+    // 메시지 갱신
+    var typeEmoji = candidate.type === '수입' ? '💰' : '💸';
+    var msgText = "🤖 <b>카테고리가 [" + newCat + "] (으)로 변경되었습니다:</b>\n\n"
+      + "• <b>구분:</b> " + typeEmoji + " " + candidate.type + "\n"
+      + "• <b>금액:</b> <b>" + Number(candidate.amount).toLocaleString() + "원</b>\n"
+      + "• <b>내용:</b> " + candidate.description + "\n"
+      + "• <b>분류:</b> <b>" + candidate.category + "</b> ✏️\n"
+      + "• <b>수단:</b> " + candidate.payment_method + "\n\n"
+      + "위 내용으로 가계부에 저장할까요?";
+
+    var inlineKeyboard = {
+      inline_keyboard: [
+        [
+          { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + key },
+          { text: "❌ 취소", callback_data: "CANCEL:" + key }
+        ],
+        [
+          { text: "🍚 식비", callback_data: "CAT:식비:" + key },
+          { text: "☕ 카페", callback_data: "CAT:카페:" + key },
+          { text: "🚗 교통", callback_data: "CAT:교통:" + key },
+          { text: "🛒 쇼핑", callback_data: "CAT:쇼핑:" + key }
+        ],
+        [
+          { text: "🏠 생활", callback_data: "CAT:생활:" + key },
+          { text: "🎬 문화", callback_data: "CAT:문화:" + key },
+          { text: "📺 구독", callback_data: "CAT:구독:" + key },
+          { text: "📝 기타", callback_data: "CAT:기타:" + key }
+        ]
+      ]
+    };
+
+    editTelegramMessage(chatId, messageId, msgText, inlineKeyboard);
+    return;
+  }
+
+  // 4. 최근 내역 삭제 (DEL_ROW:행번호)
+  if (cbData.indexOf('DEL_ROW:') === 0) {
+    var rowIdx = parseInt(cbData.substring('DEL_ROW:'.length), 10);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('가계부_내역');
+    if (sheet && rowIdx > 1 && rowIdx <= sheet.getLastRow()) {
+      sheet.deleteRow(rowIdx);
+      editTelegramMessage(chatId, messageId, "🗑️ 해당 내역이 성공적으로 삭제되었습니다.");
+    } else {
+      editTelegramMessage(chatId, messageId, "⚠️ 이미 삭제되었거나 찾을 수 없는 행입니다.");
+    }
+    return;
+  }
+}
+
+/**
+ * 📊 실시간 AI 금융 브리핑 생성 및 전송
+ */
+function sendTelegramBriefing(chatId) {
+  var data = getAllData();
+  var nw = data.net_worth || {};
+  var sum = data.summary || {};
+  var lvl = data.level || {};
+  var txs = data.transactions || [];
+  var plans = data.recurring_plans || [];
+
+  var curMonthStr = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy년 M월');
+  var todayStr = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy년 M월 d일');
+
+  // 카테고리별 당월 소비 계산
+  var curMonthPrefix = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM');
+  var catTotals = {};
+  txs.filter(function(t) { return String(t.date).indexOf(curMonthPrefix) === 0 && t.type === '지출'; })
+     .forEach(function(t) {
+       catTotals[t.category] = (catTotals[t.category] || 0) + (Number(t.amount) || 0);
+     });
+
+  var topCat = '없음';
+  var topCatAmt = 0;
+  for (var k in catTotals) {
+    if (catTotals[k] > topCatAmt) {
+      topCatAmt = catTotals[k];
+      topCat = k;
+    }
+  }
+
+  // 다가오는 7일 이내 정기일정
+  var curDay = new Date().getDate();
+  var upcoming = plans.filter(function(p) {
+    var diff = Number(p.day) - curDay;
+    return diff >= 0 && diff <= 7;
+  });
+
+  // AI 금융 코멘트 요청 (Gemini Flash)
+  var aiInsight = askGeminiBriefingComment({
+    net_worth: nw.net_worth || 0,
+    month_exp: sum.total_expense || 0,
+    month_inc: sum.total_income || 0,
+    balance: sum.balance || 0,
+    top_cat: topCat,
+    top_cat_amt: topCatAmt
+  });
+
+  var briefingText = "👑 <b>[스마트 머니 허브 - 오늘의 금융 브리핑]</b>\n"
+    + "📅 " + todayStr + " 기준\n\n"
+    + "💰 <b>1. 나의 자산 & 목표 현황</b>\n"
+    + "• 총 순자산: <b>" + Number(nw.net_worth || 0).toLocaleString() + "원</b>\n"
+    + "• 현재 레벨: " + (lvl.title || '재정 입문자') + " (진행률 " + (lvl.progress_to_next || 0) + "%)\n"
+    + "• 다음 목표: " + (lvl.next_target ? (lvl.next_target >= 100000000 ? (lvl.next_target/100000000).toFixed(1)+'억원' : (lvl.next_target/10000)+'만원') : '') + "\n\n"
+    + "💸 <b>2. " + curMonthStr + " 수입/지출 페이스</b>\n"
+    + "• 당월 수입: <b>+" + Number(sum.total_income || 0).toLocaleString() + "원</b>\n"
+    + "• 당월 지출: <b>-" + Number(sum.total_expense || 0).toLocaleString() + "원</b>\n"
+    + "• 현재 잔액: <b>" + (Number(sum.balance) >= 0 ? '+' : '') + Number(sum.balance || 0).toLocaleString() + "원</b>\n"
+    + "• 지출 1위: " + topCat + " (" + topCatAmt.toLocaleString() + "원)\n\n"
+    + "🗓️ <b>3. 다가오는 정기 일정 (7일 이내)</b>\n";
+
+  if (upcoming.length === 0) {
+    briefingText += "• 7일 이내 예정된 고정 지출/수입이 없습니다.\n\n";
+  } else {
+    upcoming.forEach(function(p) {
+      briefingText += "• 매월 " + p.day + "일: " + (p.type === '수입' ? '💵' : '💳') + " " + p.name + " (" + Number(p.amount).toLocaleString() + "원)\n";
+    });
+    briefingText += "\n";
+  }
+
+  briefingText += "💡 <b>4. AI 금융 비서 코멘트</b>\n"
+    + "<i>\"" + aiInsight + "\"</i>";
+
+  var webAppUrl = ScriptApp.getService().getUrl();
+  var inlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "📊 웹 대시보드 바로가기", url: webAppUrl }
+      ]
+    ]
+  };
+
+  sendTelegramMessage(chatId, briefingText, inlineKeyboard);
+}
+
+/**
+ * 텔레그램으로 최근 5건 거래내역 전송 (삭제 버튼 포함)
+ */
+function sendTelegramRecentTransactions(chatId) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('가계부_내역');
+  if (!sheet) return;
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) {
+    sendTelegramMessage(chatId, "최근 기록된 거래 내역이 없습니다.");
+    return;
+  }
+
+  var recentText = "📋 <b>최근 기록된 내역 (최신 5건):</b>\n\n";
+  var buttons = [];
+
+  var startIdx = Math.max(1, values.length - 5);
+  for (var i = values.length - 1; i >= startIdx; i--) {
+    var row = values[i];
+    var rowNum = i + 1;
+    var d = formatGASDate(row[0]);
+    var cat = row[1];
+    var desc = row[2];
+    var amt = Number(row[3]) || 0;
+    var type = row[4];
+    recentText += "• " + d.substring(5) + " [" + cat + "] " + desc + " : <b>" + (type === '수입' ? '+' : '') + amt.toLocaleString() + "원</b>\n";
+    buttons.push([{ text: "🗑️ 삭제: " + desc + " (" + amt.toLocaleString() + "원)", callback_data: "DEL_ROW:" + rowNum }]);
+  }
+
+  sendTelegramMessage(chatId, recentText, { inline_keyboard: buttons });
+}
+
+/**
+ * 텔레그램으로 보유 자산 목록 전송
+ */
+function sendTelegramAssets(chatId) {
+  var data = getAllData();
+  var nw = data.net_worth || {};
+  var assets = nw.assets_list || [];
+  var invs = nw.investments_list || [];
+
+  var msg = "🏦 <b>나의 보유 자산 현황</b>\n\n"
+    + "• <b>총 순자산:</b> " + Number(nw.net_worth || 0).toLocaleString() + "원\n"
+    + "• <b>현금/예적금:</b> " + Number(nw.total_assets - nw.inv_total_eval).toLocaleString() + "원\n"
+    + "• <b>주식 평가액:</b> " + Number(nw.inv_total_eval || 0).toLocaleString() + "원\n\n"
+    + "<b>[예적금/자산 상세]</b>\n";
+
+  if (assets.length === 0) {
+    msg += "등록된 자산이 없습니다.\n";
+  } else {
+    assets.forEach(function(a) {
+      msg += "• " + a.name + " (" + a.category + "): " + Number(a.amount).toLocaleString() + "원\n";
+    });
+  }
+
+  if (invs.length > 0) {
+    msg += "\n<b>[주식/투자 상세]</b>\n";
+    invs.forEach(function(iv) {
+      var evalAmt = (Number(iv.shares) || 0) * (Number(iv.current_price) || 0);
+      msg += "• " + iv.name + " (" + iv.shares + "주): " + evalAmt.toLocaleString() + "원\n";
+    });
+  }
+
+  sendTelegramMessage(chatId, msg);
+}
+
+/**
+ * 텔레그램으로 정기 일정 목록 전송
+ */
+function sendTelegramRecurringPlans(chatId) {
+  var plans = getRecurringPlansList();
+  var msg = "🗓️ <b>매월 정기 입출금 일정 목록</b>\n\n";
+  if (plans.length === 0) {
+    msg += "등록된 정기 일정이 없습니다.\n";
+  } else {
+    plans.sort(function(a, b) { return Number(a.day) - Number(b.day); }).forEach(function(p) {
+      msg += "• <b>매월 " + p.day + "일:</b> [" + p.type + "] " + p.name + " (" + Number(p.amount).toLocaleString() + "원 / " + p.pay_method + ")\n";
+    });
+  }
+  sendTelegramMessage(chatId, msg);
+}
+
+// ============================================================================
+// 🧠 Gemini Flash AI 자연어 파싱 & 브리핑 코멘트 엔진
+// ============================================================================
+
+/**
+ * Gemini Flash 모델을 호출하여 지출/수입 정보 추출
+ */
+function askGeminiFinance(userText) {
+  var apiKey = getGeminiApiKey();
+
+  // API 키가 없으면 정규식 룰 기반 파서로 안전하게 대체
+  if (!apiKey) {
+    return fallbackRegexParser(userText);
+  }
+
+  var prompt = "다음 텍스트는 사용자가 입력한 가계부 내역 또는 카드 결제 문자입니다:\n\"" + userText + "\"\n\n"
+    + "위 텍스트에서 다음 금융 정보를 추출하여 JSON 객체 하나로 응답하세요:\n"
+    + "{\n"
+    + "  \"type\": \"지출\" 또는 \"수입\",\n"
+    + "  \"amount\": 금액(숫자만),\n"
+    + "  \"description\": \"지출처 또는 내용 (간결하게)\",\n"
+    + "  \"category\": 다음 중 가장 적절한 것 하나 [\"식비\", \"카페\", \"교통\", \"쇼핑\", \"생활\", \"문화\", \"구독\", \"저축\", \"기타\", \"급여/월급\"],\n"
+    + "  \"payment_method\": \"신용카드\" 또는 \"현금\",\n"
+    + "  \"card_name\": 카드사명이 언급된 경우(예: 신한, 현대, 국민 등), 없으면 빈문자열\n"
+    + "}";
+
+  try {
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+    var payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1
+      }
+    };
+    var options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    var res = UrlFetchApp.fetch(url, options);
+    if (res.getResponseCode() === 200) {
+      var json = JSON.parse(res.getContentText());
+      var rawResult = json.candidates[0].content.parts[0].text;
+      var parsed = JSON.parse(rawResult);
+      parsed.date = Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd');
+      return parsed;
+    }
+  } catch (e) {
+    Logger.log("Gemini API error: " + e.toString());
+  }
+
+  return fallbackRegexParser(userText);
+}
+
+/**
+ * 룰 기반 정규식 폴백 파서
+ */
+function fallbackRegexParser(text) {
+  var amount = 0;
+  var amtMatch = text.match(/([0-9,]+)\s*(원|KRW|₩)?/);
+  if (amtMatch) {
+    amount = parseInt(amtMatch[1].replace(/,/g, ''), 10) || 0;
+  }
+  var type = (text.indexOf('급여') >= 0 || text.indexOf('월급') >= 0 || text.indexOf('입금') >= 0 || text.indexOf('수입') >= 0) ? '수입' : '지출';
+  var cat = guessCategoryFromText(text);
+  var method = (text.indexOf('카드') >= 0 || text.indexOf('체크') >= 0 || text.indexOf('신용') >= 0) ? '신용카드' : '현금';
+  var cardName = '';
+  var cards = ['신한', '국민', '현대', '삼성', '우리', '하나', '농협', '롯데', '카카오'];
+  cards.forEach(function(c) { if (text.indexOf(c) >= 0) cardName = c + '카드'; });
+
+  var desc = text.replace(/([0-9,]+)\s*(원|KRW|₩)?/g, '').replace(/(카드|현금|결제|지출|수입)/g, '').trim();
+  if (!desc) desc = cat;
+
+  return {
+    type: type,
+    amount: amount,
+    description: desc,
+    category: cat,
+    payment_method: method,
+    card_name: cardName,
+    date: Utilities.formatDate(new Date(), 'GMT+9', 'yyyy-MM-dd')
+  };
+}
+
+/**
+ * 키워드 기반 카테고리 자동 유추
+ */
+function guessCategoryFromText(text) {
+  var t = text.toLowerCase();
+  if (t.match(/커피|카페|스타벅스|메가|이디야|투썸|아메리카노|라떼|베이커리|디저트/)) return '카페';
+  if (t.match(/식당|밥|점심|저녁|식사|순대국|김치찌개|고기|치킨|피자|배달|맥도날드|버거/)) return '식비';
+  if (t.match(/택시|지하철|버스|주유|교통|톨게이트|하이패스|코레일|ktx|주차/)) return '교통';
+  if (t.match(/쿠팡|마트|이마트|쇼핑|백화점|다이소|옷|패션|신발|올리브영/)) return '쇼핑';
+  if (t.match(/관리비|전기세|가스|수도|공과금|아파트|월세|세탁/)) return '생활';
+  if (t.match(/영화|cgv|메가박스|공연|전시|도서|책|노래방|헬스/)) return '문화';
+  if (t.match(/넷플릭스|유튜브|쿠팡와우|디즈니|스포티파이|구독|멤버십/)) return '구독';
+  if (t.match(/적금|예금|청약|저축|투자|주식/)) return '저축';
+  if (t.match(/월급|급여|상여|알바|용돈|수당/)) return '급여/월급';
+  return '기타';
+}
+
+/**
+ * Gemini Flash를 통한 AI 금융 브리핑 코멘트 생성
+ */
+function askGeminiBriefingComment(summary) {
+  var apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    return "💡 계획적인 소비 습관이 순자산 1억 달성의 가장 빠른 지름길입니다. 오늘도 가치 있는 하루 되세요!";
+  }
+
+  var prompt = "다음은 사용자의 실시간 재정 현황 요약입니다:\n"
+    + "- 총 순자산: " + summary.net_worth + "원\n"
+    + "- 당월 수입: " + summary.month_inc + "원\n"
+    + "- 당월 지출: " + summary.month_exp + "원\n"
+    + "- 당월 잔액: " + summary.balance + "원\n"
+    + "- 최다 지출 카테고리: " + summary.top_cat + " (" + summary.top_cat_amt + "원)\n\n"
+    + "위 재정 상태를 분석하여 친절하고 통찰력 있는 금융 비서 톤으로 딱 1~2문장의 따뜻하고 격려하는 조언/코멘트를 작성하세요. 마크다운 기호 없이 한국어 문장만 출력하세요.";
+
+  try {
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+    var payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 120 }
+    };
+    var options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    var res = UrlFetchApp.fetch(url, options);
+    if (res.getResponseCode() === 200) {
+      var json = JSON.parse(res.getContentText());
+      return json.candidates[0].content.parts[0].text.trim();
+    }
+  } catch (e) {
+    Logger.log("Gemini briefing error: " + e.toString());
+  }
+
+  return "💡 계획적인 소비 습관이 순자산 1억 달성의 가장 빠른 지름길입니다. 오늘도 가치 있는 하루 되세요!";
+}
+
+// ============================================================================
+// 📡 텔레그램 HTTP API 송수신 유틸리티
+// ============================================================================
+
+function sendTelegramMessage(chatId, text, replyMarkup) {
+  var token = getTelegramToken();
+  if (!token) return;
+  var url = "https://api.telegram.org/bot" + token + "/sendMessage";
+  var payload = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true
+  };
+  if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
+
+  try {
+    UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    Logger.log("sendTelegramMessage error: " + e.toString());
+  }
+}
+
+function editTelegramMessage(chatId, messageId, text, replyMarkup) {
+  var token = getTelegramToken();
+  if (!token) return;
+  var url = "https://api.telegram.org/bot" + token + "/editMessageText";
+  var payload = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true
+  };
+  if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
+
+  try {
+    UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    Logger.log("editTelegramMessage error: " + e.toString());
+  }
+}
+
+function answerCallbackQuery(callbackQueryId, text) {
+  var token = getTelegramToken();
+  if (!token) return;
+  var url = "https://api.telegram.org/bot" + token + "/answerCallbackQuery";
+  var payload = { callback_query_id: callbackQueryId };
+  if (text) payload.text = text;
+
+  try {
+    UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    Logger.log("answerCallbackQuery error: " + e.toString());
+  }
+}
+
+function setTelegramWebhook(token, webAppUrl) {
+  var url = "https://api.telegram.org/bot" + token + "/setWebhook?url=" + encodeURIComponent(webAppUrl);
+  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  return res.getContentText();
+}
+
+function deleteTelegramWebhook(token) {
+  var url = "https://api.telegram.org/bot" + token + "/deleteWebhook";
+  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  return res.getContentText();
+}
+
