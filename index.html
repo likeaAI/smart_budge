@@ -16,21 +16,23 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260904_v11';
-        if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
+        const APP_LIVE_VER = '20260904_v12';
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('v') !== APP_LIVE_VER || localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(regs) {
-                    for (var r of regs) { r.unregister(); }
-                });
-            }
             if ('caches' in window) {
                 caches.keys().then(function(names) {
                     for (var n of names) caches.delete(n);
                 });
             }
-            if (!window.location.search.includes('v=')) {
-                window.location.replace(window.location.pathname + '?v=' + APP_LIVE_VER);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var r of regs) { r.unregister(); }
+                });
+            }
+            if (urlParams.get('v') !== APP_LIVE_VER) {
+                urlParams.set('v', APP_LIVE_VER);
+                window.location.replace(window.location.pathname + '?' + urlParams.toString());
             }
         }
     </script>
@@ -442,10 +444,40 @@
                         <div class="card-title" style="margin-bottom: 8px;">
                             <span>🎯 장기 인생 목표 진행 현황</span>
                             <div style="display:flex; gap:6px;">
-                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 9px; font-weight: 700; background: var(--warning); color: #78350f; border: none; border-radius: 8px;" onclick="openNewGoalForm()">➕ 목표 등록</button>
-                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 9px; font-weight: 600;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; font-weight: 700; background: var(--warning); color: #78350f; border: none; border-radius: 8px;" onclick="toggleDashGoalForm()">✍️ 목표 쓰기</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 10px; font-weight: 600;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
                             </div>
                         </div>
+
+                        <!-- ✍️ 대시보드 카드에서 바로 작성하는 인라인 목표 입력 폼 -->
+                        <div id="dashGoalInlineBox" style="display: none; background: var(--bg-subtle); border: 1.5px solid var(--warning); border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                            <div style="font-size: 0.86rem; font-weight: 800; color: var(--warning); margin-bottom: 8px;">🎯 새 인생 목표 직접 입력</div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; color: var(--text-main); font-weight: 700; display: block; margin-bottom: 3px;">1. 목표명 (글자로 작성)</label>
+                                    <input type="text" id="dashGoalName" class="form-control" placeholder="예: 1억 시드머니 달성, 내 집 마련, 은퇴자금" style="padding: 8px 10px; font-size: 0.9rem;">
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-main); font-weight: 700;">2. 목표 금액 설정</label>
+                                        <span id="dashGoalKoreanText" style="font-size: 0.8rem; font-weight: 800; color: var(--primary);">0원</span>
+                                    </div>
+                                    <input type="number" id="dashGoalAmount" class="form-control" placeholder="금액 입력 (예: 100000000)" oninput="updateDashGoalKorean(this.value)" style="padding: 8px 10px; font-size: 0.92rem; font-weight: 700;">
+                                    <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+                                        <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(10000000)">+1천만</button>
+                                        <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(30000000)">+3천만</button>
+                                        <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(50000000)">+5천만</button>
+                                        <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(100000000)">+1억</button>
+                                        <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(300000000)">+3억</button>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                    <button type="button" class="btn-icon" style="flex: 1; padding: 9px; background: var(--primary); color: white; border: none; font-weight: 800; font-size: 0.88rem; border-radius: 8px;" onclick="saveDashInlineGoal()">💾 목표 바로 저장하기</button>
+                                    <button type="button" class="btn-icon" style="padding: 9px 12px; font-size: 0.85rem; border-radius: 8px;" onclick="toggleDashGoalForm(false)">닫기</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="dashboardGoalsWidget" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
                     </div>
                 </div>
@@ -2279,6 +2311,102 @@
             return defaults;
         }
 
+        function toggleDashGoalForm(forceOpen) {
+            const box = document.getElementById('dashGoalInlineBox');
+            if (!box) return;
+            const isOpen = box.style.display === 'block';
+            const shouldOpen = forceOpen !== undefined ? forceOpen : !isOpen;
+            box.style.display = shouldOpen ? 'block' : 'none';
+            if (shouldOpen) {
+                setTimeout(() => {
+                    const el = document.getElementById('dashGoalName');
+                    if (el) el.focus();
+                }, 100);
+            }
+        }
+
+        function updateDashGoalKorean(val) {
+            const num = Number(val) || 0;
+            const el = document.getElementById('dashGoalKoreanText');
+            if (!el) return;
+            if (num === 0) { el.innerText = '0원'; return; }
+            if (num >= 100000000) {
+                const eok = Math.floor(num / 100000000);
+                const man = Math.floor((num % 100000000) / 10000);
+                el.innerText = `${num.toLocaleString()}원 (${eok}억${man > 0 ? ' ' + man + '만' : ''}원)`;
+            } else if (num >= 10000) {
+                el.innerText = `${num.toLocaleString()}원 (${Math.floor(num / 10000)}만원)`;
+            } else {
+                el.innerText = `${num.toLocaleString()}원`;
+            }
+        }
+
+        function setDashQuickGoal(amt) {
+            const input = document.getElementById('dashGoalAmount');
+            if (input) {
+                const cur = Number(input.value) || 0;
+                input.value = cur + amt;
+                updateDashGoalKorean(input.value);
+            }
+        }
+
+        async function saveDashInlineGoal() {
+            const name = (document.getElementById('dashGoalName').value || '').trim();
+            const target_amount = Number(document.getElementById('dashGoalAmount').value) || 0;
+
+            if (!name) {
+                showToast('목표명을 글자로 입력해주세요!', 'warning');
+                document.getElementById('dashGoalName').focus();
+                return;
+            }
+            if (target_amount <= 0) {
+                showToast('목표 금액을 설정해주세요!', 'warning');
+                document.getElementById('dashGoalAmount').focus();
+                return;
+            }
+
+            const id = 'goal_' + Date.now();
+            const d = new Date();
+            d.setFullYear(d.getFullYear() + 3);
+            const target_date = d.toISOString().substring(0, 10);
+            const icon = '🎯';
+
+            const current_amount = Math.min(target_amount, Math.max(0, globalNetWorth));
+            const now = new Date();
+            const diffTime = new Date(target_date).getTime() - now.getTime();
+            const dDay = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            const monthsRemaining = Math.max(1, Math.ceil(dDay / 30));
+            const remainingAmt = Math.max(0, target_amount - current_amount);
+            const progress_rate = Math.min(100, Math.round((current_amount / target_amount) * 100));
+            const monthly_required = Math.round(remainingAmt / monthsRemaining);
+
+            const newGoal = {
+                id, name, target_amount, current_amount, target_date, icon,
+                d_day: dDay, progress_rate, monthly_required, category: '인생목표'
+            };
+
+            let localGoals = getSavedGoals();
+            localGoals.unshift(newGoal);
+            localStorage.setItem('user_goals', JSON.stringify(localGoals));
+
+            renderGoals(localGoals);
+            renderDashboardGoals(localGoals);
+            
+            document.getElementById('dashGoalName').value = '';
+            document.getElementById('dashGoalAmount').value = '';
+            updateDashGoalKorean(0);
+            toggleDashGoalForm(false);
+
+            playSound('success');
+            showToast(`🎉 [${name}] 인생 목표가 등록되었습니다!`, 'success');
+            callGasApi('saveGoal', newGoal);
+        }
+
+        function openGoalEditFromDash(g) {
+            switchTab('tab-goals');
+            editGoal(g);
+        }
+
         function openNewGoalForm() {
             switchTab('tab-goals');
             resetGoalForm();
@@ -2294,7 +2422,7 @@
             const idEl = document.getElementById('goalEditId');
             if (idEl) idEl.value = '';
             const titleEl = document.getElementById('goalFormTitle');
-            if (titleEl) titleEl.innerText = '🎯 새 인생 목표 등록하기';
+            if (titleEl) titleEl.innerText = '🎯 나의 장기 인생 목표 로드맵 - 목표 및 금액 설정';
             const btnCancel = document.getElementById('btnCancelGoalEdit');
             if (btnCancel) btnCancel.style.display = 'none';
             const btnSave = document.getElementById('btnSaveGoal');
@@ -2342,10 +2470,11 @@
             const list = (goals && goals.length > 0) ? goals : getSavedGoals();
             if (!list || list.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align:center; padding: 14px 0;">
-                        <div style="color:var(--text-muted); font-size:0.86rem; margin-bottom: 8px;">설정된 장기 인생 목표가 없습니다.</div>
-                        <button type="button" class="btn-icon" style="background: var(--warning); color: #78350f; font-weight: 800; border: none; padding: 6px 14px; font-size: 0.82rem; border-radius: 8px;" onclick="openNewGoalForm()">
-                            ➕ 첫 인생 목표 등록하기
+                    <div style="text-align:center; padding: 16px 10px; background: var(--bg-subtle); border-radius: 12px; border: 1.5px dashed var(--warning);">
+                        <div style="color:var(--text-main); font-size:0.92rem; font-weight: 800; margin-bottom: 4px;">🎯 아직 등록된 인생 목표가 없습니다.</div>
+                        <div style="color:var(--text-muted); font-size:0.78rem; margin-bottom: 10px;">나만의 첫 목표(글자)와 목표 금액을 설정해 보세요!</div>
+                        <button type="button" class="btn-icon" style="background: var(--warning); color: #78350f; font-weight: 800; border: none; padding: 7px 16px; font-size: 0.85rem; border-radius: 8px;" onclick="toggleDashGoalForm(true)">
+                            ✍️ 지금 바로 목표 입력하기
                         </button>
                     </div>
                 `;
@@ -2355,9 +2484,12 @@
                 const div = document.createElement('div');
                 div.style.marginBottom = '12px';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:4px;">
-                        <strong style="color:var(--text-main);">${g.icon} ${g.name}</strong>
-                        <span style="font-size:0.82rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (${g.d_day > 0 ? 'D-' + g.d_day : '달성'})</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; margin-bottom:4px;">
+                        <strong style="color:var(--text-main); font-size:0.95rem;">${g.icon} ${g.name}</strong>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.82rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (${g.d_day > 0 ? 'D-' + g.d_day : '달성'})</span>
+                            <button type="button" class="btn-icon" style="font-size:0.75rem; padding:2px 6px;" onclick='openGoalEditFromDash(${JSON.stringify(g).replace(/'/g, "&apos;")})'>✏️</button>
+                        </div>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text-muted); margin-bottom:4px;">
                         <span>현재: ${Number(g.current_amount || 0).toLocaleString()}원</span>
