@@ -104,6 +104,7 @@ function handleApiPost(action, data) {
   if (action === 'addTransaction') return addTransaction(data);
   if (action === 'reconcileCard') return reconcileCard(data);
   if (action === 'saveGoal') return saveGoal(data);
+  if (action === 'deleteGoal') return deleteGoal(data);
   if (action === 'saveAsset') return saveAsset(data);
   if (action === 'deleteAsset') return deleteAsset(data);
   if (action === 'clearAssets') return clearAssets();
@@ -258,7 +259,7 @@ function getAllData(month) {
   var netWorth = grandAssets - totalDebt;
   
   // 4. 장기 목표 조회
-  var goalSheet = ss.getSheetByName('장기_목표');
+  var goalSheet = ss.getSheetByName('재정_목표') || ss.getSheetByName('장기_목표');
   var goalData = goalSheet ? goalSheet.getDataRange().getValues() : [];
   var goalsList = [];
   var now = new Date();
@@ -370,10 +371,51 @@ function addTransaction(data) {
 
 function saveGoal(data) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('장기_목표');
-  var id = data.id || new Date().getTime();
-  sheet.appendRow([id, data.name || '새 목표', data.category || '인생목표', Number(data.target_amount) || 100000000, 0, data.target_date || '2030-12-31', data.icon || '🌱', data.memo || '', new Date().toISOString()]);
-  return { success: true };
+  var sheet = ss.getSheetByName('재정_목표') || ss.getSheetByName('장기_목표') || ss.insertSheet('재정_목표');
+  var id = data.id || ('goal_' + new Date().getTime());
+  
+  var dataVals = sheet.getDataRange().getValues();
+  var foundRow = -1;
+  for (var i = 1; i < dataVals.length; i++) {
+    if (String(dataVals[i][0]) === String(id)) {
+      foundRow = i + 1;
+      break;
+    }
+  }
+
+  var rowData = [
+    id,
+    data.name || '새 인생 목표',
+    data.category || '인생목표',
+    Number(data.target_amount) || 100000000,
+    Number(data.current_amount) || 0,
+    data.target_date || '2029-12-31',
+    data.icon || '🎯',
+    data.memo || '',
+    new Date().toISOString()
+  ];
+
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+  return { success: true, id: id };
+}
+
+function deleteGoal(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('재정_목표') || ss.getSheetByName('장기_목표');
+  if (!sheet) return { success: false };
+  var id = String(data.id);
+  var dataVals = sheet.getDataRange().getValues();
+  for (var i = 1; i < dataVals.length; i++) {
+    if (String(dataVals[i][0]) === id) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: 'Goal not found' };
 }
 
 function reconcileCard(data) {

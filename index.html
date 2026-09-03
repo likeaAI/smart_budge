@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260904_v10';
+        const APP_LIVE_VER = '20260904_v11';
         if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
             if ('serviceWorker' in navigator) {
@@ -441,7 +441,10 @@
                     <div class="card card-kpi-equal" style="border-color: var(--warning); margin-bottom: 0; min-height: 150px;">
                         <div class="card-title" style="margin-bottom: 8px;">
                             <span>🎯 장기 인생 목표 진행 현황</span>
-                            <button class="btn-icon" style="font-size: 0.82rem; padding: 4px 10px; font-weight: 600;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 9px; font-weight: 700; background: var(--warning); color: #78350f; border: none; border-radius: 8px;" onclick="openNewGoalForm()">➕ 목표 등록</button>
+                                <button type="button" class="btn-icon" style="font-size: 0.8rem; padding: 4px 9px; font-weight: 600;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
+                            </div>
                         </div>
                         <div id="dashboardGoalsWidget" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
                     </div>
@@ -810,12 +813,79 @@
         <!-- 4. 🎯 장기 로드맵 탭 -->
         <section id="tab-goals" class="tab-content" style="display: none;">
             <div class="desktop-dashboard-grid">
-                <div class="card" style="border-color: var(--warning);">
-                    <div class="card-title"><span>🎯 나의 장기 인생 목표 로드맵</span></div>
-                    <div id="goalsListContainer"></div>
+                <!-- 좌측: 인생 목표 등록 폼 & 리스트 -->
+                <div>
+                    <!-- 1. 목표 등록 카드 -->
+                    <div class="card" style="border-color: var(--warning); margin-bottom: 24px;">
+                        <div class="card-title">
+                            <span id="goalFormTitle" style="color: var(--warning); font-weight: 800;">🎯 새 인생 목표 등록하기</span>
+                            <button id="btnCancelGoalEdit" type="button" class="btn-icon" style="display:none; font-size:0.78rem;" onclick="resetGoalForm()">취소</button>
+                        </div>
+                        <form id="goalInputForm" onsubmit="handleSaveGoal(event)">
+                            <input type="hidden" id="goalEditId" value="">
+                            
+                            <!-- 1. 글자 입력 (목표명) -->
+                            <div style="margin-bottom: 14px;">
+                                <label style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 6px;">1️⃣ 목표명 (글자로 입력)</label>
+                                <input type="text" id="goalName" class="form-control" placeholder="예: 1억 시드머니 달성, 내 집 마련, 세계일주, 경제적 자유" required style="font-size: 0.95rem;">
+                            </div>
+
+                            <!-- 2. 목표 금액 설정 -->
+                            <div style="margin-bottom: 14px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label style="font-size: 0.86rem; font-weight: 700; color: var(--text-main);">2️⃣ 목표 금액 설정</label>
+                                    <span id="goalAmountKorean" style="font-size: 0.86rem; font-weight: 800; color: var(--primary);">0원</span>
+                                </div>
+                                <input type="number" id="goalTargetAmount" class="form-control" placeholder="목표 금액 입력 (예: 100000000)" required min="10000" step="10000" oninput="updateGoalKoreanText(this.value)" style="font-size: 1rem; font-weight: 700;">
+                                <!-- 빠른 금액 프리셋 버튼 -->
+                                <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                                    <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(10000000)">+1천만</button>
+                                    <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(30000000)">+3천만</button>
+                                    <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(50000000)">+5천만</button>
+                                    <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(100000000)">+1억</button>
+                                    <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(300000000)">+3억</button>
+                                </div>
+                            </div>
+
+                            <!-- 3. 목표 기한 & 아이콘 -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                                <div>
+                                    <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">3️⃣ 목표 달성 기한</label>
+                                    <input type="date" id="goalTargetDate" class="form-control" style="font-size: 0.88rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">4️⃣ 목표 아이콘</label>
+                                    <select id="goalIcon" class="form-control" style="font-size: 0.88rem;">
+                                        <option value="🌱">🌱 시드머니</option>
+                                        <option value="💰">💰 1억원/목돈</option>
+                                        <option value="🏠">🏠 내 집 마련</option>
+                                        <option value="🚗">🚗 자동차/드림카</option>
+                                        <option value="✈️">✈️ 해외여행/휴식</option>
+                                        <option value="💍">💍 결혼/가족</option>
+                                        <option value="👑">👑 경제적 자유(FIRE)</option>
+                                        <option value="🎯">🎯 기타 맞춤목표</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="btnSaveGoal" class="btn-icon" style="width: 100%; padding: 13px; background: var(--primary); color: white; border: none; font-weight: 800; font-size: 1rem; border-radius: 12px; cursor: pointer;">
+                                ✨ 인생 목표 저장하기
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 2. 목표 리스트 카드 -->
+                    <div class="card" style="border-color: var(--warning);">
+                        <div class="card-title">
+                            <span>📋 등록된 인생 목표 로드맵</span>
+                            <span id="goalsCountBadge" style="font-size: 0.82rem; color: var(--text-muted);">0개</span>
+                        </div>
+                        <div id="goalsListContainer"></div>
+                    </div>
                 </div>
 
-                <div class="card" style="border-color: var(--purple);">
+                <!-- 우측: 복리 스노우볼 미래 자산 예측 -->
+                <div class="card" style="border-color: var(--purple); height: fit-content;">
                     <div class="card-title"><span>📈 복리 스노우볼 미래 자산 예측</span></div>
                     <div style="margin-bottom: 12px;">
                         <label style="font-size:0.85rem; color:var(--text-muted);">매월 저축/투자액: <b id="lblMonthlySave" style="color:var(--primary);">100만원</b></label>
@@ -1120,6 +1190,8 @@
             updateRecCalcDisplay();
             renderRecurringUI();
             renderAssetsAndInvUI();
+            renderDashboardGoals(getSavedGoals());
+            renderGoals(getSavedGoals());
             loadGameData(true);
         });
 
@@ -1724,6 +1796,10 @@
             if (tabId === 'tab-assets') {
                 renderAssetsAndInvUI();
             }
+            if (tabId === 'tab-goals') {
+                renderGoals(getSavedGoals());
+                updateSimulation();
+            }
         }
 
         function setSyncStatus(status) {
@@ -1977,13 +2053,22 @@
                 localStorage.setItem('user_recurring_plans', JSON.stringify(res.recurring_plans));
             }
 
+            // 🎯 장기 인생 목표 로컬 캐시 및 동기화
+            let currentGoals = [];
+            if (res.goals && res.goals.length > 0) {
+                localStorage.setItem('user_goals', JSON.stringify(res.goals));
+                currentGoals = res.goals;
+            } else {
+                currentGoals = JSON.parse(localStorage.getItem('user_goals') || '[]');
+            }
+
             renderCharts(txList);
-            renderDashboardGoals(res.goals || []);
+            renderDashboardGoals(currentGoals);
             renderDashboardCards(res.cards_summary || []);
             renderCardsSummary(res.cards_summary);
             renderAssetsAndInvUI();
             renderRecurringUI();
-            renderGoals(res.goals || []);
+            renderGoals(currentGoals);
             updateSimulation();
         }
 
@@ -2177,23 +2262,109 @@
         }
 
 
+        function getSavedGoals() {
+            const raw = localStorage.getItem('user_goals');
+            if (raw !== null) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                } catch(e) {}
+            }
+            // 최초 접속 시 나만의 인생 목표 샘플 제공 (언제든 수정 및 삭제 가능)
+            const defaults = [
+                { id: 'goal_1', name: '1억 시드머니 달성', target_amount: 100000000, current_amount: 0, target_date: '2028-12-31', icon: '🌱', d_day: 1200, progress_rate: 0, monthly_required: 2500000, category: '시드머니' },
+                { id: 'goal_2', name: '내 집 마련 / 주거 안정', target_amount: 300000000, current_amount: 0, target_date: '2031-12-31', icon: '🏠', d_day: 2200, progress_rate: 0, monthly_required: 4000000, category: '부동산/주거' }
+            ];
+            localStorage.setItem('user_goals', JSON.stringify(defaults));
+            return defaults;
+        }
+
+        function openNewGoalForm() {
+            switchTab('tab-goals');
+            resetGoalForm();
+            setTimeout(() => {
+                const el = document.getElementById('goalName');
+                if (el) el.focus();
+            }, 120);
+        }
+
+        function resetGoalForm() {
+            const form = document.getElementById('goalInputForm');
+            if (form) form.reset();
+            const idEl = document.getElementById('goalEditId');
+            if (idEl) idEl.value = '';
+            const titleEl = document.getElementById('goalFormTitle');
+            if (titleEl) titleEl.innerText = '🎯 새 인생 목표 등록하기';
+            const btnCancel = document.getElementById('btnCancelGoalEdit');
+            if (btnCancel) btnCancel.style.display = 'none';
+            const btnSave = document.getElementById('btnSaveGoal');
+            if (btnSave) btnSave.innerText = '✨ 인생 목표 저장하기';
+            updateGoalKoreanText(0);
+
+            // 기본 목표 날짜: 오늘로부터 3년 뒤
+            const dateInput = document.getElementById('goalTargetDate');
+            if (dateInput && !dateInput.value) {
+                const d = new Date();
+                d.setFullYear(d.getFullYear() + 3);
+                dateInput.value = d.toISOString().substring(0, 10);
+            }
+        }
+
+        function updateGoalKoreanText(val) {
+            const num = Number(val) || 0;
+            const el = document.getElementById('goalAmountKorean');
+            if (!el) return;
+            if (num === 0) { el.innerText = '0원'; return; }
+            if (num >= 100000000) {
+                const eok = Math.floor(num / 100000000);
+                const man = Math.floor((num % 100000000) / 10000);
+                el.innerText = `${num.toLocaleString()}원 (${eok}억${man > 0 ? ' ' + man + '만' : ''}원)`;
+            } else if (num >= 10000) {
+                el.innerText = `${num.toLocaleString()}원 (${Math.floor(num / 10000)}만원)`;
+            } else {
+                el.innerText = `${num.toLocaleString()}원`;
+            }
+        }
+
+        function setQuickGoalAmount(amt) {
+            const input = document.getElementById('goalTargetAmount');
+            if (input) {
+                const cur = Number(input.value) || 0;
+                input.value = cur + amt;
+                updateGoalKoreanText(input.value);
+            }
+        }
+
         function renderDashboardGoals(goals) {
             const container = document.getElementById('dashboardGoalsWidget');
+            if (!container) return;
             container.innerHTML = '';
-            if (goals.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">설정된 장기 목표가 없습니다.</div>';
+            const list = (goals && goals.length > 0) ? goals : getSavedGoals();
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 14px 0;">
+                        <div style="color:var(--text-muted); font-size:0.86rem; margin-bottom: 8px;">설정된 장기 인생 목표가 없습니다.</div>
+                        <button type="button" class="btn-icon" style="background: var(--warning); color: #78350f; font-weight: 800; border: none; padding: 6px 14px; font-size: 0.82rem; border-radius: 8px;" onclick="openNewGoalForm()">
+                            ➕ 첫 인생 목표 등록하기
+                        </button>
+                    </div>
+                `;
                 return;
             }
-            goals.slice(0, 2).forEach(g => {
+            list.slice(0, 2).forEach(g => {
                 const div = document.createElement('div');
-                div.style.marginBottom = '10px';
+                div.style.marginBottom = '12px';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:4px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:4px;">
                         <strong style="color:var(--text-main);">${g.icon} ${g.name}</strong>
-                        <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (D-${g.d_day})</span>
+                        <span style="font-size:0.82rem; font-weight:700; color:var(--primary);">${g.progress_rate}% (${g.d_day > 0 ? 'D-' + g.d_day : '달성'})</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text-muted); margin-bottom:4px;">
+                        <span>현재: ${Number(g.current_amount || 0).toLocaleString()}원</span>
+                        <span>목표: ${Number(g.target_amount).toLocaleString()}원</span>
                     </div>
                     <div style="height:8px; background:var(--track-bg); border-radius:4px; overflow:hidden;">
-                        <div style="height:100%; width:${g.progress_rate}%; background:var(--warning);"></div>
+                        <div style="height:100%; width:${Math.min(100, g.progress_rate)}%; background:linear-gradient(90deg, #f59e0b, #10b981);"></div>
                     </div>
                 `;
                 container.appendChild(div);
@@ -2253,25 +2424,119 @@
             }
         }
 
+        async function handleSaveGoal(e) {
+            if (e) e.preventDefault();
+            const id = document.getElementById('goalEditId').value.trim() || ('goal_' + Date.now());
+            const name = document.getElementById('goalName').value.trim();
+            const target_amount = Number(document.getElementById('goalTargetAmount').value) || 0;
+            const target_date = document.getElementById('goalTargetDate').value || '2029-12-31';
+            const icon = document.getElementById('goalIcon').value || '🎯';
+
+            if (!name) {
+                showToast('목표명을 글자로 입력해주세요!', 'warning');
+                return;
+            }
+            if (target_amount <= 0) {
+                showToast('목표 금액을 설정해주세요!', 'warning');
+                return;
+            }
+
+            const current_amount = Math.min(target_amount, Math.max(0, globalNetWorth));
+            const now = new Date();
+            const diffTime = new Date(target_date).getTime() - now.getTime();
+            const dDay = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            const monthsRemaining = Math.max(1, Math.ceil(dDay / 30));
+            const remainingAmt = Math.max(0, target_amount - current_amount);
+            const progress_rate = Math.min(100, Math.round((current_amount / target_amount) * 100));
+            const monthly_required = Math.round(remainingAmt / monthsRemaining);
+
+            const newGoal = {
+                id, name, target_amount, current_amount, target_date, icon,
+                d_day: dDay, progress_rate, monthly_required, category: '인생목표'
+            };
+
+            let localGoals = getSavedGoals();
+            const existIdx = localGoals.findIndex(g => String(g.id) === String(id));
+            if (existIdx >= 0) {
+                localGoals[existIdx] = newGoal;
+            } else {
+                localGoals.push(newGoal);
+            }
+            localStorage.setItem('user_goals', JSON.stringify(localGoals));
+
+            renderGoals(localGoals);
+            renderDashboardGoals(localGoals);
+            resetGoalForm();
+            playSound('success');
+            showToast('🎉 인생 목표가 성공적으로 저장되었습니다!', 'success');
+
+            // 구글 스프레드시트 동기화
+            callGasApi('saveGoal', newGoal);
+        }
+
+        function editGoal(g) {
+            document.getElementById('goalEditId').value = g.id;
+            document.getElementById('goalName').value = g.name;
+            document.getElementById('goalTargetAmount').value = g.target_amount;
+            updateGoalKoreanText(g.target_amount);
+            if (g.target_date) document.getElementById('goalTargetDate').value = g.target_date;
+            if (g.icon) document.getElementById('goalIcon').value = g.icon;
+
+            const titleEl = document.getElementById('goalFormTitle');
+            if (titleEl) titleEl.innerText = '✏️ 인생 목표 수정하기';
+            const btnCancel = document.getElementById('btnCancelGoalEdit');
+            if (btnCancel) btnCancel.style.display = 'inline-block';
+            const btnSave = document.getElementById('btnSaveGoal');
+            if (btnSave) btnSave.innerText = '💾 수정 완료하기';
+
+            const formCard = document.getElementById('goalInputForm');
+            if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function deleteGoalItem(id) {
+            if (!confirm('이 인생 목표를 삭제하시겠습니까?')) return;
+            let localGoals = getSavedGoals().filter(g => String(g.id) !== String(id));
+            localStorage.setItem('user_goals', JSON.stringify(localGoals));
+            renderGoals(localGoals);
+            renderDashboardGoals(localGoals);
+            showToast('목표가 삭제되었습니다.', 'info');
+            callGasApi('deleteGoal', { id: id });
+        }
+
         function renderGoals(goals) {
             const container = document.getElementById('goalsListContainer');
+            if (!container) return;
+            const list = (goals && goals.length > 0) ? goals : getSavedGoals();
+            const badge = document.getElementById('goalsCountBadge');
+            if (badge) badge.innerText = `${list.length}개`;
             container.innerHTML = '';
-            goals.forEach((g) => {
+            if (!list || list.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 24px 0; color:var(--text-muted); font-size:0.88rem;">등록된 장기 인생 목표가 없습니다. 위 입력창에서 첫 목표를 등록해 보세요!</div>';
+                return;
+            }
+            list.forEach((g) => {
                 const card = document.createElement('div');
-                card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:12px; color:var(--text-main);';
+                card.style.cssText = 'background:var(--bg-subtle); border:1px solid var(--border-color); border-radius:14px; padding:16px; margin-bottom:14px; color:var(--text-main);';
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <strong style="font-size:1.05rem; color:var(--text-main);">${g.icon} ${g.name}</strong>
-                        <span style="font-size:0.85rem; font-weight:800; color:var(--primary);">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '완료'}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <strong style="font-size:1.1rem; color:var(--text-main);">${g.icon} ${g.name}</strong>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <span style="font-size:0.82rem; font-weight:800; color:var(--primary); background:rgba(37,99,235,0.12); padding:3px 8px; border-radius:6px;">${g.d_day > 0 ? 'D-' + g.d_day + '일' : '달성'}</span>
+                            <button type="button" class="btn-icon" style="font-size:0.75rem; padding:3px 7px;" onclick='editGoal(${JSON.stringify(g).replace(/'/g, "&apos;")})'>✏️</button>
+                            <button type="button" class="btn-icon" style="font-size:0.75rem; padding:3px 7px; color:var(--expense);" onclick="deleteGoalItem('${g.id}')">🗑️</button>
+                        </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">
-                        <span>모은 금액: <strong style="color:var(--primary);">${g.current_amount.toLocaleString()}원</strong></span>
-                        <span>목표: <strong style="color:var(--text-main);">${g.target_amount.toLocaleString()}원</strong></span>
+                    <div style="display:flex; justify-content:space-between; font-size:0.88rem; color:var(--text-muted); margin-bottom:6px;">
+                        <span>현재 모은 금액: <strong style="color:var(--primary);">${Number(g.current_amount || 0).toLocaleString()}원</strong></span>
+                        <span>목표 금액: <strong style="color:var(--text-main);">${Number(g.target_amount).toLocaleString()}원</strong></span>
                     </div>
-                    <div style="height:10px; background:var(--track-bg); border-radius:5px; overflow:hidden; margin-bottom:6px;">
-                        <div style="height:100%; width:${g.progress_rate}%; background:linear-gradient(90deg, #3b82f6, #10b981);"></div>
+                    <div style="height:10px; background:var(--track-bg); border-radius:5px; overflow:hidden; margin-bottom:8px;">
+                        <div style="height:100%; width:${Math.min(100, g.progress_rate)}%; background:linear-gradient(90deg, #3b82f6, #10b981);"></div>
                     </div>
-                    <div style="font-size:0.8rem; color:var(--text-muted); text-align:right;">매월 권장 저축: <b style="color:var(--income);">${(g.monthly_required/10000).toLocaleString()}만원</b></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-muted);">
+                        <span>목표일: <b>${g.target_date || '미정'}</b></span>
+                        <span>매월 권장 저축액: <b style="color:var(--income);">${Number(g.monthly_required || 0).toLocaleString()}원</b></span>
+                    </div>
                 `;
                 container.appendChild(card);
             });
