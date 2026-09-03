@@ -2,13 +2,25 @@
  * 💰 스마트 머니 허브 - Google Apps Script Backend (단일 doPost Web/Telegram 통합 라우팅)
  */
 
-// ⚙️ 텔레그램 봇 및 Gemini AI 설정 (스크립트 속성 또는 기본값)
+// ============================================================
+// 1. 설정값 및 전역 상수 (토큰 & API 키 직접 지정)
+// ============================================================
+// ⚠️ 텔레그램 @BotFather 봇 토큰을 아래 큰따옴표 안에 직접 붙여넣으시면 스크립트 속성 설정 없이도 100% 즉시 동작합니다!
+const TELEGRAM_TOKEN = ""; // 👈 여기에 @BotFather 토큰을 입력하세요 (예: "7675984957:AAETIlHJuLEVs...")
+const GEMINI_API     = "AIzaSyAbrfSqVrNnlXzivdVhRW8I4Gu7PWzA1Jk";
+const ACTIVE_MODEL   = "gemini-3.1-flash-lite";
+
 function getTelegramToken() {
-  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || '';
+  if (typeof TELEGRAM_TOKEN !== 'undefined' && TELEGRAM_TOKEN && TELEGRAM_TOKEN.trim() !== "") {
+    return TELEGRAM_TOKEN.trim();
+  }
+  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || CacheService.getScriptCache().get('TELEGRAM_BOT_TOKEN') || '';
 }
 
 function getGeminiApiKey() {
-  return PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  var propKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (propKey && propKey.trim() !== "") return propKey.trim();
+  return GEMINI_API;
 }
 
 function doGet(e) {
@@ -24,6 +36,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     PropertiesService.getScriptProperties().setProperty('TELEGRAM_BOT_TOKEN', token);
+    CacheService.getScriptCache().put('TELEGRAM_BOT_TOKEN', token, 21600);
     var res = setTelegramWebhook(token, webAppUrl);
     return ContentService.createTextOutput(JSON.stringify({ success: true, result: res, webhookUrl: webAppUrl }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -50,24 +63,37 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  var successOutput = HtmlService.createHtmlOutput("<b>OK</b>");
+
   try {
-    var data = {};
-    if (e.postData && e.postData.contents) {
-      try { data = JSON.parse(e.postData.contents); } catch(err) { data = { text: e.postData.contents }; }
-    } else if (e.parameter) { data = e.parameter; }
-    
-    // 1️⃣ 텔레그램 웹훅 요청 판별 (message 또는 callback_query 수신 시)
-    if (data.message || data.callback_query) {
-      return handleTelegramUpdate(data);
+    if (!e || !e.postData) return successOutput;
+
+    var contents = {};
+    try {
+      contents = JSON.parse(e.postData.contents);
+    } catch(err) {
+      contents = { text: e.postData.contents };
+    }
+
+    // 1️⃣ 텔레그램 웹훅 요청 판별 (message, callback_query, channel_post 수신 시)
+    if (contents.message || contents.callback_query || contents.channel_post) {
+      handleTelegramUpdate(contents);
+      return successOutput;
     }
 
     // 2️⃣ 웹 UI(기존 프론트엔드) API 요청 판별 (action 수신 시)
+    var data = contents;
+    if (e.parameter) {
+      for (var k in e.parameter) { if (!data[k]) data[k] = e.parameter[k]; }
+    }
     var action = data.action || (e.parameter ? e.parameter.action : '');
     if (!action && (data.text || data.sms || data.body)) action = 'parseSmsWebhook';
     var result = handleApiPost(action, data);
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+
   } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+    Logger.log("doPost error: " + err.toString());
+    return successOutput;
   }
 }
 
@@ -552,20 +578,29 @@ function clearRecurring() {
  */
 function handleTelegramUpdate(data) {
   try {
-    if (data.message) {
-      var msg = data.message;
-      var chatId = msg.chat.id;
+    var cache = CacheService.getScriptCache();
+
+    // 중복 전송 방지 (update_id 기준) - code.txt 패턴
+    if (data.update_id) {
+      var updateId = String(data.update_id);
+      if (cache.get(updateId)) return;
+      cache.put(updateId, "true", 600);
+    }
+
+    var msg = data.message || data.channel_post;
+    if (msg) {
+      var chatId = String(msg.chat.id);
       var text = (msg.text || '').trim();
 
-      if (!text) {
-        return ContentService.createTextOutput("OK");
-      }
+      if (!text) return;
 
       // 1. 슬래시 명령어 또는 바로가기 키보드 텍스트 처리
       if (text.indexOf('/') === 0 || text === '📊 금융 브리핑' || text === '🗓️ 정기일정' || text === '🏦 자산 현황' || text === '💸 지출 입력') {
         handleTelegramCommand(chatId, text, msg);
       } else {
         // 2. 비정형 자연어 및 결제 SMS (Gemini AI 파싱 + 되묻기 인터랙션)
+        // 📡 [수신 확인] 즉시 발송하여 봇이 반응함을 사용자에게 알림!
+        sendTelegramMessage(chatId, "📡 <i>[수신 확인] \"" + text + "\" 분석 중입니다...</i>");
         handleTelegramNaturalText(chatId, text, msg);
       }
     } else if (data.callback_query) {
@@ -575,7 +610,6 @@ function handleTelegramUpdate(data) {
   } catch (err) {
     Logger.log("Telegram update error: " + err.toString());
   }
-  return ContentService.createTextOutput("OK");
 }
 
 /**
@@ -1173,7 +1207,7 @@ function askGeminiFinance(userText) {
     + "}";
 
   try {
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + ACTIVE_MODEL + ":generateContent?key=" + apiKey;
     var payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
@@ -1315,7 +1349,7 @@ function askGeminiBriefingComment(summary) {
     + "위 재정 상태를 분석하여 친절하고 통찰력 있는 금융 비서 톤으로 딱 1~2문장의 따뜻하고 격려하는 조언/코멘트를 작성하세요. 마크다운 기호 없이 한국어 문장만 출력하세요.";
 
   try {
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + ACTIVE_MODEL + ":generateContent?key=" + apiKey;
     var payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.7, maxOutputTokens: 120 }
@@ -1344,10 +1378,13 @@ function askGeminiBriefingComment(summary) {
 
 function sendTelegramMessage(chatId, text, replyMarkup) {
   var token = getTelegramToken();
-  if (!token) return;
+  if (!token) {
+    Logger.log("❌ TELEGRAM_TOKEN이 설정되지 않았습니다! Code.gs 상단 TELEGRAM_TOKEN에 봇 토큰을 입력해주세요.");
+    return;
+  }
   var url = "https://api.telegram.org/bot" + token + "/sendMessage";
   var payload = {
-    chat_id: chatId,
+    chat_id: String(chatId),
     text: text,
     parse_mode: "HTML",
     disable_web_page_preview: true
@@ -1355,12 +1392,24 @@ function sendTelegramMessage(chatId, text, replyMarkup) {
   if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
 
   try {
-    UrlFetchApp.fetch(url, {
+    var res = UrlFetchApp.fetch(url, {
       method: "post",
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
+    // HTML 파싱 에러(400) 발생 시 태그 제거 후 플레인 텍스트로 안전 재발송
+    if (res.getResponseCode() !== 200) {
+      Logger.log("Telegram HTML send failed (" + res.getResponseCode() + "): " + res.getContentText() + " -> Retrying without HTML");
+      delete payload.parse_mode;
+      payload.text = text.replace(/<[^>]*>?/gm, '');
+      UrlFetchApp.fetch(url, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+    }
   } catch (e) {
     Logger.log("sendTelegramMessage error: " + e.toString());
   }
@@ -1371,7 +1420,7 @@ function editTelegramMessage(chatId, messageId, text, replyMarkup) {
   if (!token) return;
   var url = "https://api.telegram.org/bot" + token + "/editMessageText";
   var payload = {
-    chat_id: chatId,
+    chat_id: String(chatId),
     message_id: messageId,
     text: text,
     parse_mode: "HTML",
@@ -1380,12 +1429,22 @@ function editTelegramMessage(chatId, messageId, text, replyMarkup) {
   if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
 
   try {
-    UrlFetchApp.fetch(url, {
+    var res = UrlFetchApp.fetch(url, {
       method: "post",
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
+    if (res.getResponseCode() !== 200) {
+      delete payload.parse_mode;
+      payload.text = text.replace(/<[^>]*>?/gm, '');
+      UrlFetchApp.fetch(url, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+    }
   } catch (e) {
     Logger.log("editTelegramMessage error: " + e.toString());
   }
