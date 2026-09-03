@@ -600,19 +600,25 @@ function handleTelegramCommand(chatId, text, msg) {
 
   // /start, /help, /도움말
   if (cmd === '/start' || cmd === '/help' || cmd === '/도움말') {
-    var helpText = "👑 <b>스마트 머니 허브 - 텔레그램 비서</b>\n\n"
+    var helpText = "👑 <b>스마트 머니 허브 - 텔레그램 AI 금융 비서</b>\n\n"
       + "가계부 웹 대시보드와 실시간 양방향으로 연동되는 개인 금융 비서입니다.\n\n"
-      + "⚡ <b>빠른 CMD 명령어:</b>\n"
-      + "• <code>/지출 [금액] [내용] [카테고리] [결제수단]</code>\n"
+      + "🌟 <b>기본 사용법 (자연어 & 결제문자 자동인식):</b>\n"
+      + "명령어를 굳이 외우실 필요 없습니다! 그냥 평소 말하듯 편하게 보내시면 AI가 지출/수입/자산을 스스로 알아듣고 되물어봅니다.\n\n"
+      + "• <i>\"오늘 점심 12000원 신한카드로 먹음\"</i> ➡️ 💸 <b>지출 자동인식</b>\n"
+      + "• <i>\"월급 350만 들어옴\"</i> ➡️ 💰 <b>수입 자동인식</b>\n"
+      + "• <i>\"청약통장에 10만원 넣음\"</i> ➡️ 🏦 <b>자산 자동인식</b>\n"
+      + "• <i>\"오늘 얼마 썼지?\"</i> 또는 <i>\"이번달 현황\"</i> ➡️ 📊 <b>실시간 브리핑</b>\n"
+      + "• 카드사 결제 문자 전체 복사 붙여넣기 ➡️ ⚡ <b>즉시 자동 파싱</b>\n\n"
+      + "⌨️ <b>수동 강제 지정 (CMD 명령어):</b>\n"
+      + "<i>(※ AI가 헷갈릴 것 같을 때 정확하게 강제로 지정하는 명령어입니다)</i>\n"
+      + "• <code>/지출 [금액] [내용] [카테고리] [수단]</code>\n"
       + "  예: <code>/지출 15000 점심식사 식비 신한카드</code>\n"
       + "• <code>/수입 [금액] [내용]</code>\n"
       + "  예: <code>/수입 3500000 9월급여</code>\n"
       + "• <code>/자산 [금액] [자산명] [카테고리]</code>\n"
       + "  예: <code>/자산 50000000 청약예금</code>\n"
-      + "• <code>/브리핑</code> : 오늘의 자산/지출 AI 종합 요약\n"
-      + "• <code>/최근</code> : 최근 기록 5건 확인 및 삭제\n\n"
-      + "🤖 <b>자연어 및 SMS 인식:</b>\n"
-      + "명령어 없이 <i>\"스타벅스 아메리카노 4500원 결제\"</i> 라고 적거나, 카드 결제 문자를 복사해 보내시면 AI가 자동으로 정리하여 되물어봅니다!";
+      + "• <code>/브리핑</code> : 일일/월간 금융 종합 리포트\n"
+      + "• <code>/최근</code> : 최근 기록 5건 확인 및 삭제";
 
     var replyKeyboard = {
       keyboard: [
@@ -718,12 +724,57 @@ function handleTelegramNaturalText(chatId, text, msg) {
   // Gemini AI 또는 룰 기반 파싱 실행
   var candidate = askGeminiFinance(text);
 
+  // 1. 브리핑 요청 질문인 경우 (예: "오늘 얼마 썼지?", "이번달 현황", "브리핑해줘")
+  if (candidate && candidate.action_type === 'briefing') {
+    sendTelegramBriefing(chatId);
+    return;
+  }
+
+  // 2. 자산 등록인 경우 (예: "청약통장에 10만원 넣음", "적금 50만원 추가")
+  if (candidate && candidate.action_type === 'asset' && candidate.amount > 0) {
+    sendInteractiveAssetConfirm(chatId, candidate);
+    return;
+  }
+
+  // 3. 지출/수입 등록인 경우
   if (!candidate || !candidate.amount || candidate.amount <= 0) {
-    sendTelegramMessage(chatId, "⚠️ 금액이나 지출 내역을 명확하게 파악하지 못했습니다.\n\n예: <i>\"점심 12000원 카드로 결제\"</i> 또는 <code>/지출 12000 점심</code> 형식으로 입력해 주세요.");
+    sendTelegramMessage(chatId, "⚠️ 금액이나 지출/수입 내역을 명확하게 파악하지 못했습니다.\n\n"
+      + "💡 <b>자연어 입력 예시:</b>\n"
+      + "• <i>\"점심 12000원 신한카드로 먹음\"</i>\n"
+      + "• <i>\"월급 350만 들어옴\"</i>\n"
+      + "• <i>\"청약통장에 10만원 넣음\"</i>\n\n"
+      + "<i>(※ AI가 헷갈릴 때는 <code>/지출 12000 점심</code> 또는 <code>/수입 3500000 월급</code> 명령어로 강제 지정할 수도 있습니다.)</i>");
     return;
   }
 
   sendInteractiveConfirm(chatId, candidate);
+}
+
+/**
+ * 자산 등록 대화형 되묻기 전송
+ */
+function sendInteractiveAssetConfirm(chatId, candidate) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = "tg_asset_" + chatId + "_" + new Date().getTime();
+  cache.put(cacheKey, JSON.stringify(candidate), 600);
+
+  var msgText = "🤖 <b>자산 반영 내용을 확인해주세요:</b>\n\n"
+    + "• <b>구분:</b> 🏦 보유 자산 반영\n"
+    + "• <b>자산명:</b> " + candidate.description + "\n"
+    + "• <b>금액:</b> <b>" + Number(candidate.amount).toLocaleString() + "원</b>\n"
+    + "• <b>분류:</b> " + (candidate.category || '현금/예적금') + "\n\n"
+    + "위 자산을 가계부 순자산에 등록할까요?";
+
+  var inlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "💾 네, 자산에 반영할게요", callback_data: "CONFIRM_ASSET:" + cacheKey },
+        { text: "❌ 취소", callback_data: "CANCEL:" + cacheKey }
+      ]
+    ]
+  };
+
+  sendTelegramMessage(chatId, msgText, inlineKeyboard);
 }
 
 /**
@@ -781,7 +832,7 @@ function handleTelegramCallback(query) {
 
   var cache = CacheService.getScriptCache();
 
-  // 1. 기록 확정 (CONFIRM)
+  // 1. 거래 기록 확정 (CONFIRM)
   if (cbData.indexOf('CONFIRM:') === 0) {
     var key = cbData.substring('CONFIRM:'.length);
     var raw = cache.get(key);
@@ -806,6 +857,32 @@ function handleTelegramCallback(query) {
       editTelegramMessage(chatId, messageId, doneText);
     } else {
       editTelegramMessage(chatId, messageId, "❌ 시트 저장 중 오류가 발생했습니다: " + (res.error || ''));
+    }
+    return;
+  }
+
+  // 2. 자산 기록 확정 (CONFIRM_ASSET)
+  if (cbData.indexOf('CONFIRM_ASSET:') === 0) {
+    var key = cbData.substring('CONFIRM_ASSET:'.length);
+    var raw = cache.get(key);
+    if (!raw) {
+      editTelegramMessage(chatId, messageId, "⚠️ 확인 시간이 만료되었습니다. 다시 입력해주세요.");
+      return;
+    }
+    var assetData = JSON.parse(raw);
+    cache.remove(key);
+
+    var res = saveAsset({ name: assetData.description, amount: assetData.amount, category: assetData.category || '현금/예적금' });
+    if (res.success) {
+      var nw = getAllData().net_worth || {};
+      var doneText = "✅ <b>자산 등록 완료!</b> 🏦\n\n"
+        + "• <b>" + assetData.description + "</b>: " + Number(assetData.amount).toLocaleString() + "원\n"
+        + "• <b>분류:</b> " + (assetData.category || '현금/예적금') + "\n\n"
+        + "💎 <b>총 순자산:</b> " + Number(nw.net_worth || 0).toLocaleString() + "원\n"
+        + "웹 대시보드 순자산에 실시간 반영되었습니다.";
+      editTelegramMessage(chatId, messageId, doneText);
+    } else {
+      editTelegramMessage(chatId, messageId, "❌ 자산 등록에 실패했습니다: " + (res.error || ''));
     }
     return;
   }
@@ -1056,6 +1133,9 @@ function sendTelegramRecurringPlans(chatId) {
 /**
  * Gemini Flash 모델을 호출하여 지출/수입 정보 추출
  */
+/**
+ * Gemini Flash 모델을 호출하여 지출/수입/자산/브리핑 정보 정밀 추출
+ */
 function askGeminiFinance(userText) {
   var apiKey = getGeminiApiKey();
 
@@ -1064,15 +1144,30 @@ function askGeminiFinance(userText) {
     return fallbackRegexParser(userText);
   }
 
-  var prompt = "다음 텍스트는 사용자가 입력한 가계부 내역 또는 카드 결제 문자입니다:\n\"" + userText + "\"\n\n"
-    + "위 텍스트에서 다음 금융 정보를 추출하여 JSON 객체 하나로 응답하세요:\n"
+  var prompt = "당신은 한국어 금융/가계부 AI 비서입니다. 사용자의 일상 대화, 결제 SMS, 질문을 분석하여 오직 순수 JSON으로만 응답하세요.\n\n"
+    + "사용자 메시지: \"" + userText + "\"\n\n"
+    + "분석 지침:\n"
+    + "1. action_type 판별:\n"
+    + "   - 'briefing': 사용자가 지출/수입/잔액 현황이나 브리핑을 물어볼 때 (예: '오늘 얼마 썼지?', '이번달 현황 알려줘', '브리핑해줘', '잔액 얼마야?')\n"
+    + "   - 'asset': 예적금/청약/주식 등 자산 통장에 돈을 넣거나 자산 증감을 말할 때 (예: '청약통장 10만원 넣음', '적금 50만원 추가', '예금 5000만원 생김')\n"
+    + "   - 'transaction': 일반적인 지출이나 수입일 때\n"
+    + "2. type 판별 (지출 vs 수입):\n"
+    + "   - '수입': 월급, 급여, 보너스, 성과급, 용돈, 알바비, 입금, 들어옴, 환급, 정산, 배당금, 이자수익, 벌었음, 송금받음 등\n"
+    + "   - '지출': 결제, 샀어, 먹었어, 마심, 썼어, 비용, 출금, 카드, 택시비, 쇼핑, 치킨, 송금함, 이체함 등 (대부분의 구매 행위는 지출)\n"
+    + "3. amount (금액): 350만 -> 3500000, 5만 -> 50000, 1억 -> 100000000 등 정확한 정수 숫자 변환\n"
+    + "4. description (내용): 지출/수입 대상 명칭 (예: '점심 식사', '스타벅스 아메리카노', '9월 월급', '쿠팡 생수')\n"
+    + "5. category: ['식비', '카페', '교통', '쇼핑', '생활', '문화', '구독', '저축', '급여/월급', '기타'] 중 1개 선택\n"
+    + "6. payment_method: '신용카드' 또는 '현금'\n"
+    + "7. card_name: 카드사명이 언급된 경우 (예: '신한카드', '국민카드' 등), 없으면 빈문자열\n\n"
+    + "응답 JSON 형식:\n"
     + "{\n"
+    + "  \"action_type\": \"transaction\" 또는 \"asset\" 또는 \"briefing\",\n"
     + "  \"type\": \"지출\" 또는 \"수입\",\n"
-    + "  \"amount\": 금액(숫자만),\n"
-    + "  \"description\": \"지출처 또는 내용 (간결하게)\",\n"
-    + "  \"category\": 다음 중 가장 적절한 것 하나 [\"식비\", \"카페\", \"교통\", \"쇼핑\", \"생활\", \"문화\", \"구독\", \"저축\", \"기타\", \"급여/월급\"],\n"
-    + "  \"payment_method\": \"신용카드\" 또는 \"현금\",\n"
-    + "  \"card_name\": 카드사명이 언급된 경우(예: 신한, 현대, 국민 등), 없으면 빈문자열\n"
+    + "  \"amount\": 15000,\n"
+    + "  \"description\": \"점심 식사\",\n"
+    + "  \"category\": \"식비\",\n"
+    + "  \"payment_method\": \"신용카드\",\n"
+    + "  \"card_name\": \"신한카드\"\n"
     + "}";
 
   try {
@@ -1107,25 +1202,51 @@ function askGeminiFinance(userText) {
 }
 
 /**
- * 룰 기반 정규식 폴백 파서
+ * 룰 기반 정규식 폴백 파서 (한국어 단위 및 수입/지출/자산 정밀 분리)
  */
 function fallbackRegexParser(text) {
-  var amount = 0;
-  var amtMatch = text.match(/([0-9,]+)\s*(원|KRW|₩)?/);
-  if (amtMatch) {
-    amount = parseInt(amtMatch[1].replace(/,/g, ''), 10) || 0;
+  var t = text.trim();
+
+  // 1. 브리핑 의도 확인
+  if (t.match(/브리핑|현황|요약|결산|얼마 썼|얼마 남|잔액|남았어/i)) {
+    return { action_type: 'briefing' };
   }
-  var type = (text.indexOf('급여') >= 0 || text.indexOf('월급') >= 0 || text.indexOf('입금') >= 0 || text.indexOf('수입') >= 0) ? '수입' : '지출';
-  var cat = guessCategoryFromText(text);
-  var method = (text.indexOf('카드') >= 0 || text.indexOf('체크') >= 0 || text.indexOf('신용') >= 0) ? '신용카드' : '현금';
+
+  // 2. 한국어 금액 파싱 (350만, 50만원, 1억, 15000 등)
+  var amount = 0;
+  var manMatch = t.match(/([0-9.]+)\s*(만|만원)/);
+  var ukMatch = t.match(/([0-9.]+)\s*(억|억원)/);
+  var numMatch = t.match(/([0-9,]+)\s*(원|KRW|₩)?/);
+
+  if (ukMatch) {
+    amount = Math.round(parseFloat(ukMatch[1]) * 100000000);
+  } else if (manMatch) {
+    amount = Math.round(parseFloat(manMatch[1]) * 10000);
+  } else if (numMatch) {
+    amount = parseInt(numMatch[1].replace(/,/g, ''), 10) || 0;
+  }
+
+  // 3. 자산 증감 의도 확인
+  var isAsset = t.match(/청약|적금|예금|정기예금|주식|코인|통장 넣|통장에/);
+  var actionType = isAsset ? 'asset' : 'transaction';
+
+  // 4. 수입 vs 지출 판별
+  var isIncome = t.match(/급여|월급|입금|수입|들어옴|환급|정산|용돈|알바|보너스|수당|벌었|송금받/);
+  var type = isIncome ? '수입' : '지출';
+
+  var cat = isIncome ? '급여/월급' : guessCategoryFromText(t);
+  var method = (t.indexOf('카드') >= 0 || t.indexOf('체크') >= 0 || t.indexOf('신용') >= 0 || t.indexOf('승인') >= 0) ? '신용카드' : '현금';
   var cardName = '';
   var cards = ['신한', '국민', '현대', '삼성', '우리', '하나', '농협', '롯데', '카카오'];
-  cards.forEach(function(c) { if (text.indexOf(c) >= 0) cardName = c + '카드'; });
+  cards.forEach(function(c) { if (t.indexOf(c) >= 0) cardName = c + '카드'; });
 
-  var desc = text.replace(/([0-9,]+)\s*(원|KRW|₩)?/g, '').replace(/(카드|현금|결제|지출|수입)/g, '').trim();
-  if (!desc) desc = cat;
+  var desc = t.replace(/([0-9,.]+)\s*(억|억원|만|만원|원|KRW|₩)?/g, '')
+              .replace(/(카드|현금|결제|지출|수입|입금|들어옴|먹음|마심|샀음|했음|보냄)/g, '')
+              .trim();
+  if (!desc) desc = isAsset ? '보유 자산' : cat;
 
   return {
+    action_type: actionType,
     type: type,
     amount: amount,
     description: desc,
