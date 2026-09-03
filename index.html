@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260904_v12';
+        const APP_LIVE_VER = '20260904_v13';
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('v') !== APP_LIVE_VER || localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
@@ -462,7 +462,7 @@
                                         <label style="font-size: 0.8rem; color: var(--text-main); font-weight: 700;">2. 목표 금액 설정</label>
                                         <span id="dashGoalKoreanText" style="font-size: 0.8rem; font-weight: 800; color: var(--primary);">0원</span>
                                     </div>
-                                    <input type="number" id="dashGoalAmount" class="form-control" placeholder="금액 입력 (예: 100000000)" oninput="updateDashGoalKorean(this.value)" style="padding: 8px 10px; font-size: 0.92rem; font-weight: 700;">
+                                    <input type="text" inputmode="numeric" id="dashGoalAmount" class="form-control" placeholder="금액 입력 (예: 100,000,000)" oninput="handleDashGoalAmountInput(this)" style="padding: 8px 10px; font-size: 0.95rem; font-weight: 700;">
                                     <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
                                         <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(10000000)">+1천만</button>
                                         <button type="button" class="btn-icon" style="font-size: 0.74rem; padding: 3px 7px;" onclick="setDashQuickGoal(30000000)">+3천만</button>
@@ -787,7 +787,7 @@
                         <!-- 금액 입력 -->
                         <div style="margin-bottom: 12px;">
                             <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">매월 지정 금액 (원)</label>
-                            <input type="number" id="recItemAmount" class="form-control" placeholder="예: 3500000">
+                            <input type="text" inputmode="numeric" id="recItemAmount" class="form-control" placeholder="예: 3,500,000" oninput="handleAutoCommaFormat(this)">
                         </div>
 
                         <!-- 카테고리 -->
@@ -868,7 +868,7 @@
                                     <label style="font-size: 0.86rem; font-weight: 700; color: var(--text-main);">2️⃣ 목표 금액 설정</label>
                                     <span id="goalAmountKorean" style="font-size: 0.86rem; font-weight: 800; color: var(--primary);">0원</span>
                                 </div>
-                                <input type="number" id="goalTargetAmount" class="form-control" placeholder="목표 금액 입력 (예: 100000000)" required min="10000" step="10000" oninput="updateGoalKoreanText(this.value)" style="font-size: 1rem; font-weight: 700;">
+                                <input type="text" inputmode="numeric" id="goalTargetAmount" class="form-control" placeholder="목표 금액 입력 (예: 100,000,000)" required oninput="handleGoalTargetAmountInput(this)" style="font-size: 1.05rem; font-weight: 700;">
                                 <!-- 빠른 금액 프리셋 버튼 -->
                                 <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
                                     <button type="button" class="btn-icon" style="font-size: 0.78rem; padding: 5px 10px;" onclick="setQuickGoalAmount(10000000)">+1천만</button>
@@ -1057,7 +1057,7 @@
                                 </div>
                                 <div>
                                     <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">현재 평가 금액 (원)</label>
-                                    <input type="number" id="inputAssetAmount" class="form-control" placeholder="예: 3000000">
+                                    <input type="text" inputmode="numeric" id="inputAssetAmount" class="form-control" placeholder="예: 3,000,000" oninput="handleAutoCommaFormat(this)">
                                 </div>
                             </div>
 
@@ -1110,11 +1110,11 @@
                                 </div>
                                 <div>
                                     <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">평균 매수가 (원)</label>
-                                    <input type="number" id="inputInvAvgPrice" class="form-control" placeholder="예: 70000">
+                                    <input type="text" inputmode="numeric" id="inputInvAvgPrice" class="form-control" placeholder="예: 70,000" oninput="handleAutoCommaFormat(this)">
                                 </div>
                                 <div>
                                     <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">현재가 (원)</label>
-                                    <input type="number" id="inputInvCurrentPrice" class="form-control" placeholder="예: 75000">
+                                    <input type="text" inputmode="numeric" id="inputInvCurrentPrice" class="form-control" placeholder="예: 75,000" oninput="handleAutoCommaFormat(this)">
                                 </div>
                             </div>
 
@@ -2311,6 +2311,35 @@
             return defaults;
         }
 
+        // 💰 천단위 콤마(,) 실시간 자동 포맷팅 함수 (커서 위치 유지 및 콤마 입력 허용)
+        function handleAutoCommaFormat(input) {
+            if (!input) return;
+            const start = input.selectionStart;
+            const raw = input.value;
+            const clean = raw.replace(/[^0-9]/g, '');
+            if (!clean) {
+                input.value = '';
+                return;
+            }
+            const formatted = Number(clean).toLocaleString('ko-KR');
+            input.value = formatted;
+            const diff = formatted.length - raw.length;
+            const newPos = Math.max(0, start + diff);
+            try { input.setSelectionRange(newPos, newPos); } catch(e) {}
+        }
+
+        function handleDashGoalAmountInput(input) {
+            handleAutoCommaFormat(input);
+            const clean = input.value.replace(/[^0-9]/g, '');
+            updateDashGoalKorean(clean ? Number(clean) : 0);
+        }
+
+        function handleGoalTargetAmountInput(input) {
+            handleAutoCommaFormat(input);
+            const clean = input.value.replace(/[^0-9]/g, '');
+            updateGoalKoreanText(clean ? Number(clean) : 0);
+        }
+
         function toggleDashGoalForm(forceOpen) {
             const box = document.getElementById('dashGoalInlineBox');
             if (!box) return;
@@ -2344,15 +2373,16 @@
         function setDashQuickGoal(amt) {
             const input = document.getElementById('dashGoalAmount');
             if (input) {
-                const cur = Number(input.value) || 0;
-                input.value = cur + amt;
-                updateDashGoalKorean(input.value);
+                const cur = Number(String(input.value).replace(/,/g, '')) || 0;
+                const next = cur + amt;
+                input.value = next.toLocaleString('ko-KR');
+                updateDashGoalKorean(next);
             }
         }
 
         async function saveDashInlineGoal() {
             const name = (document.getElementById('dashGoalName').value || '').trim();
-            const target_amount = Number(document.getElementById('dashGoalAmount').value) || 0;
+            const target_amount = Number(String(document.getElementById('dashGoalAmount').value).replace(/,/g, '')) || 0;
 
             if (!name) {
                 showToast('목표명을 글자로 입력해주세요!', 'warning');
@@ -2457,9 +2487,10 @@
         function setQuickGoalAmount(amt) {
             const input = document.getElementById('goalTargetAmount');
             if (input) {
-                const cur = Number(input.value) || 0;
-                input.value = cur + amt;
-                updateGoalKoreanText(input.value);
+                const cur = Number(String(input.value).replace(/,/g, '')) || 0;
+                const next = cur + amt;
+                input.value = next.toLocaleString('ko-KR');
+                updateGoalKoreanText(next);
             }
         }
 
@@ -2560,7 +2591,7 @@
             if (e) e.preventDefault();
             const id = document.getElementById('goalEditId').value.trim() || ('goal_' + Date.now());
             const name = document.getElementById('goalName').value.trim();
-            const target_amount = Number(document.getElementById('goalTargetAmount').value) || 0;
+            const target_amount = Number(String(document.getElementById('goalTargetAmount').value).replace(/,/g, '')) || 0;
             const target_date = document.getElementById('goalTargetDate').value || '2029-12-31';
             const icon = document.getElementById('goalIcon').value || '🎯';
 
@@ -2609,7 +2640,7 @@
         function editGoal(g) {
             document.getElementById('goalEditId').value = g.id;
             document.getElementById('goalName').value = g.name;
-            document.getElementById('goalTargetAmount').value = g.target_amount;
+            document.getElementById('goalTargetAmount').value = Number(g.target_amount || 0).toLocaleString('ko-KR');
             updateGoalKoreanText(g.target_amount);
             if (g.target_date) document.getElementById('goalTargetDate').value = g.target_date;
             if (g.icon) document.getElementById('goalIcon').value = g.icon;
@@ -2799,7 +2830,7 @@
             editingAssetId = id;
             document.getElementById('inputAssetName').value = item.name;
             document.getElementById('inputAssetCategory').value = item.category || '현금/예적금';
-            document.getElementById('inputAssetAmount').value = item.amount;
+            document.getElementById('inputAssetAmount').value = Number(item.amount || 0).toLocaleString('ko-KR');
             document.getElementById('assetFormTitle').innerText = '✏️ 보유 자산 수정 중';
             document.getElementById('assetFormBox').style.display = 'block';
         }
@@ -2807,7 +2838,7 @@
         function handleSaveAsset() {
             const name = document.getElementById('inputAssetName').value.trim();
             const category = document.getElementById('inputAssetCategory').value;
-            const amount = parseInt(document.getElementById('inputAssetAmount').value, 10);
+            const amount = parseInt(String(document.getElementById('inputAssetAmount').value).replace(/,/g, ''), 10);
 
             if (!name) { showToast('자산명을 입력해주세요.', 'warning'); return; }
             if (isNaN(amount) || amount < 0) { showToast('올바른 금액을 입력해주세요.', 'warning'); return; }
@@ -2920,8 +2951,8 @@
             document.getElementById('inputInvName').value = item.name;
             document.getElementById('inputInvMarket').value = item.market || '국내주식';
             document.getElementById('inputInvShares').value = item.shares;
-            document.getElementById('inputInvAvgPrice').value = item.avg_buy_price;
-            document.getElementById('inputInvCurrentPrice').value = item.current_price;
+            document.getElementById('inputInvAvgPrice').value = Number(item.avg_buy_price || 0).toLocaleString('ko-KR');
+            document.getElementById('inputInvCurrentPrice').value = Number(item.current_price || 0).toLocaleString('ko-KR');
             document.getElementById('invFormTitle').innerText = '✏️ 종목 수정 중';
             document.getElementById('invFormBox').style.display = 'block';
         }
@@ -2930,8 +2961,8 @@
             const name = document.getElementById('inputInvName').value.trim();
             const market = document.getElementById('inputInvMarket').value;
             const shares = parseFloat(document.getElementById('inputInvShares').value);
-            const avgPrice = parseFloat(document.getElementById('inputInvAvgPrice').value);
-            const curPrice = parseFloat(document.getElementById('inputInvCurrentPrice').value);
+            const avgPrice = parseFloat(String(document.getElementById('inputInvAvgPrice').value).replace(/,/g, ''));
+            const curPrice = parseFloat(String(document.getElementById('inputInvCurrentPrice').value).replace(/,/g, ''));
 
             if (!name) { showToast('종목명을 입력해주세요.', 'warning'); return; }
             if (isNaN(shares) || shares <= 0) { showToast('보유 수량을 올바르게 입력해주세요.', 'warning'); return; }
@@ -3175,7 +3206,7 @@
             document.getElementById('rngRecDay').value = item.day;
             document.getElementById('lblRecDay').innerText = '매월 ' + item.day + '일';
             document.getElementById('recItemName').value = item.name;
-            document.getElementById('recItemAmount').value = item.amount;
+            document.getElementById('recItemAmount').value = Number(item.amount || 0).toLocaleString('ko-KR');
             document.getElementById('recCategory').value = item.category;
             document.getElementById('recPayMethod').value = item.pay_method;
 
@@ -3205,7 +3236,7 @@
         function handleSaveRecurringPlan() {
             const day = parseInt(document.getElementById('rngRecDay').value, 10);
             const name = document.getElementById('recItemName').value.trim();
-            const amount = parseInt(document.getElementById('recItemAmount').value, 10);
+            const amount = parseInt(String(document.getElementById('recItemAmount').value).replace(/,/g, ''), 10);
             const category = document.getElementById('recCategory').value;
             const payMethod = document.getElementById('recPayMethod').value;
 
