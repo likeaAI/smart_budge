@@ -16,7 +16,7 @@
 
     <!-- ⚡ 브라우저 및 서비스워커 캐시 즉시 비우기 및 최신 버전 자동 리로드 -->
     <script>
-        const APP_LIVE_VER = '20260904_v9';
+        const APP_LIVE_VER = '20260904_v10';
         if (localStorage.getItem('app_cache_ver') !== APP_LIVE_VER) {
             localStorage.setItem('app_cache_ver', APP_LIVE_VER);
             if ('serviceWorker' in navigator) {
@@ -141,59 +141,73 @@
         .sync-indicator { font-size: 0.75rem; color: var(--income); font-weight: 700; }
 
         /* 📱 Container & Balanced Responsive Grid System */
-        .container { max-width: 1240px; margin: auto; padding: 16px; }
+        .container { max-width: 1280px; margin: auto; padding: 24px 20px; }
         
         /* Base Card Styling */
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); color: var(--text-main); }
-        .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); color: var(--text-main); }
+        .card-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
 
         /* 🎯 Dashboard Clean Grid Sections */
-        .dash-section-stack { display: flex; flex-direction: column; gap: 16px; }
+        .dash-section-stack { display: flex; flex-direction: column; gap: 28px; }
         
-        /* Top Executive KPI Grid */
-        .dash-kpi-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        /* Row Grids with Perfect Horizontal and Vertical Alignment */
+        .dash-row-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: stretch; }
+        
+        /* Top Executive KPI Grid (Legacy compatibility) */
+        .dash-kpi-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: stretch; }
         
         /* Middle Analytics Chart Grid */
-        .dash-chart-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .dash-chart-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: stretch; }
         
         /* Bottom Detailed Records Grid */
-        .dash-records-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .dash-records-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .desktop-dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 
         @media (min-width: 900px) {
             .desktop-nav { display: flex; }
             .tab-bar { display: none !important; }
-            body { padding-bottom: 30px; }
+            body { padding-bottom: 60px; }
             
             /* Desktop All Rows: Uniform 50% : 50% (1fr 1fr) for perfect horizontal alignment */
-            .dash-kpi-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
-            .dash-chart-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
-            .dash-records-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-            .desktop-dashboard-grid { grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+            .dash-row-grid { grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+            .dash-kpi-grid { grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+            .dash-chart-grid { grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+            .dash-records-grid { grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+            .desktop-dashboard-grid { grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        }
+
+        /* 👑 Equal Height Card Class */
+        .card-kpi-equal {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            min-height: 270px;
         }
 
         /* 👑 Level Banner */
         .level-banner {
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white !important; padding: 20px; border-radius: 16px;
+            color: white !important; padding: 22px 24px; border-radius: 18px;
             box-shadow: 0 8px 24px rgba(37,99,235,0.18);
             display: flex; flex-direction: column; justify-content: space-between;
+            height: 100%; min-height: 150px;
         }
         .level-banner * { color: white !important; }
         .level-banner #disp-level-target { color: #fde047 !important; }
-        .level-tag { background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-        .progress-bar-bg { height: 9px; background: rgba(255,255,255,0.25); border-radius: 5px; overflow: hidden; margin: 12px 0 6px 0; }
-        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 5px; transition: width 0.5s ease; }
+        .level-tag { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .progress-bar-bg { height: 10px; background: rgba(255,255,255,0.25); border-radius: 6px; overflow: hidden; margin: 14px 0 8px 0; }
+        .progress-bar-fill { height: 100%; background: #10b981; border-radius: 6px; transition: width 0.5s ease; }
 
         /* Stat Grid (3 Items) */
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
-        .stat-box { background: var(--bg-subtle); padding: 12px; border-radius: 12px; text-align: center; color: var(--text-main); }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
+        .stat-box { background: var(--bg-subtle); padding: 12px 10px; border-radius: 12px; text-align: center; color: var(--text-main); }
+        .stat-label { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
         .stat-val { font-size: 1.15rem; font-weight: 900; }
 
-        /* 📊 Chart Cards & Wrappers */
-        .dash-chart-grid > .card { display: flex; flex-direction: column; height: 320px; margin-bottom: 0; }
-        .chart-wrapper { position: relative; height: 240px; width: 100%; flex: 1; min-height: 220px; }
+        /* 📊 Chart Cards & Wrappers (Generous desktop height) */
+        .dash-chart-grid > .card { display: flex; flex-direction: column; min-height: 420px; height: 420px; margin-bottom: 0; padding: 22px 24px; }
+        .chart-wrapper { position: relative; height: 330px; width: 100%; flex: 1; min-height: 310px; }
 
         /* 📋 Scrollable Table Wrapper */
         .table-scroll-container { max-height: 430px; overflow-y: auto; overflow-x: auto; }
@@ -292,9 +306,9 @@
         .stamp-box { background: var(--bg-card); color: var(--text-main); border: 4px solid var(--income); border-radius: 24px; padding: 30px; text-align: center; width: 320px; animation: stampSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes stampSlam { 0% { opacity: 0; transform: scale(2) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
 
-        .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: var(--text-main); }
-        .table th, .table td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-main); }
-        .table th { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; background: var(--bg-card); position: sticky; top: 0; }
+        .table { width: 100%; border-collapse: collapse; font-size: 0.94rem; color: var(--text-main); }
+        .table th, .table td { padding: 15px 14px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-main); }
+        .table th { color: var(--text-muted); font-size: 0.82rem; font-weight: 700; background: var(--bg-card); position: sticky; top: 0; }
         .text-right { text-align: right; }
     </style>
 </head>
@@ -400,145 +414,150 @@
         <section id="tab-dashboard" class="tab-content">
             <div class="dash-section-stack">
                 
-                <!-- 👑 1단 (맨 위): 나의 순자산/레벨 & 장기 목표 / 신용카드 현황 (50% : 50%) -->
-                <div class="dash-kpi-grid">
-                    <!-- 좌측: 레벨 퀘스트 & 총 순자산 카드 -->
-                    <div style="display: flex; flex-direction: column; gap: 14px;">
-                        <div class="level-banner">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
-                                    <h3 id="disp-level-title" style="margin-top: 4px; font-size: 1.25rem;">종잣돈 빌더 (LV.3)</h3>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 0.75rem; opacity: 0.85;">다음 레벨까지</div>
-                                    <strong id="disp-level-target" style="font-size: 1.15rem; color: #fde047;">5,000만</strong>
-                                </div>
-                            </div>
+                <!-- 👑 1단 상: 레벨 퀘스트 & 장기 인생 목표 (좌우 1:1 완벽 높이 일치) -->
+                <div class="dash-row-grid">
+                    <!-- 좌: 레벨 퀘스트 배너 -->
+                    <div class="level-banner">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <div class="progress-bar-bg"><div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
-                                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.9;">
-                                    <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
-                                    <span id="disp-level-pct">진행률 45%</span>
-                                </div>
+                                <span class="level-tag" id="disp-level-tag">자산 퀘스트</span>
+                                <h3 id="disp-level-title" style="margin-top: 6px; font-size: 1.3rem;">종잣돈 빌더 (LV.3)</h3>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.78rem; opacity: 0.85;">다음 레벨까지</div>
+                                <strong id="disp-level-target" style="font-size: 1.2rem; color: #fde047;">5,000만</strong>
                             </div>
                         </div>
+                        <div>
+                            <div class="progress-bar-bg"><div id="disp-level-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; opacity: 0.92;">
+                                <span>현재 순자산: <b id="disp-networth-mini">0원</b></span>
+                                <span id="disp-level-pct">진행률 45%</span>
+                            </div>
+                        </div>
+                    </div>
 
-                        <div class="card" style="border-left: 5px solid var(--primary); margin-bottom: 0;">
-                            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💎 나의 총 순자산 (Google Sheets DB)</div>
-                            <div id="disp-networth" style="font-size: 2rem; font-weight: 900; color: var(--primary); margin: 4px 0 6px 0;">0원</div>
-                            <div style="display: flex; gap: 14px; font-size: 0.85rem; margin-bottom: 8px;">
+                    <!-- 우: 장기 인생 목표 로드맵 -->
+                    <div class="card card-kpi-equal" style="border-color: var(--warning); margin-bottom: 0; min-height: 150px;">
+                        <div class="card-title" style="margin-bottom: 8px;">
+                            <span>🎯 장기 인생 목표 진행 현황</span>
+                            <button class="btn-icon" style="font-size: 0.82rem; padding: 4px 10px; font-weight: 600;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
+                        </div>
+                        <div id="dashboardGoalsWidget" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
+                    </div>
+                </div>
+
+                <!-- 👑 1단 하: 나의 총 순자산 & 신용카드 실시간 사용액 (좌우 1:1 완벽 높이 일치) -->
+                <div class="dash-row-grid">
+                    <!-- 좌: 나의 총 순자산 카드 -->
+                    <div class="card card-kpi-equal" style="border-left: 5px solid var(--primary); margin-bottom: 0;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">💎 나의 총 순자산 (Google Sheets DB)</div>
+                            <div id="disp-networth" style="font-size: 2.2rem; font-weight: 900; color: var(--primary); margin: 4px 0 8px 0; letter-spacing: -0.5px;">0원</div>
+                            <div style="display: flex; gap: 16px; font-size: 0.88rem; margin-bottom: 12px;">
                                 <span>📈 주식/투자: <strong id="disp-inv" style="color:var(--text-main);">0원</strong></span>
                                 <span>🏦 현금/예금: <strong id="disp-cash" style="color:var(--text-main);">0원</strong></span>
                             </div>
-                            
-                            <!-- 🔄 매달(월간) & 매년(연간) 2중 실시간 카운터 -->
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <!-- 📅 이번 달 (월간) -->
-                                <div style="background: var(--bg-subtle); border-radius: 10px; padding: 8px 12px; border-left: 3px solid var(--primary);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                        <span style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted);">📅 이번 달 (월간)</span>
-                                        <span id="disp-score-badge" style="font-size: 0.75rem; color: var(--warning); font-weight: 700;">자각 100점</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 0.88rem;">
-                                        <span>지출: <strong id="disp-expense" style="color: var(--expense);">0원</strong></span>
-                                        <span>수입: <strong id="disp-income" style="color: var(--income);">0원</strong></span>
-                                        <span>순잉여: <strong id="disp-balance" style="color: var(--primary);">0원</strong></span>
-                                    </div>
+                        </div>
+                        
+                        <!-- 🔄 매달(월간) & 매년(연간) 2중 실시간 카운터 -->
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- 📅 이번 달 (월간) -->
+                            <div style="background: var(--bg-subtle); border-radius: 12px; padding: 10px 14px; border-left: 3px solid var(--primary);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                    <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted);">📅 이번 달 (월간)</span>
+                                    <span id="disp-score-badge" style="font-size: 0.78rem; color: var(--warning); font-weight: 700;">자각 100점</span>
                                 </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.92rem;">
+                                    <span>지출: <strong id="disp-expense" style="color: var(--expense);">0원</strong></span>
+                                    <span>수입: <strong id="disp-income" style="color: var(--income);">0원</strong></span>
+                                    <span>순잉여: <strong id="disp-balance" style="color: var(--primary);">0원</strong></span>
+                                </div>
+                            </div>
 
-                                <!-- 📆 올해 누적 (연간) -->
-                                <div style="background: var(--bg-subtle); border-radius: 10px; padding: 8px 12px; border-left: 3px solid var(--purple);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                        <span style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted);">📆 올해 누적 (연간)</span>
-                                        <span id="disp-year-badge" style="font-size: 0.75rem; color: var(--purple); font-weight: 700;">2026 누적</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 0.88rem;">
-                                        <span>누적 지출: <strong id="disp-year-expense" style="color: var(--expense);">0원</strong></span>
-                                        <span>누적 수입: <strong id="disp-year-income" style="color: var(--income);">0원</strong></span>
-                                        <span>누적 저축: <strong id="disp-year-balance" style="color: var(--income);">0원</strong></span>
-                                    </div>
+                            <!-- 📆 올해 누적 (연간) -->
+                            <div style="background: var(--bg-subtle); border-radius: 12px; padding: 10px 14px; border-left: 3px solid var(--purple);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                    <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted);">📆 올해 누적 (연간)</span>
+                                    <span id="disp-year-badge" style="font-size: 0.78rem; color: var(--purple); font-weight: 700;">2026 누적</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.92rem;">
+                                    <span>누적 지출: <strong id="disp-year-expense" style="color: var(--expense);">0원</strong></span>
+                                    <span>누적 수입: <strong id="disp-year-income" style="color: var(--income);">0원</strong></span>
+                                    <span>누적 저축: <strong id="disp-year-balance" style="color: var(--income);">0원</strong></span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 우측: 장기 인생 목표 로드맵 & 신용카드 이번달/연간 현황 -->
-                    <div style="display: flex; flex-direction: column; gap: 14px;">
-                        <div class="card" style="border-color: var(--warning); margin-bottom: 0; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div class="card-title" style="margin-bottom: 6px;">
-                                <span>🎯 장기 인생 목표 진행 현황</span>
-                                <button class="btn-icon" style="font-size: 0.8rem; padding: 4px 8px;" onclick="switchTab('tab-goals')">전체보기 ➔</button>
-                            </div>
-                            <div id="dashboardGoalsWidget"></div>
-                        </div>
-
-                        <!-- 💳 신용카드 이번달/연간 현황 -->
-                        <div class="card" style="border-left: 5px solid var(--expense); margin-bottom: 0;">
+                    <!-- 우: 신용카드 실시간 사용액 카드 (높이 100% 동일) -->
+                    <div class="card card-kpi-equal" style="border-left: 5px solid var(--expense); margin-bottom: 0;">
+                        <div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">💳 신용카드 실시간 사용액</span>
-                                <button class="btn-icon" style="font-size: 0.78rem; padding: 3px 8px;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
+                                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">💳 신용카드 실시간 사용액</span>
+                                <button class="btn-icon" style="font-size: 0.82rem; padding: 4px 10px; font-weight: 600;" onclick="switchTab('tab-cards')">대조하기 ➔</button>
                             </div>
-                            <div id="disp-cards-total" style="font-size: 2rem; font-weight: 900; color: var(--expense); margin: 4px 0 6px 0;">0원</div>
+                            <div id="disp-cards-total" style="font-size: 2.2rem; font-weight: 900; color: var(--expense); margin: 4px 0 8px 0; letter-spacing: -0.5px;">0원</div>
                             
                             <!-- 🔄 카드 매달 & 매년 카운터 -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; font-size: 0.82rem;">
-                                <div style="background: var(--bg-subtle); padding: 6px 10px; border-radius: 8px;">
-                                    <span style="color: var(--text-muted); display: block; font-size: 0.74rem;">📅 이번 달 청구 대조</span>
-                                    <strong id="disp-cards-rec-status" style="color: var(--income);">정상 일치</strong>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 0.86rem;">
+                                <div style="background: var(--bg-subtle); padding: 9px 12px; border-radius: 10px;">
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; margin-bottom: 2px;">📅 이번 달 청구 대조</span>
+                                    <strong id="disp-cards-rec-status" style="color: var(--income); font-size: 0.95rem;">정상 일치</strong>
                                 </div>
-                                <div style="background: var(--bg-subtle); padding: 6px 10px; border-radius: 8px;">
-                                    <span style="color: var(--text-muted); display: block; font-size: 0.74rem;">📆 올해 카드 누적액</span>
-                                    <strong id="disp-cards-year-total" style="color: var(--expense);">0원</strong>
+                                <div style="background: var(--bg-subtle); padding: 9px 12px; border-radius: 10px;">
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; margin-bottom: 2px;">📆 올해 카드 누적액</span>
+                                    <strong id="disp-cards-year-total" style="color: var(--expense); font-size: 0.95rem;">0원</strong>
                                 </div>
                             </div>
-                            
-                            <div class="stat-grid" id="dashboardCardsStatGrid" style="margin-top: 0;">
-                                <div class="stat-box" style="border-left: 3px solid var(--primary);">
-                                    <div class="stat-label">현대카드</div>
-                                    <div class="stat-val" style="color: var(--primary); font-size: 1.05rem;">0원</div>
-                                </div>
-                                <div class="stat-box" style="border-left: 3px solid var(--purple);">
-                                    <div class="stat-label">신한카드</div>
-                                    <div class="stat-val" style="color: var(--purple); font-size: 1.05rem;">0원</div>
-                                </div>
-                                <div class="stat-box" style="border-left: 3px solid var(--warning);">
-                                    <div class="stat-label">기타카드</div>
-                                    <div class="stat-val" style="color: var(--warning); font-size: 1.05rem;">0원</div>
-                                </div>
+                        </div>
+                        
+                        <!-- 하단 카드별 통계 그리드 (순자산 카드와 완벽한 시각적 균형) -->
+                        <div class="stat-grid" id="dashboardCardsStatGrid" style="margin-top: 0; gap: 10px;">
+                            <div class="stat-box" style="border-left: 3px solid var(--primary); padding: 12px 10px;">
+                                <div class="stat-label">현대카드</div>
+                                <div class="stat-val" style="color: var(--primary); font-size: 1.1rem;">0원</div>
+                            </div>
+                            <div class="stat-box" style="border-left: 3px solid var(--purple); padding: 12px 10px;">
+                                <div class="stat-label">신한카드</div>
+                                <div class="stat-val" style="color: var(--purple); font-size: 1.1rem;">0원</div>
+                            </div>
+                            <div class="stat-box" style="border-left: 3px solid var(--warning); padding: 12px 10px;">
+                                <div class="stat-label">기타카드</div>
+                                <div class="stat-val" style="color: var(--warning); font-size: 1.1rem;">0원</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 📋 2단 (중간): 최근 소비/수익 지출 내역 (와이드 테이블) -->
-                <div class="card" style="margin-bottom: 0;">
-                    <div class="card-title">
-                        <span>📋 최근 소비/수익 내역</span>
-                        <button class="btn-icon" style="font-size: 0.85rem; padding: 6px 14px; background: var(--primary); color: white; border: none; font-weight: 700;" onclick="switchTab('tab-add')">➕ 지출/수익 쓰기</button>
+                <div class="card" style="margin-bottom: 0; min-height: 200px; padding: 22px 24px;">
+                    <div class="card-title" style="margin-bottom: 16px;">
+                        <span style="font-size: 1.1rem;">📋 최근 소비/수익 내역</span>
+                        <button class="btn-icon" style="font-size: 0.88rem; padding: 8px 16px; background: var(--primary); color: white; border: none; font-weight: 700; border-radius: 10px;" onclick="switchTab('tab-add')">➕ 지출/수익 쓰기</button>
                     </div>
                     <div class="table-scroll-container">
                         <table class="table">
                             <thead><tr><th>날짜</th><th>내용</th><th>결제수단</th><th class="text-right">금액</th></tr></thead>
                             <tbody id="recent-tx-tbody">
-                                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
+                                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 25px 0;">구글 시트에서 데이터를 불러옵니다...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- 📊 3단 (맨 아래): 소비 분석 그래프 (월간 vs 연간 2중 토글 탑재) -->
+                <!-- 📊 3단 (하단): 소비 분석 그래프 (월간 vs 연간 2중 토글 탑재) -->
                 <div class="dash-chart-grid">
                     <div class="card">
                         <div class="card-title">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span>🍩 카테고리 소비 비중</span>
                                 <div style="display: inline-flex; background: var(--bg-subtle); border-radius: 8px; padding: 2px;">
-                                    <button id="btnCatMonth" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchCatChartPeriod('month')">월간</button>
-                                    <button id="btnCatYear" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchCatChartPeriod('year')">연간</button>
+                                    <button id="btnCatMonth" type="button" class="btn-icon" style="font-size: 0.74rem; padding: 4px 9px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchCatChartPeriod('month')">월간</button>
+                                    <button id="btnCatYear" type="button" class="btn-icon" style="font-size: 0.74rem; padding: 4px 9px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchCatChartPeriod('year')">연간</button>
                                 </div>
                             </div>
-                            <span id="chartExpenseTotal" style="font-size: 0.85rem; font-weight: 700; color: var(--expense);">0원</span>
+                            <span id="chartExpenseTotal" style="font-size: 0.9rem; font-weight: 800; color: var(--expense);">0원</span>
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="categoryChart"></canvas>
@@ -550,15 +569,29 @@
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span>📊 지출 추이 그래프</span>
                                 <div style="display: inline-flex; background: var(--bg-subtle); border-radius: 8px; padding: 2px;">
-                                    <button id="btnTrendDaily" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchTrendChartPeriod('daily')">일별(당월)</button>
-                                    <button id="btnTrendMonthly" type="button" class="btn-icon" style="font-size: 0.72rem; padding: 3px 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchTrendChartPeriod('monthly')">월별(연간)</button>
+                                    <button id="btnTrendDaily" type="button" class="btn-icon" style="font-size: 0.74rem; padding: 4px 9px; border: none; border-radius: 6px; background: var(--primary); color: white;" onclick="switchTrendChartPeriod('daily')">일별(당월)</button>
+                                    <button id="btnTrendMonthly" type="button" class="btn-icon" style="font-size: 0.74rem; padding: 4px 9px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted);" onclick="switchTrendChartPeriod('monthly')">월별(연간)</button>
                                 </div>
                             </div>
-                            <span id="trendChartSub" style="font-size: 0.78rem; color: var(--text-muted);">이번 달 일별</span>
+                            <span id="trendChartSub" style="font-size: 0.8rem; color: var(--text-muted);">이번 달 일별</span>
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="dailyChart"></canvas>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 💡 4단 (최하단): 실시간 AI 재정 진단 & 스마트 가이드 배너 -->
+                <div class="card" style="border-left: 5px solid #8b5cf6; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139,92,246,0.08) 100%); padding: 22px 24px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.2rem;">💡</span>
+                            <span style="font-size: 1.02rem; font-weight: 800; color: #a78bfa;">스마트 AI 금융 비서의 실시간 재정 진단 코멘트</span>
+                        </div>
+                        <span id="aiAnalysisTimestamp" style="font-size: 0.78rem; color: var(--text-muted);">실시간 분석 활성</span>
+                    </div>
+                    <div id="disp-dashboard-ai-tip" style="font-size: 0.92rem; line-height: 1.65; color: var(--text-main);">
+                        가계부 거래 내역을 실시간으로 분석하여 목표 달성을 위한 맞춤형 재정 조언을 제공합니다.
                     </div>
                 </div>
 
@@ -1902,6 +1935,21 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            }
+
+            // 💡 실시간 AI 재정 진단 코멘트 업데이트
+            const tipEl = document.getElementById('disp-dashboard-ai-tip');
+            if (tipEl) {
+                const totalCardsSpent = (res.cards_summary || []).reduce((a, c) => a + (c.spent_amount || 0), 0) || yearCardTotal;
+                let comment = "";
+                if (monthExp === 0) {
+                    comment = "🌱 <b>아직 이번 달 지출 내역이 없습니다.</b> 지출이 발생할 때마다 텔레그램 봇이나 웹에서 바로 기록해 보세요! 작은 기록 습관이 종잣돈 1억 달성의 시작입니다.";
+                } else if (monthBal >= 0) {
+                    comment = `✨ <b>안정적인 흑자 기조를 유지 중입니다!</b> 현재 당월 순잉여는 <b>+${monthBal.toLocaleString()}원</b>이며, 실시간 신용카드 사용액은 <b>${totalCardsSpent.toLocaleString()}원</b>입니다. 결제일 전 통장 잔고를 확인하시고, 남은 잉여 자금은 장기 목표 통장으로 격리 저축해 보세요.`;
+                } else {
+                    comment = `💡 <b>당월 지출 집중 구간:</b> 현재 이번 달 지출(<b>${monthExp.toLocaleString()}원</b>)이 수입보다 많습니다. 신용카드 실시간 사용액(<b>${totalCardsSpent.toLocaleString()}원</b>)을 점검하시고, 카테고리별 소비 비중 차트를 확인하여 변동 지출을 최적화해 보세요!`;
+                }
+                tipEl.innerHTML = comment;
             }
 
             // 🌐 구글 시트 원격 자산/주식/정기일정 데이터 자동 수신 및 로컬 동기화
