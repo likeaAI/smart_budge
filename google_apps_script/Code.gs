@@ -636,13 +636,11 @@ function handleTelegramUpdate(data) {
 
       if (!text) return;
 
-      // 1. 슬래시 명령어 또는 바로가기 키보드 텍스트 처리
+      // 1. 단축 명령어 또는 바로가기 키보드 텍스트 처리
       if (text.indexOf('/') === 0 || text === '📊 금융 브리핑' || text === '🗓️ 정기일정' || text === '🏦 자산 현황' || text === '💸 지출 입력') {
         handleTelegramCommand(chatId, text, msg);
       } else {
-        // 2. 비정형 자연어 및 결제 SMS (Gemini AI 파싱 + 되묻기 인터랙션)
-        // 📡 [수신 확인] 즉시 발송하여 봇이 반응함을 사용자에게 알림!
-        sendTelegramMessage(chatId, "📡 <i>[수신 확인] \"" + text + "\" 분석 중입니다...</i>");
+        // 2. 비정형 자연어 및 결제 SMS (자연어 삭제, 브리핑, 카드값 등 초고속 인식 + Gemini AI 파싱)
         handleTelegramNaturalText(chatId, text, msg);
       }
     } else if (data.callback_query) {
@@ -684,19 +682,19 @@ function handleTelegramCommand(chatId, text, msg) {
       + "명령어를 굳이 외우실 필요 없습니다! 그냥 평소 말하듯 편하게 보내시면 AI가 지출/수입/자산을 스스로 알아듣고 되물어봅니다.\n\n"
       + "• <i>\"오늘 점심 12000원 신한카드로 먹음\"</i> ➡️ 💸 <b>지출 자동인식</b>\n"
       + "• <i>\"월급 350만 들어옴\"</i> ➡️ 💰 <b>수입 자동인식</b>\n"
-      + "• <i>\"청약통장에 10만원 넣음\"</i> ➡️ 🏦 <b>자산 자동인식</b>\n"
-      + "• <i>\"오늘 얼마 썼지?\"</i> 또는 <i>\"이번달 현황\"</i> ➡️ 📊 <b>실시간 브리핑</b>\n"
+      + "• <i>\"방금 입력한 거 삭제해줘\"</i> ➡️ 🗑️ <b>내역 즉시 삭제</b>\n"
+      + "• <i>\"스타벅스 지출 지워줘\"</i> ➡️ 🗑️ <b>특정 항목 검색 삭제</b>\n"
+      + "• <i>\"오늘 얼마 썼지?\"</i> 또는 <i>\"브리핑해줘\"</i> ➡️ 📊 <b>실시간 금융 브리핑</b>\n"
+      + "• <i>\"이번 달 카드값 얼마야?\"</i> ➡️ 💳 <b>카드 실시간 사용액</b>\n"
+      + "• <i>\"청약통장에 10만원 넣음\"</i> ➡️ 🏦 <b>자산 자동반영</b>\n"
       + "• 카드사 결제 문자 전체 복사 붙여넣기 ➡️ ⚡ <b>즉시 자동 파싱</b>\n\n"
-      + "⌨️ <b>수동 강제 지정 (CMD 명령어):</b>\n"
-      + "<i>(※ AI가 헷갈릴 것 같을 때 정확하게 강제로 지정하는 명령어입니다)</i>\n"
+      + "⌨️ <b>수동 지정 명령어:</b>\n"
       + "• <code>/지출 [금액] [내용] [카테고리] [수단]</code>\n"
-      + "  예: <code>/지출 15000 점심식사 식비 신한카드</code>\n"
       + "• <code>/수입 [금액] [내용]</code>\n"
-      + "  예: <code>/수입 3500000 9월급여</code>\n"
-      + "• <code>/자산 [금액] [자산명] [카테고리]</code>\n"
-      + "  예: <code>/자산 50000000 청약예금</code>\n"
-      + "• <code>/브리핑</code> : 일일/월간 금융 종합 리포트\n"
-      + "• <code>/최근</code> : 최근 기록 5건 확인 및 삭제";
+      + "• <code>/자산 [금액] [자산명]</code>\n"
+      + "• <code>/브리핑</code> : 종합 금융 리포트\n"
+      + "• <code>/최근</code> 또는 <code>/삭제</code> : 최근 거래 내역 확인 및 삭제\n"
+      + "• <code>/카드</code> : 카드별 실시간 사용액";
 
     var replyKeyboard = {
       keyboard: [
@@ -720,9 +718,15 @@ function handleTelegramCommand(chatId, text, msg) {
     var amount = parseInt(parts[1].replace(/[^0-9]/g, ''), 10);
     var desc = parts[2];
     var cat = parts[3] || guessCategoryFromText(desc);
-    var method = parts[4] || '신용카드';
+    var payMethod = parts[4] || (desc.indexOf('카드') >= 0 ? '신용카드' : '현금');
+    var cardName = '';
+    if (payMethod.indexOf('카드') >= 0 && payMethod !== '신용카드') {
+      cardName = payMethod;
+      payMethod = '신용카드';
+    }
 
     var candidate = {
+      action_type: 'transaction',
       type: '지출',
       amount: amount,
       description: desc,
@@ -777,9 +781,21 @@ function handleTelegramCommand(chatId, text, msg) {
     return;
   }
 
-  // /브리핑, /요약, /현황
-  if (cmd === '/브리핑' || cmd === '/요약' || cmd === '/현황') {
+  // /브리핑, /요약, /현황, /보고서
+  if (cmd === '/브리핑' || cmd === '/요약' || cmd === '/현황' || cmd === '/보고서') {
     sendTelegramBriefing(chatId);
+    return;
+  }
+
+  // /카드, /카드값
+  if (cmd === '/카드' || cmd === '/카드값') {
+    sendTelegramCardsDetail(chatId);
+    return;
+  }
+
+  // /삭제, /취소
+  if (cmd === '/삭제' || cmd === '/취소') {
+    handleTelegramNaturalDelete(chatId, text);
     return;
   }
 
@@ -794,38 +810,230 @@ function handleTelegramCommand(chatId, text, msg) {
 }
 
 /**
- * 비정형 자연어 및 결제 SMS 처리 (Gemini AI 파싱 + 되묻기 인터랙션)
+ * 비정형 자연어 및 결제 SMS 처리 (초고속 사전 의도 판별 + Gemini AI 파싱)
  */
 function handleTelegramNaturalText(chatId, text, msg) {
+  var cleanText = text.trim();
+
+  // ⚡ [사전 판별 A] 삭제 / 취소 / 지우기 자연어 의도 (예: "방금 입력한거 삭제해줘", "스타벅스 삭제", "지워줘", "취소")
+  if (cleanText.match(/^(삭제|지워|취소|삭제해줘|지워줘|취소해줘|방금 거|방금거|마지막 거|마지막거|오입력|잘못 입력)/i) || 
+      cleanText.match(/(삭제해|지워줘|취소해|삭제 부탁|삭제해줘|지워줘요|빼줘|지우기|삭제)$/i)) {
+    handleTelegramNaturalDelete(chatId, cleanText);
+    return;
+  }
+
+  // ⚡ [사전 판별 B] 브리핑 / 현황 / 요약 / 보고서 자연어 의도 (예: "오늘 얼마 썼지?", "브리핑해줘", "이번달 현황", "지출 요약")
+  if (cleanText.match(/^(브리핑|요약|현황|보고서|가계부 현황|오늘 현황|이번 달 현황|지출 현황)/i) ||
+      cleanText.match(/(브리핑|요약해|보고서|얼마 썼|얼마 남|잔액 얼마|지출 얼마|현황 알려|현황 보여|보고해)/i)) {
+    sendTelegramBriefing(chatId);
+    return;
+  }
+
+  // ⚡ [사전 판별 C] 신용카드 실시간 사용액 자연어 의도 (예: "카드값 얼마야?", "이번달 카드값", "카드 실시간 사용액")
+  if (cleanText.match(/(카드값|카드 값|카드 사용액|카드 실시간|이번 달 카드)/i)) {
+    sendTelegramCardsDetail(chatId);
+    return;
+  }
+
+  // ⚡ [사전 판별 D] 고정비 / 정기 일정 자연어 의도 (예: "이번달 나갈 고정비 뭐야?", "정기일정 알려줘")
+  if (cleanText.match(/(고정비|정기 일정|정기일정|구독료|나갈 돈)/i)) {
+    sendTelegramRecurringPlans(chatId);
+    return;
+  }
+
+  // ⚡ [사전 판별 E] 순자산 / 자산 현황 자연어 의도 (예: "내 자산 얼마야?", "순자산 현황")
+  if (cleanText.match(/(순자산|자산 현황|내 자산|총 자산)/i)) {
+    sendTelegramAssets(chatId);
+    return;
+  }
+
   sendTelegramMessage(chatId, "🤖 <i>내용 분석 중입니다...</i>");
 
   // Gemini AI 또는 룰 기반 파싱 실행
   var candidate = askGeminiFinance(text);
 
-  // 1. 브리핑 요청 질문인 경우 (예: "오늘 얼마 썼지?", "이번달 현황", "브리핑해줘")
+  // 1. 삭제 의도인 경우
+  if (candidate && candidate.action_type === 'delete') {
+    handleTelegramNaturalDelete(chatId, candidate.target || text);
+    return;
+  }
+
+  // 2. 브리핑 요청 질문인 경우
   if (candidate && candidate.action_type === 'briefing') {
     sendTelegramBriefing(chatId);
     return;
   }
 
-  // 2. 자산 등록인 경우 (예: "청약통장에 10만원 넣음", "적금 50만원 추가")
+  // 3. 신용카드 사용액 확인인 경우
+  if (candidate && candidate.action_type === 'cards') {
+    sendTelegramCardsDetail(chatId);
+    return;
+  }
+
+  // 4. 고정비 / 정기일정 확인인 경우
+  if (candidate && candidate.action_type === 'recurring') {
+    sendTelegramRecurringPlans(chatId);
+    return;
+  }
+
+  // 5. 도움말인 경우
+  if (candidate && candidate.action_type === 'help') {
+    handleTelegramCommand(chatId, '/도움말', msg);
+    return;
+  }
+
+  // 6. 자산 등록인 경우 (예: "청약통장에 10만원 넣음", "적금 50만원 추가")
   if (candidate && candidate.action_type === 'asset' && candidate.amount > 0) {
     sendInteractiveAssetConfirm(chatId, candidate);
     return;
   }
 
-  // 3. 지출/수입 등록인 경우
+  // 7. 지출/수입 등록인 경우
   if (!candidate || !candidate.amount || candidate.amount <= 0) {
     sendTelegramMessage(chatId, "⚠️ 금액이나 지출/수입 내역을 명확하게 파악하지 못했습니다.\n\n"
       + "💡 <b>자연어 입력 예시:</b>\n"
-      + "• <i>\"점심 12000원 신한카드로 먹음\"</i>\n"
-      + "• <i>\"월급 350만 들어옴\"</i>\n"
-      + "• <i>\"청약통장에 10만원 넣음\"</i>\n\n"
-      + "<i>(※ AI가 헷갈릴 때는 <code>/지출 12000 점심</code> 또는 <code>/수입 3500000 월급</code> 명령어로 강제 지정할 수도 있습니다.)</i>");
+      + "• <i>\"점심 12000원 신한카드로 먹음\"</i> ➡️ 💸 지출 등록\n"
+      + "• <i>\"월급 350만 들어옴\"</i> ➡️ 💰 수입 등록\n"
+      + "• <i>\"방금 입력한 거 삭제해줘\"</i> ➡️ 🗑️ 내역 즉시 삭제\n"
+      + "• <i>\"오늘 가계부 브리핑해줘\"</i> ➡️ 📊 실시간 브리핑\n"
+      + "• <i>\"이번 달 카드값 얼마야?\"</i> ➡️ 💳 카드 실시간 확인\n\n"
+      + "<i>(※ 수동 입력 시: <code>/지출 12000 점심</code> 또는 <code>/브리핑</code>)</i>");
     return;
   }
 
   sendInteractiveConfirm(chatId, candidate);
+}
+
+/**
+ * 🗑️ 자연어 삭제 요청 정밀 처리 (방금 거 삭제, 특정 내역 검색 삭제 등)
+ */
+function handleTelegramNaturalDelete(chatId, queryText) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('가계부_내역') || ss.getSheetByName('지출_내역');
+  if (!sheet) {
+    sendTelegramMessage(chatId, "⚠️ '가계부_내역' 시트를 찾을 수 없습니다.");
+    return;
+  }
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) {
+    sendTelegramMessage(chatId, "📋 등록된 거래 내역이 없어 삭제할 항목이 없습니다.");
+    return;
+  }
+
+  var cleanQuery = queryText.replace(/삭제|지워줘|지워|취소해줘|취소|내역|해줘|요/g, '').trim();
+  var targetNumMatch = cleanQuery.match(/([0-9,]+)\s*(원)?/);
+  var targetAmt = targetNumMatch ? parseInt(targetNumMatch[1].replace(/,/g, ''), 10) : 0;
+  var targetKeyword = cleanQuery.replace(/([0-9,]+)\s*(원)?/, '').trim();
+
+  var matchedRows = [];
+
+  // 최근 30개 행 역순 검색
+  var startIdx = Math.max(1, values.length - 30);
+  for (var i = values.length - 1; i >= startIdx; i--) {
+    var row = values[i];
+    var rowNum = i + 1;
+    var d = formatGASDate(row[0]);
+    var cat = String(row[1]);
+    var desc = String(row[2]);
+    var amt = Number(row[3]) || 0;
+    var type = String(row[4]);
+
+    var isMatch = false;
+    if (targetKeyword && (desc.indexOf(targetKeyword) >= 0 || cat.indexOf(targetKeyword) >= 0)) {
+      isMatch = true;
+    }
+    if (targetAmt > 0 && amt === targetAmt) {
+      isMatch = true;
+    }
+
+    if (isMatch) {
+      matchedRows.push({ rowNum: rowNum, date: d, cat: cat, desc: desc, amt: amt, type: type });
+      if (matchedRows.length >= 5) break;
+    }
+  }
+
+  // 1. 특정 키워드나 금액으로 일치 항목이 검색된 경우
+  if (matchedRows.length > 0) {
+    var msgText = "🗑️ <b>일치하는 내역을 찾았습니다. 삭제할 항목을 선택해주세요:</b>\n\n";
+    var buttons = [];
+    matchedRows.forEach(function(m) {
+      msgText += "• " + m.date.substring(5) + " [" + m.cat + "] <b>" + m.desc + "</b> (" + (m.type === '수입' ? '+' : '') + m.amt.toLocaleString() + "원)\n";
+      buttons.push([{
+        text: "🗑️ 삭제: " + m.desc + " (" + m.amt.toLocaleString() + "원)",
+        callback_data: "DEL_ROW:" + m.rowNum
+      }]);
+    });
+    buttons.push([{ text: "❌ 취소", callback_data: "CANCEL_DEL" }]);
+    sendTelegramMessage(chatId, msgText, { inline_keyboard: buttons });
+    return;
+  }
+
+  // 2. 일반 삭제/방금 입력건 삭제 요청인 경우: 가장 최근 등록건 바로가기 + 최근 5건 목록 제공
+  var latestRow = values[values.length - 1];
+  var latestRowNum = values.length;
+  var latestDate = formatGASDate(latestRow[0]);
+  var latestCat = String(latestRow[1]);
+  var latestDesc = String(latestRow[2]);
+  var latestAmt = Number(latestRow[3]) || 0;
+  var latestType = String(latestRow[4]);
+
+  var promptMsg = "🗑️ <b>삭제할 거래 내역을 선택해주세요:</b>\n\n"
+    + "<b>[가장 최근 등록된 내역]</b>\n"
+    + "• " + latestDate.substring(5) + " [" + latestCat + "] <b>" + latestDesc + "</b> (" + (latestType === '수입' ? '+' : '') + latestAmt.toLocaleString() + "원)\n\n"
+    + "아래 버튼을 누르면 즉시 가계부에서 삭제됩니다:";
+
+  var recentButtons = [
+    [{ text: "⚡ [방금 등록건 즉시 삭제] " + latestDesc + " (" + latestAmt.toLocaleString() + "원)", callback_data: "DEL_ROW:" + latestRowNum }]
+  ];
+
+  var start5 = Math.max(1, values.length - 5);
+  for (var k = values.length - 1; k >= start5; k--) {
+    if (k + 1 === latestRowNum) continue;
+    var r = values[k];
+    var rNum = k + 1;
+    var rDesc = String(r[2]);
+    var rAmt = Number(r[3]) || 0;
+    recentButtons.push([{
+      text: "🗑️ " + rDesc + " (" + rAmt.toLocaleString() + "원)",
+      callback_data: "DEL_ROW:" + rNum
+    }]);
+  }
+  recentButtons.push([{ text: "❌ 닫기 / 취소", callback_data: "CANCEL_DEL" }]);
+
+  sendTelegramMessage(chatId, promptMsg, { inline_keyboard: recentButtons });
+}
+
+/**
+ * 💳 텔레그램으로 신용카드 실시간 사용액 및 세부 내역 전송
+ */
+function sendTelegramCardsDetail(chatId) {
+  var data = getAllData();
+  var cards = data.cards_summary || [];
+  var curMonth = Utilities.formatDate(new Date(), 'GMT+9', 'M월');
+
+  if (cards.length === 0) {
+    sendTelegramMessage(chatId, "💳 <b>" + curMonth + " 신용카드 실시간 사용 현황</b>\n\n등록된 카드 사용 내역이 없습니다.");
+    return;
+  }
+
+  var totalSpent = cards.reduce(function(acc, c) { return acc + (Number(c.spent_amount) || 0); }, 0);
+  var text = "💳 <b>[스마트 머니 허브 - " + curMonth + " 신용카드 실시간 사용액]</b>\n\n"
+    + "• 총 실시간 카드 사용액: <b>" + totalSpent.toLocaleString() + "원</b>\n\n"
+    + "<b>[보유 카드별 사용 상세]</b>\n";
+
+  cards.forEach(function(c) {
+    text += "• <b>" + c.card_name + "</b>: " + Number(c.spent_amount || 0).toLocaleString() + "원"
+      + (c.payment_day ? " (결제일: " + c.payment_day + "일)" : "")
+      + (c.status ? " [" + c.status + "]" : "") + "\n";
+  });
+
+  text += "\n💡 <i>영수증/이용대금명세서 대조는 웹 대시보드 [카드값 대조] 탭에서 가능합니다.</i>";
+
+  var webAppUrl = ScriptApp.getService().getUrl();
+  sendTelegramMessage(chatId, text, {
+    inline_keyboard: [[{ text: "📊 웹 대시보드에서 카드 대조하기", url: webAppUrl }]]
+  });
 }
 
 /**
@@ -1029,13 +1237,21 @@ function handleTelegramCallback(query) {
   if (cbData.indexOf('DEL_ROW:') === 0) {
     var rowIdx = parseInt(cbData.substring('DEL_ROW:'.length), 10);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('가계부_내역');
+    var sheet = ss.getSheetByName('가계부_내역') || ss.getSheetByName('지출_내역');
     if (sheet && rowIdx > 1 && rowIdx <= sheet.getLastRow()) {
+      var dDesc = sheet.getRange(rowIdx, 3).getValue();
+      var dAmt = Number(sheet.getRange(rowIdx, 4).getValue()) || 0;
       sheet.deleteRow(rowIdx);
-      editTelegramMessage(chatId, messageId, "🗑️ 해당 내역이 성공적으로 삭제되었습니다.");
+      editTelegramMessage(chatId, messageId, "🗑️ <b>삭제 완료!</b>\n\n• <b>항목:</b> " + dDesc + "\n• <b>금액:</b> " + dAmt.toLocaleString() + "원\n\n가계부에서 성공적으로 삭제되었습니다.");
     } else {
       editTelegramMessage(chatId, messageId, "⚠️ 이미 삭제되었거나 찾을 수 없는 행입니다.");
     }
+    return;
+  }
+
+  // 5. 삭제 취소 (CANCEL_DEL)
+  if (cbData === 'CANCEL_DEL') {
+    editTelegramMessage(chatId, messageId, "❌ 삭제를 취소했습니다.");
     return;
   }
 }
@@ -1225,27 +1441,36 @@ function askGeminiFinance(userText) {
     return fallbackRegexParser(userText);
   }
 
-  var prompt = "당신은 한국어 금융/가계부 AI 비서입니다. 사용자의 일상 대화, 결제 SMS, 질문을 분석하여 오직 순수 JSON으로만 응답하세요.\n\n"
+  var prompt = "당신은 한국어 금융/가계부 AI 비서입니다. 사용자의 일상 대화, 결제 SMS, 질문, 명령을 분석하여 오직 순수 JSON으로만 응답하세요.\n\n"
     + "사용자 메시지: \"" + userText + "\"\n\n"
     + "분석 지침:\n"
-    + "1. action_type 판별: 'transaction' | 'asset' | 'briefing'\n"
-    + "2. type 판별: '지출' 또는 '수입'\n"
-    + "3. amount (금액): 350만 -> 3500000, 5만 -> 50000, 1억 -> 100000000 등 정확한 정수 숫자 변환\n"
-    + "4. description (내용): 지출/수입 대상 명칭 (예: '점심 식사', '스타벅스 아메리카노', '9월 월급', '쿠팡 생수')\n"
-    + "5. category: ['식비', '카페', '교통', '쇼핑', '생활', '문화', '구독', '저축', '급여/월급', '기타'] 중 1개 선택\n"
-    + "6. payment_method: '신용카드' 또는 '현금'\n"
-    + "7. card_name: 카드사명이 언급된 경우 (예: '신한카드', '국민카드' 등), 없으면 빈문자열\n"
-    + "8. time: 텍스트에 명시적인 결제/입금 시간(예: '14:35', '오후 2시', '밤 11시', '09/03 18:20')이 있을 때만 'HH:mm' 형태로 추출하고, 시간 언급이 없으면 빈문자열(\"\")로 두세요. 절대로 사용자에게 시간을 되묻지 마세요.\n\n"
+    + "1. action_type 판별:\n"
+    + "   - 'delete': 거래 내역의 삭제, 취소, 지우기, 오입력 수정을 요구하는 경우 (예: '방금 입력한거 삭제해줘', '스타벅스 지출 지워줘', '최근 내역 취소', '삭제', '잘못 썼어', '지워줘')\n"
+    + "   - 'briefing': 오늘/이번달 지출이나 수입 현황, 잔액, 브리핑, 보고서, 요약을 요청하는 경우 (예: '오늘 얼마 썼어?', '이번 달 요약해줘', '브리핑', '남은 돈 얼마야?', '가계부 현황', '지출 내역 요약')\n"
+    + "   - 'cards': 신용카드 사용액이나 결제일을 묻는 경우 (예: '이번 달 카드값 얼마야?', '신용카드 사용액', '카드 얼마 나왔어?')\n"
+    + "   - 'recurring': 고정 지출이나 정기 일정을 묻는 경우 (예: '이번 달 나갈 고정비 뭐야?', '정기일정 알려줘')\n"
+    + "   - 'asset': 예적금, 청약, 주식 등 자산 잔액 추가나 변경인 경우\n"
+    + "   - 'transaction': 일반 지출이나 수입을 기록하려는 경우\n"
+    + "   - 'help': 도움말이나 사용법을 묻는 경우\n"
+    + "2. target: action_type이 'delete'일 때 삭제하려는 대상 키워드나 금액 (예: '스타벅스', '15000', '방금' 등)\n"
+    + "3. type 판별: '지출' 또는 '수입'\n"
+    + "4. amount (금액): 350만 -> 3500000, 5만 -> 50000, 1억 -> 100000000 등 정확한 정수 숫자 변환 (단, briefing/delete 등에서는 0 가능)\n"
+    + "5. description (내용): 지출/수입 대상 명칭 (예: '점심 식사', '스타벅스 아메리카노', '9월 월급', '쿠팡 생수')\n"
+    + "6. category: ['식비', '카페', '교통', '쇼핑', '생활', '문화', '구독', '저축', '급여/월급', '기타'] 중 1개 선택\n"
+    + "7. payment_method: '신용카드' 또는 '현금'\n"
+    + "8. card_name: 카드사명이 언급된 경우 (예: '신한카드', '국민카드' 등), 없으면 빈문자열\n"
+    + "9. time: 텍스트에 명시적인 결제/입금 시간(예: '14:35', '오후 2시')이 있을 때만 'HH:mm' 형태로 추출하고, 시간 언급이 없으면 빈문자열(\"\")로 두세요. 절대로 사용자에게 시간을 되묻지 마세요.\n\n"
     + "응답 JSON 형식:\n"
     + "{\n"
-    + "  \"action_type\": \"transaction\" 또는 \"asset\" 또는 \"briefing\",\n"
+    + "  \"action_type\": \"delete\" 또는 \"briefing\" 또는 \"cards\" 또는 \"recurring\" 또는 \"asset\" 또는 \"transaction\" 또는 \"help\",\n"
+    + "  \"target\": \"삭제 대상 키워드 또는 빈문자열\",\n"
     + "  \"type\": \"지출\" 또는 \"수입\",\n"
     + "  \"amount\": 15000,\n"
     + "  \"description\": \"점심 식사\",\n"
     + "  \"category\": \"식비\",\n"
     + "  \"payment_method\": \"신용카드\",\n"
     + "  \"card_name\": \"신한카드\",\n"
-    + "  \"time\": \"14:35\" (없으면 \"\")\n"
+    + "  \"time\": \"14:35\"\n"
     + "}";
 
   try {
@@ -1280,17 +1505,32 @@ function askGeminiFinance(userText) {
 }
 
 /**
- * 룰 기반 정규식 폴백 파서 (한국어 단위 및 수입/지출/자산 정밀 분리)
+ * 룰 기반 정규식 폴백 파서 (한국어 단위 및 삭제/브리핑/수입/지출/자산 정밀 분리)
  */
 function fallbackRegexParser(text) {
   var t = text.trim();
 
-  // 1. 브리핑 의도 확인
-  if (t.match(/브리핑|현황|요약|결산|얼마 썼|얼마 남|잔액|남았어/i)) {
+  // 1. 삭제 / 취소 의도 확인
+  if (t.match(/^(삭제|지워|취소|빼줘|지우기)/i) || t.match(/(삭제해|지워줘|취소해|삭제해줘|지워줘요|빼줘|지우기|삭제)$/i)) {
+    return { action_type: 'delete', target: t };
+  }
+
+  // 2. 브리핑 / 현황 의도 확인
+  if (t.match(/브리핑|현황|요약|결산|보고서|얼마 썼|얼마 남|잔액|남았어|지출 얼마/i)) {
     return { action_type: 'briefing' };
   }
 
-  // 2. 한국어 금액 파싱 (350만, 50만원, 1억, 15000 등)
+  // 3. 신용카드 실시간 사용액 의도 확인
+  if (t.match(/카드값|카드 값|카드 사용액|카드 실시간/i)) {
+    return { action_type: 'cards' };
+  }
+
+  // 4. 고정비 / 정기일정 의도 확인
+  if (t.match(/고정비|정기일정|정기 일정|구독료/i)) {
+    return { action_type: 'recurring' };
+  }
+
+  // 5. 한국어 금액 파싱 (350만, 50만원, 1억, 15000 등)
   var amount = 0;
   var manMatch = t.match(/([0-9.]+)\s*(만|만원)/);
   var ukMatch = t.match(/([0-9.]+)\s*(억|억원)/);
