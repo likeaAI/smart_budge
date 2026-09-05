@@ -799,6 +799,14 @@ function handleTelegramCommand(chatId, text, msg) {
     return;
   }
 
+  // /웹, /웹보드, /가계부, /대시보드
+  if (cmd === '/웹' || cmd === '/웹보드' || cmd === '/가계부' || cmd === '/대시보드') {
+    sendTelegramMessage(chatId, "👑 <b>스마트 머니 허브 웹 대시보드:</b>\n\n아래 버튼을 누르면 깃허브에 빌드된 가계부 웹 대시보드로 즉시 이동합니다.", {
+      inline_keyboard: [[{ text: "📊 가계부 웹 대시보드 열기", url: getWebDashboardUrl() }]]
+    });
+    return;
+  }
+
   // /최근
   if (cmd === '/최근') {
     sendTelegramRecentTransactions(chatId);
@@ -814,6 +822,15 @@ function handleTelegramCommand(chatId, text, msg) {
  */
 function handleTelegramNaturalText(chatId, text, msg) {
   var cleanText = text.trim();
+
+  // ⚡ [사전 판별 0] 웹보드 / 대시보드 / 가계부 링크 자연어 의도 (예: "웹보드", "대시보드", "가계부 링크", "웹사이트")
+  if (cleanText.match(/^(웹|웹보드|대시보드|가계부|사이트|홈페이지|링크)$/i) ||
+      cleanText.match(/(웹보드|대시보드|가계부 링크|웹사이트|대시보드 열어줘|웹 열어줘)/i)) {
+    sendTelegramMessage(chatId, "👑 <b>스마트 머니 허브 웹 대시보드:</b>\n\n아래 버튼을 누르면 깃허브에 빌드된 실시간 가계부 대시보드로 이동합니다.", {
+      inline_keyboard: [[{ text: "📊 가계부 웹 대시보드 열기", url: getWebDashboardUrl() }]]
+    });
+    return;
+  }
 
   // ⚡ [사전 판별 A] 삭제 / 취소 / 지우기 자연어 의도 (예: "방금 입력한거 삭제해줘", "스타벅스 삭제", "지워줘", "취소")
   if (cleanText.match(/^(삭제|지워|취소|삭제해줘|지워줘|취소해줘|방금 거|방금거|마지막 거|마지막거|오입력|잘못 입력)/i) || 
@@ -1030,10 +1047,17 @@ function sendTelegramCardsDetail(chatId) {
 
   text += "\n💡 <i>영수증/이용대금명세서 대조는 웹 대시보드 [카드값 대조] 탭에서 가능합니다.</i>";
 
-  var webAppUrl = ScriptApp.getService().getUrl();
+  var webUrl = getWebDashboardUrl();
   sendTelegramMessage(chatId, text, {
-    inline_keyboard: [[{ text: "📊 웹 대시보드에서 카드 대조하기", url: webAppUrl }]]
+    inline_keyboard: [[{ text: "📊 웹 대시보드에서 카드 대조하기", url: webUrl }]]
   });
+}
+
+/**
+ * 👑 깃허브 빌드 웹 가계부 대시보드 URL 반환 (GitHub Pages)
+ */
+function getWebDashboardUrl() {
+  return "https://likeaai.github.io/smart_budge/";
 }
 
 /**
@@ -1340,11 +1364,11 @@ function sendTelegramBriefing(chatId) {
   briefingText += "💡 <b>4. AI 금융 비서 코멘트</b>\n"
     + "<i>\"" + aiInsight + "\"</i>";
 
-  var webAppUrl = ScriptApp.getService().getUrl();
+  var webUrl = getWebDashboardUrl();
   var inlineKeyboard = {
     inline_keyboard: [
       [
-        { text: "📊 웹 대시보드 바로가기", url: webAppUrl }
+        { text: "📊 웹 대시보드 바로가기", url: webUrl }
       ]
     ]
   };
