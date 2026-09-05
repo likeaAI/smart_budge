@@ -1064,6 +1064,49 @@ function sendInteractiveAssetConfirm(chatId, candidate) {
 }
 
 /**
+ * 대화형 카테고리 선택 인라인 키보드 생성 (수입/지출 완벽 분리)
+ */
+function getCategoryKeyboard(type, key) {
+  if (type === '수입') {
+    return [
+      [
+        { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + key },
+        { text: "❌ 취소", callback_data: "CANCEL:" + key }
+      ],
+      [
+        { text: "💰 급여/월급", callback_data: "CAT:급여/월급:" + key },
+        { text: "💼 부업/외주", callback_data: "CAT:부업/외주:" + key },
+        { text: "📈 금융/이자", callback_data: "CAT:금융/이자:" + key }
+      ],
+      [
+        { text: "🥕 중고/당근", callback_data: "CAT:중고/당근:" + key },
+        { text: "🎁 용돈/상여", callback_data: "CAT:용돈/상여:" + key },
+        { text: "✨ 기타수익", callback_data: "CAT:기타수익:" + key }
+      ]
+    ];
+  } else {
+    return [
+      [
+        { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + key },
+        { text: "❌ 취소", callback_data: "CANCEL:" + key }
+      ],
+      [
+        { text: "🍚 식비", callback_data: "CAT:식비:" + key },
+        { text: "☕ 카페", callback_data: "CAT:카페:" + key },
+        { text: "🚗 교통", callback_data: "CAT:교통:" + key },
+        { text: "🛒 쇼핑", callback_data: "CAT:쇼핑:" + key }
+      ],
+      [
+        { text: "🏠 생활", callback_data: "CAT:생활:" + key },
+        { text: "🎬 문화", callback_data: "CAT:문화:" + key },
+        { text: "📺 구독", callback_data: "CAT:구독:" + key },
+        { text: "📝 기타", callback_data: "CAT:기타:" + key }
+      ]
+    ];
+  }
+}
+
+/**
  * 대화형 되묻기 (Inline Keyboard Confirm) 전송
  */
 function sendInteractiveConfirm(chatId, candidate) {
@@ -1085,24 +1128,7 @@ function sendInteractiveConfirm(chatId, candidate) {
     + "위 내용으로 가계부에 저장할까요?";
 
   var inlineKeyboard = {
-    inline_keyboard: [
-      [
-        { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + cacheKey },
-        { text: "❌ 취소", callback_data: "CANCEL:" + cacheKey }
-      ],
-      [
-        { text: "🍚 식비", callback_data: "CAT:식비:" + cacheKey },
-        { text: "☕ 카페", callback_data: "CAT:카페:" + cacheKey },
-        { text: "🚗 교통", callback_data: "CAT:교통:" + cacheKey },
-        { text: "🛒 쇼핑", callback_data: "CAT:쇼핑:" + cacheKey }
-      ],
-      [
-        { text: "🏠 생활", callback_data: "CAT:생활:" + cacheKey },
-        { text: "🎬 문화", callback_data: "CAT:문화:" + cacheKey },
-        { text: "📺 구독", callback_data: "CAT:구독:" + cacheKey },
-        { text: "📝 기타", callback_data: "CAT:기타:" + cacheKey }
-      ]
-    ]
+    inline_keyboard: getCategoryKeyboard(candidate.type, cacheKey)
   };
 
   sendTelegramMessage(chatId, msgText, inlineKeyboard);
@@ -1137,11 +1163,13 @@ function handleTelegramCallback(query) {
 
     if (res.success) {
       var summary = getAllData().summary || {};
-      var doneText = "✅ <b>가계부 기록 완료!</b> 쾅! 🌟\n\n"
-        + "• <b>" + txData.description + "</b>: " + Number(txData.amount).toLocaleString() + "원\n"
+      var isInc = txData.type === '수입';
+      var doneText = (isInc ? "✅ <b>소중한 수익 입금 완료! 💰🎉</b>\n\n" : "✅ <b>가계부 지출 기록 완료! 💸🌟</b>\n\n")
+        + "• <b>" + txData.description + "</b>: " + (isInc ? "+" : "") + Number(txData.amount).toLocaleString() + "원\n"
         + "• <b>분류:</b> " + txData.category + " (" + txData.payment_method + ")\n\n"
-        + "📊 <b>이번 달 총 지출:</b> " + Number(summary.total_expense || 0).toLocaleString() + "원\n"
-        + "💰 <b>이번 달 잔액:</b> " + Number(summary.balance || 0).toLocaleString() + "원";
+        + (isInc ? ("📈 <b>이번 달 총 수입:</b> +" + Number(summary.total_income || 0).toLocaleString() + "원\n") : "")
+        + "📊 <b>이번 달 총 지출:</b> -" + Number(summary.total_expense || 0).toLocaleString() + "원\n"
+        + "💰 <b>이번 달 순잔액:</b> " + (Number(summary.balance) >= 0 ? '+' : '') + Number(summary.balance || 0).toLocaleString() + "원";
 
       editTelegramMessage(chatId, messageId, doneText);
     } else {
@@ -1209,24 +1237,7 @@ function handleTelegramCallback(query) {
       + "위 내용으로 가계부에 저장할까요?";
 
     var inlineKeyboard = {
-      inline_keyboard: [
-        [
-          { text: "💾 네, 기록할게요", callback_data: "CONFIRM:" + key },
-          { text: "❌ 취소", callback_data: "CANCEL:" + key }
-        ],
-        [
-          { text: "🍚 식비", callback_data: "CAT:식비:" + key },
-          { text: "☕ 카페", callback_data: "CAT:카페:" + key },
-          { text: "🚗 교통", callback_data: "CAT:교통:" + key },
-          { text: "🛒 쇼핑", callback_data: "CAT:쇼핑:" + key }
-        ],
-        [
-          { text: "🏠 생활", callback_data: "CAT:생활:" + key },
-          { text: "🎬 문화", callback_data: "CAT:문화:" + key },
-          { text: "📺 구독", callback_data: "CAT:구독:" + key },
-          { text: "📝 기타", callback_data: "CAT:기타:" + key }
-        ]
-      ]
+      inline_keyboard: getCategoryKeyboard(candidate.type, key)
     };
 
     editTelegramMessage(chatId, messageId, msgText, inlineKeyboard);
